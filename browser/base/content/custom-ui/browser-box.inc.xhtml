@@ -1,0 +1,77 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+<hbox flex="1" id="browser">
+  <box context="sidebar-context-menu" id="sidebar-container" hidden="true">
+    <html:header id="custom-sidebar-header">
+      <svg xmlns="http://www.w3.org/2000/svg" id="custom-brand-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M2 12.5h16" stroke-opacity=".5"/></svg>
+      <html:span id="custom-brand-name" data-l10n-id="custom-ui-brand"/>
+      <html:button id="custom-sidebar-toggle" aria-controls="sidebar-container" aria-expanded="true" data-l10n-id="custom-ui-sidebar-collapse"/>
+    </html:header>
+    <html:button id="custom-sidebar-newtab" data-l10n-id="custom-ui-new-tab-button">
+      <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-new-tab"/>
+      <html:kbd id="custom-newtab-shortcut" class="custom-shortcut"/>
+    </html:button>
+    <html:sidebar-main flex="1">
+      <box id="vertical-tabs" slot="tabstrip" customizable="true" contextmenu="toolbar-context-menu"></box>
+    </html:sidebar-main>
+    <html:section id="custom-drift" aria-labelledby="custom-drift-title">
+      <html:h3 id="custom-drift-title" data-l10n-id="custom-ui-drift-title"/>
+      <html:p data-l10n-id="custom-ui-drift-schedule"/>
+    </html:section>
+    <html:div id="custom-sidebar-footer">
+      <html:button id="custom-settings-button" data-l10n-id="custom-ui-settings-button">
+        <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-settings"/>
+      </html:button>
+      <html:button id="custom-ai-button" aria-controls="custom-ai-panel" aria-expanded="false" data-l10n-id="custom-ui-assistant-button">
+        <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-assistant"/>
+      </html:button>
+      <html:button id="custom-space-button" disabled="disabled" data-l10n-id="custom-ui-space-button">
+        <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-space"/>
+      </html:button>
+    </html:div>
+  </box>
+  <splitter id="sidebar-launcher-splitter" class="chromeclass-extrachrome sidebar-splitter" resizebefore="sibling" resizeafter="none" hidden="true"/>
+  <vbox id="sidebar-box" hidden="true" class="chromeclass-extrachrome">
+    <box id="sidebar-header" align="center">
+      <toolbarbutton id="sidebar-switcher-target" class="tabbable" aria-expanded="false">
+        <image id="sidebar-icon" consumeanchor="sidebar-switcher-target"/>
+        <label id="sidebar-title" crop="end" control="sidebar"/>
+        <image id="sidebar-switcher-arrow"/>
+      </toolbarbutton>
+      <image id="sidebar-throbber"/>
+      <spacer id="sidebar-spacer"/>
+      <toolbarbutton id="sidebar-close" class="close-icon tabbable" data-l10n-id="sidebar-close-button"/>
+    </box>
+    <stack class="sidebar-browser-stack">
+      <browser id="sidebar" autoscroll="false" disablehistory="true" disablefullscreen="true" tooltip="aHTMLTooltip"/>
+    </stack>
+  </vbox>
+  <splitter id="sidebar-splitter" class="chromeclass-extrachrome sidebar-splitter" resizebefore="sibling" resizeafter="none" hidden="true" role="separator" aria-controls="sidebar-box" data-l10n-id="sidebar-resize-splitter"/>
+  <tabbox id="tabbrowser-tabbox" flex="1" tabcontainer="tabbrowser-tabs">
+    <tabpanels id="tabbrowser-tabpanels" flex="1" selectedIndex="0"/>
+  </tabbox>
+  <splitter id="ai-window-splitter" class="chromeclass-extrachrome sidebar-splitter" resizebefore="sibling" resizeafter="sibling" collapsed="true"/>
+  <vbox id="ai-window-box" collapsed="true" class="chromeclass-extrachrome ai-window-right-sidebar">
+    <stack class="ai-window-browser-stack" flex="1">
+    </stack>
+  </vbox>
+  <vbox id="custom-ai-panel" class="chromeclass-extrachrome" hidden="true">
+    <html:aside class="custom-ai-content" aria-labelledby="custom-ai-title">
+      <html:header class="custom-ai-header">
+        <html:h2 id="custom-ai-title" data-l10n-id="custom-ui-assistant-title"/>
+        <html:button id="custom-ai-pause" disabled="disabled" data-l10n-id="custom-ui-pause"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="3" y="2.5" width="2.6" height="9" rx="1"/><rect x="8.4" y="2.5" width="2.6" height="9" rx="1"/></svg></html:button>
+        <html:button id="custom-ai-stop" disabled="disabled" data-l10n-id="custom-ui-stop"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5"/></svg></html:button>
+        <html:button id="custom-ai-close" class="close-icon" data-l10n-id="custom-ui-assistant-close"/>
+      </html:header>
+      <html:div class="custom-ai-body">
+        <html:p data-l10n-id="custom-ui-assistant-unavailable"/>
+        <html:section class="custom-ai-history" aria-labelledby="custom-ai-history-title">
+          <html:h3 id="custom-ai-history-title" data-l10n-id="custom-ui-history-title"/>
+          <html:p data-l10n-id="custom-ui-history-empty"/>
+        </html:section>
+      </html:div>
+    </html:aside>
+  </vbox>
+</hbox>

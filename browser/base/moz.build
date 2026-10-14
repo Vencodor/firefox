@@ -27,6 +27,7 @@ BROWSER_CHROME_MANIFESTS += [
     "content/test/browser-confirmationHint/browser.toml",
     "content/test/browser-contentTheme/browser.toml",
     "content/test/browser-contextMenu/browser.toml",
+    "content/test/browser-custom-ui/browser.toml",
     "content/test/browser-favicons/browser.toml",
     "content/test/browser-forms/browser.toml",
     "content/test/browser-framebusting/browser.toml",

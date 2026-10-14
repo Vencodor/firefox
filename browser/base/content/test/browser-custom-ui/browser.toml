@@ -1,0 +1,11 @@
+[DEFAULT]
+prefs = [
+  "browser.customUI.enabled=true",
+  "sidebar.revamp=true",
+  "sidebar.verticalTabs=true",
+  "sidebar.verticalTabs.dragToPinPromo.dismissed=true",
+  "sidebar.visibility=always-show",
+  "sidebar.animation.enabled=false",
+]
+
+["browser_custom_ui.js"]

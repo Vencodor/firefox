@@ -260,6 +260,7 @@ export default class SidebarMain extends MozLitElement {
     let toolsSplitter = document.createXULElement("splitter");
     toolsSplitter.setAttribute("orient", "vertical");
     toolsSplitter.setAttribute("id", "sidebar-tools-and-extensions-splitter");
+    toolsSplitter.setAttribute("part", "tools-splitter");
     toolsSplitter.setAttribute("resizebefore", "none");
     toolsSplitter.setAttribute("resizeafter", "sibling");
     this.toolsSplitter = toolsSplitter;
@@ -917,6 +918,7 @@ export default class SidebarMain extends MozLitElement {
         )}
         <div
           class="buttons-wrapper"
+          part="tools"
           ?overflowing=${this.shouldShowOverflowButton}
         >
           <button-group
@@ -933,7 +935,10 @@ export default class SidebarMain extends MozLitElement {
           ${when(
             !window.SidebarController.sidebarVerticalTabsEnabled,
             () =>
-              html` <div class="bottom-actions actions-list">
+              html` <div
+                class="bottom-actions actions-list"
+                part="bottom-actions"
+              >
                 ${repeat(
                   this.bottomActions,
                   action => action.view,

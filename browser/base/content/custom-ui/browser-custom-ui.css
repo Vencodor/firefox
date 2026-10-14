@@ -1,0 +1,789 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:root:not([custom-ui]) :is(#custom-sidebar-header, #custom-sidebar-newtab, #custom-sidebar-footer, #custom-drift, #custom-ai-panel),
+:root:not([custom-ai-open]) #custom-ai-panel,
+:root[custom-ui]:is([inDOMFullscreen], [fullscreenNavToolboxHidden], [customizing])
+  :is(#custom-sidebar-header, #custom-sidebar-newtab, #custom-sidebar-footer, #custom-drift, #custom-ai-panel),
+#custom-ai-panel[hidden] {
+  display: none;
+}
+
+:root[custom-ui] {
+  --custom-background: light-dark(#eceef1, #191b20);
+  --custom-surface: light-dark(#ffffff, #25282f);
+  --custom-surface-subtle: light-dark(#fcfcfd, #22252b);
+  --custom-hover: light-dark(#f4f5f7, #30343d);
+  --custom-ink: light-dark(#1b1d21, #eceef2);
+  --custom-muted: light-dark(#5a5f67, #acb3bf);
+  --custom-line: light-dark(#e2e5e9, #3b404a);
+  --custom-line-strong: light-dark(#d9dde3, #4a515e);
+  --custom-accent: light-dark(#3b5bdb, #a3b4ff);
+  --custom-accent-subtle: light-dark(#eef2fd, #2b344f);
+  --border-radius-custom-page: 14px;
+  --border-radius-custom-tab: 10px;
+  --size-custom-brand: 18px;
+  --size-custom-header: 44px;
+  --size-custom-control: 36px;
+  --size-custom-card: 340px;
+  --size-custom-splitter: 10px;
+  --size-custom-tab: 40px;
+  --space-custom-gap: 10px;
+  --space-custom-edge: 6px;
+  --space-custom-inset: 8px;
+  --space-custom-padding: 12px;
+  --space-custom-section: 16px;
+  --space-custom-groups: 14px;
+  --font-size-custom-label: 13px;
+  --font-size-custom-shortcut: 11px;
+  --font-size-custom-small: 12px;
+  --font-size-custom-title: 14px;
+  --custom-avatar-background: light-dark(#cdd2d9, #4a515e);
+  --outline-custom-selected: var(--border-width) solid Highlight;
+  --box-shadow-custom-tab: 0 1px 2px light-dark(rgb(27 29 33 / 8%), rgb(0 0 0 / 20%)), 0 4px 12px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 14%));
+  --box-shadow-custom-page: 0 1px 2px light-dark(rgb(27 29 33 / 4%), rgb(0 0 0 / 20%)), 0 16px 40px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 15%));
+  --box-shadow-custom-float: 0 2px 4px light-dark(rgb(27 29 33 / 5%), rgb(0 0 0 / 24%)), 0 18px 44px light-dark(rgb(27 29 33 / 14%), rgb(0 0 0 / 32%));
+  --sidebar-expanded-launcher-width: 252px;
+  --sidebar-background-color: var(--custom-background);
+  --sidebar-text-color: var(--custom-ink);
+  --sidebar-border-color: var(--custom-line);
+  --toolbox-background-color: var(--custom-background);
+  --toolbox-background-color-inactive: var(--custom-background);
+  --toolbox-background-gradient: none;
+  --toolbox-text-color: var(--custom-ink);
+  --toolbar-background-color: var(--custom-surface);
+  --toolbar-color: var(--custom-ink);
+  --toolbarbutton-icon-fill: var(--custom-muted);
+  --tab-background-color-selected: var(--custom-surface);
+  --tab-background-color-hover: var(--custom-hover);
+  --tab-text-color: var(--custom-ink);
+  --tab-text-color-hover: var(--custom-ink);
+  --tab-text-color-selected: var(--custom-ink);
+  color: var(--custom-ink);
+  font-family: "IBM Plex Sans KR", system-ui, sans-serif;
+
+  body,
+  #browser {
+    background: var(--custom-background);
+  }
+
+  #browser {
+    position: relative;
+  }
+
+  #sidebar-container {
+    flex-direction: column;
+    min-height: 0;
+    background: var(--custom-background);
+    color: var(--custom-ink);
+  }
+
+  #sidebar-container > sidebar-main {
+    flex: 1;
+    min-height: 0;
+  }
+
+  sidebar-main::part(tools),
+  sidebar-main::part(tools-splitter),
+  sidebar-main::part(bottom-actions),
+  #tabs-newtab-button,
+  #vertical-tabs-newtab-button {
+    display: none;
+  }
+
+  :is(#sidebar-button, #firefox-view-button, #fxa-toolbar-menu-button, #unified-extensions-button, #ai-window-button, #alltabs-button),
+  #nav-bar-customization-target > toolbarspring {
+    display: none;
+  }
+
+  #stop-reload-button {
+    display: flex !important;
+  }
+
+  #urlbar-container {
+    flex: 1;
+    min-width: 0;
+    margin-inline: var(--space-custom-gap, var(--space-medium));
+    padding-block: var(--space-custom-edge, var(--space-small));
+  }
+
+  #urlbar {
+    --urlbar-height: 32px;
+    --urlbar-container-min-width: 0px;
+    --urlbar-input-container-padding: 4px;
+    --urlbar-basic-component-size: calc(var(--urlbar-height) - 2 * var(--urlbar-input-container-padding));
+    --urlbar-component-gap: 4px;
+    --urlbar-icon-padding: 4px;
+    --toolbar-field-background-color: var(--custom-surface);
+    --toolbar-field-background-color-focus: var(--custom-surface);
+    --toolbar-field-text-color: var(--custom-ink);
+    --toolbar-field-text-color-focus: var(--custom-ink);
+    --toolbar-field-border-color: var(--custom-line);
+    --toolbar-field-border-color-focus: var(--custom-accent);
+    --urlbar-background-color: var(--custom-surface);
+    --urlbar-background-color-focus: var(--custom-surface);
+    --urlbar-box-background-color: var(--custom-hover);
+    --urlbar-box-background-color-hover: var(--custom-line);
+    --urlbar-box-background-color-active: var(--custom-line-strong);
+    --urlbar-box-background-color-focus: var(--custom-hover);
+    --urlbar-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --urlbar-background-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --urlbarview-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --chrome-box-shadow: light-dark(rgb(27 29 33 / 10%), rgb(0 0 0 / 25%));
+    color: var(--custom-ink);
+    background-color: transparent;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+  }
+
+  #urlbar .searchmode-switcher {
+    --button-border-radius: var(--border-radius-small);
+    --button-padding: 0 var(--space-custom-edge);
+    --button-background-color-muted: transparent;
+    --button-background-color-muted-hover: var(--custom-hover);
+    --button-background-color-muted-active: var(--custom-line);
+    --button-background-color-muted-selected: var(--custom-hover);
+  }
+
+  #urlbar .searchmode-switcher::part(button) {
+    background-image: none;
+    box-shadow: none;
+  }
+
+  #custom-brand-icon {
+    flex: none;
+    width: var(--size-custom-brand, var(--icon-size-small));
+    height: var(--size-custom-brand, var(--icon-size-small));
+  }
+
+  #custom-sidebar-header {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-custom-gap, var(--space-medium));
+    min-height: var(--size-item-large);
+    padding-inline: calc(var(--space-custom-edge, var(--space-small)) + var(--space-custom-inset, var(--space-small)));
+    margin-block-start: var(--space-custom-gap, var(--space-medium));
+    margin-block-end: var(--space-custom-section, var(--space-large));
+    -moz-window-dragging: drag;
+  }
+
+  #custom-brand-name {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+    font-weight: var(--font-weight-semibold);
+  }
+
+  :is(#custom-sidebar-toggle, #custom-ai-close) {
+    flex: none;
+    box-sizing: border-box;
+    width: var(--size-item-large);
+    height: var(--size-item-large);
+    padding: 0;
+    border: var(--border-width) solid transparent;
+    border-radius: var(--border-radius-medium);
+    background-color: transparent;
+    color: var(--custom-muted);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: var(--icon-size-small);
+    -moz-context-properties: fill;
+    fill: currentColor;
+    -moz-window-dragging: no-drag;
+
+    &:hover {
+      background-color: var(--custom-hover);
+      color: var(--custom-ink);
+    }
+  }
+
+  #custom-sidebar-toggle {
+    background-image: url("chrome://browser/skin/sidebar-expanded.svg");
+  }
+
+  #sidebar-container:not([sidebar-launcher-expanded]) #custom-sidebar-toggle {
+    background-image: url("chrome://browser/skin/sidebar-collapsed.svg");
+  }
+
+  #custom-ai-close {
+    background-image: url("chrome://global/skin/icons/close.svg");
+  }
+
+  :is(#custom-sidebar-newtab, #custom-sidebar-footer > button) {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-custom-gap, var(--space-medium));
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: var(--size-custom-tab, var(--size-item-xlarge));
+    padding-inline: var(--space-custom-padding, var(--space-medium));
+    border: var(--border-width) solid transparent;
+    border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    background-color: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+    text-align: start;
+
+    &::before {
+      content: "";
+      flex: none;
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: contain;
+      -moz-context-properties: fill;
+      fill: currentColor;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: var(--custom-hover);
+    }
+
+    &:active:not(:disabled),
+    &[aria-expanded="true"] {
+      background-color: var(--custom-surface);
+    }
+  }
+
+  #sidebar-container > #custom-sidebar-newtab {
+    margin-inline: var(--space-custom-edge, var(--space-small));
+    margin-block-end: var(--space-custom-section, var(--space-large));
+    border-color: var(--custom-line-strong);
+    background-color: color-mix(in srgb, var(--custom-surface) 60%, transparent);
+
+    &::before {
+      background-image: url("chrome://global/skin/icons/plus.svg");
+    }
+
+    &:hover {
+      background-color: var(--custom-surface);
+    }
+
+    .custom-shortcut {
+      margin-inline-start: auto;
+      color: var(--custom-muted);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: var(--font-size-custom-shortcut, var(--font-size-small));
+      white-space: nowrap;
+    }
+  }
+
+  #custom-drift {
+    flex: none;
+    margin-inline: var(--space-small);
+    padding-block: var(--space-medium);
+    padding-inline: var(--space-small);
+    border-block-start: var(--border-width) solid var(--custom-line);
+    color: var(--custom-muted);
+    font-size: var(--font-size-custom-small, var(--font-size-small));
+
+    h3 {
+      margin-block: 0 var(--space-small);
+      font: inherit;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+
+  #custom-sidebar-footer {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: var(--space-xxsmall);
+    margin-inline: var(--space-custom-edge, var(--space-small));
+    padding-block: var(--space-small);
+    border-block-start: var(--border-width) solid var(--custom-line);
+  }
+
+  #custom-settings-button::before {
+    background-image: url("chrome://global/skin/icons/settings.svg");
+  }
+
+  #custom-ai-button::before {
+    background-image: url("chrome://global/skin/icons/highlights.svg");
+  }
+
+  #custom-space-button {
+    margin-block-start: var(--space-small);
+    border-block-start-color: var(--custom-line);
+    border-radius: 0;
+    color: var(--custom-muted);
+
+    &::before {
+      width: var(--size-item-medium);
+      height: var(--size-item-medium);
+      border-radius: var(--border-radius-circle);
+      background-color: var(--custom-avatar-background);
+    }
+  }
+
+  .custom-sidebar-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #sidebar-container:not([sidebar-launcher-expanded]) {
+    #custom-sidebar-header {
+      justify-content: center;
+      padding-inline: 0;
+    }
+
+    #custom-brand-name,
+    #custom-brand-icon,
+    #custom-drift,
+    .custom-sidebar-label,
+    .custom-shortcut {
+      display: none;
+    }
+
+    :is(#custom-sidebar-newtab, #custom-sidebar-footer > button) {
+      justify-content: center;
+      padding-inline: 0;
+    }
+  }
+
+  #tabbrowser-tabs[orient="vertical"] {
+    --tab-min-height: var(--size-custom-tab);
+    --tab-margin-block: 0px;
+    --tab-height-with-margin-padding: calc(var(--tab-min-height) + 2px);
+    --icon-size: var(--icon-size-small);
+    --tab-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --tab-box-shadow-selected: var(--box-shadow-custom-tab);
+    --tab-padding-block-start: 1px;
+    --tab-padding-block-end: 1px;
+    --tab-group-label-container-size: 32px;
+    --tab-group-label-size: 32px;
+    --tab-group-label-hover-inset: 0px;
+
+    &[expanded] .tabbrowser-tab:not([pinned]) .tab-content {
+      padding-inline: calc(var(--space-custom-edge, var(--space-small)) + var(--space-custom-padding, var(--space-medium)));
+    }
+
+    .tab-background {
+      border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    }
+
+    .tab-background:is([selected], [multiselected]) {
+      background: var(--custom-surface);
+      border-color: transparent;
+      box-shadow: var(--box-shadow-custom-tab, var(--box-shadow-level-1));
+    }
+
+    .tab-label {
+      font-size: var(--font-size-custom-label, var(--font-size-small));
+    }
+
+    .tab-label-container[selected] {
+      font-weight: var(--font-weight-semibold);
+    }
+
+    &[expanded] {
+      --tab-margin-inline-inner: var(--space-custom-edge);
+      --tab-icon-margin-inline-end: var(--space-custom-gap);
+
+      .tabbrowser-tab:first-child {
+        padding-block-start: 1px;
+      }
+
+      .tabbrowser-tab:not([pinned]) .tab-content > :is(.tab-throbber, .tab-icon-pending, .tab-icon-image) {
+        margin-inline-end: var(--space-custom-gap, var(--space-medium));
+      }
+
+      tab-group {
+        --tab-group-line-color: var(--custom-line-strong);
+      }
+
+      tab-group:not(:first-child) {
+        margin-block-start: var(--space-custom-groups, var(--space-large));
+      }
+
+      tab-group > :is(.tab-group-label-container, .tabbrowser-tab) {
+        margin-inline-start: 0;
+      }
+
+      .tab-group-label-container {
+        margin-block: 0;
+        padding-block-end: var(--space-xxsmall);
+        padding-inline-start: var(--space-custom-edge, var(--space-small));
+      }
+
+      .tab-group-label-hover-highlight {
+        flex: 1;
+        min-width: 0;
+        margin-inline-end: var(--space-custom-edge, var(--space-small));
+        padding-inline: 0;
+        border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+      }
+
+      .tab-group-label {
+        position: relative;
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        padding-inline: calc(var(--icon-size-small) + var(--space-custom-inset, var(--space-small))) var(--space-custom-inset, var(--space-small));
+        border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+        background-color: transparent;
+        color: var(--custom-ink);
+        text-align: start;
+        font-size: var(--font-size-custom-label, var(--font-size-small));
+      }
+
+      .tab-group-label::before {
+        content: "";
+        position: absolute;
+        inset-inline-start: var(--space-custom-inset, var(--space-small));
+        inset-block-start: 50%;
+        width: var(--icon-size-xsmall);
+        height: var(--icon-size-xsmall);
+        background: url("chrome://global/skin/icons/arrow-down-12.svg") center / contain no-repeat;
+        color: var(--custom-muted);
+        -moz-context-properties: fill;
+        fill: currentColor;
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+
+      .tab-group-label:hover {
+        background-color: var(--custom-hover);
+      }
+
+      tab-group[collapsed] .tab-group-label::before {
+        transform: translateY(-50%) rotate(-90deg);
+      }
+    }
+  }
+
+  .tab-icon-image[src="chrome://branding/content/icon32.png"]:not([busy], [sharing], [crashed], [pictureinpicture]) {
+    content: url("chrome://global/skin/icons/defaultFavicon.svg");
+  }
+
+  #custom-ai-panel {
+    position: absolute;
+    inset-inline-end: var(--icon-size-medium);
+    inset-block-end: var(--icon-size-medium);
+    z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 1);
+    box-sizing: border-box;
+    width: var(--size-custom-card, var(--size-layout-medium));
+    max-width: calc(100% - var(--tab-background-width-pinned-expanded));
+    max-height: calc(100% - var(--tab-background-width-pinned-expanded));
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    border: var(--border-width) solid var(--custom-line);
+    border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+    background-color: var(--custom-surface);
+    color: var(--custom-ink);
+    box-shadow: var(--box-shadow-custom-float, var(--box-shadow-level-3));
+    color-scheme: var(--toolbar-color-scheme);
+  }
+
+  .custom-ai-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+  }
+
+  .custom-ai-header {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-small);
+    padding: var(--space-medium);
+    padding-block-end: var(--space-small);
+  }
+
+  #custom-ai-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: var(--font-size-custom-title, var(--font-size-large));
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .custom-ai-body {
+    min-height: 0;
+    padding: var(--space-medium);
+    padding-block-start: var(--space-small);
+    overflow: auto;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+
+    > p {
+      margin-block-start: 0;
+      padding: var(--space-custom-gap, var(--space-medium)) var(--space-medium);
+      border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+      background-color: var(--custom-accent-subtle);
+      color: var(--custom-ink);
+    }
+  }
+
+  .custom-ai-history {
+    margin-block-start: var(--space-medium);
+    color: var(--custom-muted);
+
+    h3 {
+      margin-block: 0 var(--space-small);
+      font-size: inherit;
+      font-weight: var(--font-weight-semibold);
+    }
+
+    p {
+      margin: 0;
+      font-size: var(--font-size-custom-small, var(--font-size-small));
+    }
+  }
+
+  :is(#custom-ai-pause, #custom-ai-stop) {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: var(--size-custom-control, var(--size-item-large));
+    min-height: var(--size-custom-control, var(--size-item-large));
+    padding: 0;
+    border: var(--border-width) solid var(--custom-line-strong);
+    border-radius: var(--border-radius-medium);
+    background-color: var(--custom-surface-subtle);
+    color: var(--custom-muted);
+    font: inherit;
+
+    &:disabled {
+      opacity: var(--button-opacity-disabled);
+    }
+  }
+
+  #custom-ai-stop {
+    border-color: transparent;
+    background-color: var(--custom-ink);
+    color: var(--custom-surface);
+  }
+
+  :is(#custom-sidebar-toggle, #custom-sidebar-newtab, #custom-sidebar-footer > button, #custom-ai-close):focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+  }
+
+  @media (max-width: 720px) {
+    --sidebar-expanded-launcher-width: 200px;
+
+    #custom-ai-panel {
+      inset-inline-end: var(--space-medium);
+      inset-block-end: var(--space-medium);
+      max-width: calc(100% - var(--size-item-medium));
+      max-height: calc(100% - var(--size-item-medium));
+    }
+
+    #custom-sidebar-newtab .custom-shortcut {
+      display: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    --custom-background: Canvas;
+    --custom-surface: Canvas;
+    --custom-surface-subtle: Canvas;
+    --custom-hover: ButtonFace;
+    --custom-ink: CanvasText;
+    --custom-muted: CanvasText;
+    --custom-line: ButtonBorder;
+    --custom-line-strong: ButtonBorder;
+    --custom-accent: LinkText;
+    --custom-accent-subtle: Canvas;
+    --custom-avatar-background: Canvas;
+
+    .tab-background[selected] {
+      outline: var(--outline-custom-selected);
+    }
+  }
+}
+
+@media (-moz-pref("sidebar.verticalTabs")) {
+  :root[custom-ui] {
+    body {
+      display: grid;
+      box-sizing: border-box;
+      padding: var(--space-custom-gap, var(--space-medium));
+      grid-template-columns: max-content max-content max-content max-content minmax(0, 1fr) max-content max-content;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    #navigator-toolbox {
+      grid-area: 1 / 5 / 2 / -1;
+      min-width: 0;
+      z-index: var(--browser-area-z-index-toolbox-while-animating);
+      border: var(--border-width) solid var(--custom-line);
+      border-radius: var(--border-radius-custom-page, var(--border-radius-medium)) var(--border-radius-custom-page, var(--border-radius-medium)) 0 0;
+      background: var(--custom-surface);
+      box-shadow: none;
+    }
+
+    #nav-bar {
+      --toolbarbutton-padding-inner: 8px;
+      --toolbarbutton-padding-outer: 0px;
+      --toolbar-padding-inline: 0px;
+      --toolbarbutton-border-radius: var(--border-radius-small);
+      min-height: var(--size-custom-header, var(--size-item-xlarge));
+      padding-inline: var(--space-custom-section, var(--space-large));
+      padding-block: 0;
+      border-radius: inherit;
+      border-block-start: none;
+      background: var(--custom-surface);
+      box-shadow: none;
+    }
+
+    #nav-bar-customization-target {
+      align-items: center;
+      column-gap: var(--space-xxsmall);
+    }
+
+    @media (max-width: 720px) {
+      #nav-bar {
+        padding-inline: var(--space-custom-inset, var(--space-small));
+      }
+
+      #urlbar-container {
+        margin-inline: var(--space-custom-edge, var(--space-small));
+      }
+    }
+
+    #TabsToolbar,
+    #PersonalToolbar {
+      background: var(--custom-surface);
+      color: var(--custom-ink);
+    }
+
+    #browser:not([hidden]) {
+      display: grid;
+      grid-area: 1 / 1 / 3 / -1;
+      grid-template-columns: subgrid;
+      grid-template-rows: subgrid;
+      min-height: 0;
+    }
+
+    #browser > :is([hidden="true"], [collapsed="true"]) {
+      display: none;
+    }
+
+    #sidebar-container {
+      grid-area: 1 / 1 / 3 / 2;
+    }
+
+    #sidebar-launcher-splitter {
+      grid-area: 1 / 2 / 3 / 3;
+      margin-inline: 0;
+      width: var(--size-custom-splitter, var(--size-item-xsmall));
+    }
+
+    #sidebar-box {
+      grid-area: 2 / 3 / 3 / 4;
+    }
+
+    #sidebar-splitter {
+      grid-area: 2 / 4 / 3 / 5;
+    }
+
+    #tabbrowser-tabbox {
+      grid-area: 2 / 5 / 3 / 6;
+      min-width: 0;
+      min-height: 0;
+      margin: 0;
+      border: var(--border-width) solid var(--custom-line);
+      border-block-start: none;
+      border-radius: 0 0 var(--border-radius-custom-page, var(--border-radius-medium)) var(--border-radius-custom-page, var(--border-radius-medium));
+      overflow: clip;
+      background: var(--custom-surface);
+      box-shadow: var(--box-shadow-custom-page, var(--box-shadow-level-2));
+    }
+
+    .browserContainer {
+      border-radius: 0;
+      outline: none;
+      box-shadow: none;
+    }
+
+    #ai-window-splitter {
+      grid-area: 2 / 6 / 3 / 7;
+    }
+
+    #ai-window-box {
+      grid-area: 2 / 7 / 3 / 8;
+    }
+
+    #custom-ai-panel {
+      grid-area: 2 / 5 / 3 / 6;
+    }
+
+    #customization-container {
+      grid-area: 2 / 1 / 3 / -1;
+    }
+
+    &[sidebar-positionend] {
+      body {
+        grid-template-columns: max-content max-content minmax(0, 1fr) max-content max-content max-content max-content;
+      }
+
+      #navigator-toolbox {
+        grid-column-start: 3;
+      }
+
+      #ai-window-box {
+        grid-column: 1 / 2;
+      }
+
+      #ai-window-splitter {
+        grid-column: 2 / 3;
+      }
+
+      #tabbrowser-tabbox,
+      #custom-ai-panel {
+        grid-column: 3 / 4;
+      }
+
+      #sidebar-splitter {
+        grid-column: 4 / 5;
+      }
+
+      #sidebar-box {
+        grid-column: 5 / 6;
+      }
+
+      #sidebar-launcher-splitter {
+        grid-area: 2 / 6 / 3 / 7;
+      }
+
+      #sidebar-container {
+        grid-area: 2 / 7 / 3 / 8;
+      }
+    }
+
+    &[inDOMFullscreen] {
+      body {
+        padding: 0;
+      }
+
+      #tabbrowser-tabbox {
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+  }
+}

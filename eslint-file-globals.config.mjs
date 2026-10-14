@@ -110,6 +110,7 @@ export default [
       "browser/base/content/browser-trustPanel.js",
       "browser/base/content/browser-unified-extensions.js",
       "browser/base/content/browser-webrtc.js",
+      "browser/base/content/custom-ui/browser-custom-ui.js",
       "browser/base/content/global-scripts.js",
       "browser/base/content/main-popupset.js",
       "browser/base/content/navigator-toolbox.js",

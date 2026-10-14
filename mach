@@ -80,6 +80,27 @@ def try_alternate_python3_executables(args):
 
 
 def main(args):
+    if (
+        sys.platform == "win32"
+        and args
+        and args[0] == "npx"
+        and "@mozilla/firefox-devtools-mcp-moz" in args
+    ):
+        # Older tool connections still invoke this command through Python.
+        node_dir = os.path.join(os.environ["USERPROFILE"], ".mozbuild", "node")
+        node_env = os.environ.copy()
+        node_env["PATH"] = node_dir + os.pathsep + node_env.get("PATH", "")
+        sys.exit(
+            subprocess.call(
+                [
+                    os.path.join(node_dir, "node.exe"),
+                    os.path.join(node_dir, "node_modules", "npm", "bin", "npx-cli.js"),
+                    *args[1:],
+                ],
+                env=node_env,
+            )
+        )
+
     # Ensure we are running Python 3.10+. We run this check as soon as
     # possible to avoid a cryptic import/usage error.
     if sys.version_info < MIN_PYTHON_VERSION:
