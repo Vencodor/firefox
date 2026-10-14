@@ -374,9 +374,13 @@ const PanelUI = {
       }
 
       let anchor = this._getPanelAnchor(this.menuButton);
-      await PanelMultiView.openPopup(this.panel, anchor, {
+      let options = {
         triggerEvent: domEvent,
-      });
+      };
+      if (anchor.id == "custom-brand-button") {
+        options.position = "after_start";
+      }
+      await PanelMultiView.openPopup(this.panel, anchor, options);
     })().catch(console.error);
   },
 
@@ -1396,6 +1400,15 @@ const PanelUI = {
   },
 
   _getPanelAnchor(candidate) {
+    if (
+      candidate == this.menuButton &&
+      document.documentElement.hasAttribute("custom-ui")
+    ) {
+      let brandButton = document.getElementById("custom-brand-button");
+      if (brandButton?.checkVisibility()) {
+        candidate = brandButton;
+      }
+    }
     let iconAnchor = candidate.badgeStack || candidate.icon;
     return iconAnchor || candidate;
   },

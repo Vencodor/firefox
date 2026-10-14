@@ -10,6 +10,18 @@
   display: none;
 }
 
+:root[custom-ui]:not([customizing]) #urlbar .searchmode-switcher {
+  display: none;
+}
+
+:root[custom-ui][customizing] #urlbar :is(.searchmode-switcher, .searchmode-switcher-panel) {
+  pointer-events: auto;
+}
+
+#custom-newtab-surface {
+  display: none;
+}
+
 :root[custom-ui] {
   --custom-background: light-dark(#eceef1, #191b20);
   --custom-surface: light-dark(#ffffff, #25282f);
@@ -93,6 +105,8 @@
   }
 
   :is(#sidebar-button, #firefox-view-button, #fxa-toolbar-menu-button, #unified-extensions-button, #ai-window-button, #alltabs-button),
+  #PanelUI-button,
+  #personal-toolbar-empty,
   #nav-bar-customization-target > toolbarspring {
     display: none;
   }
@@ -154,6 +168,34 @@
     flex: none;
     width: var(--size-custom-brand, var(--icon-size-small));
     height: var(--size-custom-brand, var(--icon-size-small));
+  }
+
+  #custom-brand-button {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-custom-gap, var(--space-medium));
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: var(--size-item-large);
+    margin-inline-start: calc(-1 * var(--space-custom-inset, var(--space-small)));
+    padding-inline: var(--space-custom-inset, var(--space-small));
+    border: 0;
+    border-radius: var(--border-radius-small);
+    background-color: transparent;
+    color: var(--custom-ink);
+    font: inherit;
+    text-align: start;
+    -moz-window-dragging: no-drag;
+
+    &:hover {
+      background-color: var(--custom-hover);
+    }
+
+    &:active,
+    &[aria-expanded="true"] {
+      background-color: var(--custom-surface);
+    }
   }
 
   #custom-sidebar-header {
@@ -337,12 +379,21 @@
 
   #sidebar-container:not([sidebar-launcher-expanded]) {
     #custom-sidebar-header {
+      flex-direction: column;
       justify-content: center;
+      gap: var(--space-xxsmall);
+      padding-inline: 0;
+    }
+
+    #custom-brand-button {
+      flex: none;
+      justify-content: center;
+      width: var(--size-item-large);
+      margin-inline: 0;
       padding-inline: 0;
     }
 
     #custom-brand-name,
-    #custom-brand-icon,
     #custom-drift,
     .custom-sidebar-label,
     .custom-shortcut {
@@ -576,7 +627,7 @@
     color: var(--custom-surface);
   }
 
-  :is(#custom-sidebar-toggle, #custom-sidebar-newtab, #custom-sidebar-footer > button, #custom-ai-close):focus-visible {
+  :is(#custom-brand-button, #custom-sidebar-toggle, #custom-sidebar-newtab, #custom-sidebar-footer > button, #custom-ai-close):focus-visible {
     outline: var(--focus-outline);
     outline-offset: var(--focus-outline-offset);
   }
@@ -733,6 +784,215 @@
 
     #customization-container {
       grid-area: 2 / 1 / 3 / -1;
+    }
+
+    &[custom-newtab]:not([customizing], [inDOMFullscreen], [inFullscreen], [chromehidden]) {
+      --size-custom-search-width: min(640px, calc(100% - 64px));
+      --size-custom-search-height: 132px;
+      --size-custom-search-icon: 28px;
+      --space-custom-search-inset: 22px;
+      --font-size-custom-search: 16px;
+      --box-shadow-custom-search:
+        0 2px 8px light-dark(rgb(0 0 0 / 4%), rgb(0 0 0 / 16%)), 0 16px 40px -12px light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 32%));
+      --custom-search-background: light-dark(#f8f9fb, #202329);
+
+      #tabbrowser-tabbox {
+        grid-row: 1 / 3;
+        border-block-start: var(--border-width) solid var(--custom-line);
+        border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+      }
+
+      #custom-newtab-surface {
+        display: grid;
+        position: relative;
+        grid-area: 1 / 5 / 3 / 6;
+        place-items: center;
+        min-width: 0;
+        color: var(--custom-muted);
+        pointer-events: none;
+
+        &::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: calc(var(--browser-area-z-index-tabbox) + 1);
+          border: var(--border-width) solid var(--custom-line);
+          border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+          background: var(--custom-search-background);
+        }
+      }
+
+      .custom-newtab-content {
+        position: relative;
+        z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 1);
+        width: var(--size-custom-search-width, var(--size-layout-large));
+        height: var(--size-custom-search-height, var(--size-item-large));
+      }
+
+      #custom-newtab-logo {
+        position: absolute;
+        inset-block-end: calc(100% + var(--space-xxlarge));
+        inset-inline-start: calc(50% - var(--size-custom-search-icon, var(--icon-size-large)));
+        color: var(--custom-muted);
+      }
+
+      #custom-newtab-hint {
+        position: absolute;
+        inset-inline: var(--space-custom-search-inset, var(--space-large)) var(--size-image-large);
+        inset-block-end: var(--space-custom-search-inset, var(--space-large));
+        z-index: 1;
+        margin: 0;
+        font-size: var(--font-size-custom-small, var(--font-size-small));
+        line-height: 1.5;
+      }
+
+      #navigator-toolbox {
+        grid-row: 1 / 3;
+        grid-column-end: 6;
+        place-self: center;
+        width: var(--size-custom-search-width, var(--size-layout-large));
+        overflow: visible;
+        border: 0;
+        border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+        background: transparent;
+      }
+
+      #navigator-toolbox > toolbar:not(#nav-bar),
+      #nav-bar-customization-target > :not(#urlbar-container),
+      #nav-bar > :not(#nav-bar-customization-target),
+      #urlbar :is(#identity-box, #trust-icon-container, #page-action-buttons, #tracking-protection-icon-container) {
+        display: none;
+      }
+
+      #nav-bar {
+        min-height: 0;
+        padding: 0;
+        background: transparent;
+      }
+
+      #stop-reload-button {
+        display: none !important;
+      }
+
+      #urlbar-container {
+        margin: 0;
+        padding: 0;
+      }
+
+      #urlbar {
+        --urlbar-height: var(--size-custom-search-height);
+        --urlbar-input-container-padding: 20px;
+        --urlbar-border-radius: var(--border-radius-custom-page);
+        --urlbar-background-border-radius: var(--border-radius-custom-page);
+        --urlbar-background-border-top-radius-open: var(--border-radius-custom-page);
+        --urlbar-background-box-shadow-open: var(--box-shadow-custom-search);
+        --urlbar-basic-component-size: 28px;
+        --urlbar-input-growth-open-inline: 0px;
+        --urlbar-input-growth-open-block: 0px;
+        --urlbarview-border-radius: var(--border-radius-custom-page);
+        --urlbarview-row-border-radius: calc(var(--border-radius-custom-page) + var(--urlbarview-row-gutter));
+        --urlbarview-row-padding-inline: var(--space-custom-padding);
+        --urlbarview-row-padding-block: var(--space-custom-edge);
+        --urlbarview-background-color-hover: var(--custom-hover);
+        --urlbarview-background-color-selected: var(--custom-line);
+        --urlbarview-text-color-hover: var(--custom-ink);
+        --urlbarview-text-color-selected: var(--custom-ink);
+        --urlbarview-text-color-action: var(--custom-muted);
+        --urlbarview-text-color-secondary: var(--custom-muted);
+        --urlbarview-separator-color: var(--custom-line);
+        --urlbarview-small-font-size: var(--font-size-custom-small);
+        --toolbar-field-border-color: var(--custom-line);
+        --toolbar-field-border-color-focus: var(--custom-muted);
+        --focus-outline-color: var(--custom-muted);
+        --link-color: var(--custom-muted);
+        font-size: var(--font-size-custom-search, var(--font-size-large));
+      }
+
+      #urlbar .urlbarView {
+        font-size: var(--font-size-custom-title, var(--font-size-small));
+      }
+
+      #urlbar .urlbarView-row {
+        border-radius: var(--urlbarview-row-border-radius, var(--border-radius-medium));
+      }
+
+      #urlbar:not([popover-open]) .urlbar-background {
+        clip-path: none;
+        box-shadow: var(--box-shadow-custom-search, var(--box-shadow-level-2));
+      }
+
+      #urlbar .urlbar-input-container {
+        align-items: flex-start;
+        padding-block: var(--space-custom-search-inset, var(--space-large));
+      }
+
+      #urlbar .urlbar-input-container::before {
+        content: "";
+        flex: none;
+        width: var(--icon-size-medium);
+        height: var(--size-custom-search-icon, var(--icon-size-large));
+        margin-inline-end: var(--space-custom-gap, var(--space-medium));
+        background: url("chrome://global/skin/icons/search-glass.svg") center / 18px no-repeat;
+        -moz-context-properties: fill;
+        fill: currentColor;
+      }
+
+      #urlbar .urlbar-input-box {
+        height: var(--size-custom-search-icon, var(--icon-size-large));
+      }
+
+      #urlbar .urlbar-go-button {
+        position: absolute;
+        box-sizing: border-box;
+        inset-inline-end: var(--space-large);
+        inset-block-end: var(--space-large);
+        width: var(--size-custom-control, var(--size-item-large));
+        height: var(--size-custom-control, var(--size-item-large));
+        padding: var(--space-custom-gap, var(--space-medium));
+        border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+        background-color: var(--custom-hover);
+      }
+
+      &[sidebar-positionend] {
+        #navigator-toolbox,
+        #custom-newtab-surface {
+          grid-column: 3 / 4;
+        }
+      }
+
+      @media (max-width: 720px) {
+        --size-custom-search-width: calc(100% - 32px);
+
+        #custom-newtab-hint {
+          font-size: var(--font-size-custom-shortcut, var(--font-size-small));
+        }
+      }
+
+      @media (max-height: 500px) {
+        #custom-newtab-logo {
+          width: var(--size-item-xlarge);
+          height: var(--size-item-xlarge);
+          inset-inline-start: calc(50% - var(--icon-size-medium));
+          inset-block-end: calc(100% + var(--space-large));
+        }
+      }
+
+      @media (forced-colors: active) {
+        --custom-search-background: Canvas;
+
+        #urlbar {
+          --urlbar-background-box-shadow-open: none;
+          --urlbarview-background-color-selected: Highlight;
+          --urlbarview-text-color-selected: HighlightText;
+          --toolbar-field-border-color-focus: Highlight;
+          --focus-outline-color: Highlight;
+          --link-color: LinkText;
+        }
+
+        #urlbar .urlbar-background {
+          box-shadow: none;
+        }
+      }
     }
 
     &[sidebar-positionend] {

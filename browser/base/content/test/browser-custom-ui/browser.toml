@@ -1,6 +1,7 @@
 [DEFAULT]
 prefs = [
   "browser.customUI.enabled=true",
+  "browser.newtabpage.enabled=false",
   "sidebar.revamp=true",
   "sidebar.verticalTabs=true",
   "sidebar.verticalTabs.dragToPinPromo.dismissed=true",

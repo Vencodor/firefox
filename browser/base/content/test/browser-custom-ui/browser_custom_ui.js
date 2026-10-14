@@ -15,52 +15,157 @@ add_setup(async function () {
   );
   registerCleanupFunction(() => {
     window.CustomBrowserUI.setPanelOpen(false, false);
+    gURLBar.view.close();
+    gBrowser.selectedBrowser.focus();
   });
 });
 
 add_task(async function test_basic_browser_layout() {
-  let sidebar = document
-    .getElementById("sidebar-container")
-    .getBoundingClientRect();
-  let navigation = document
-    .getElementById("navigator-toolbox")
-    .getBoundingClientRect();
-  let page = document
-    .getElementById("tabbrowser-tabbox")
-    .getBoundingClientRect();
-  Assert.lessOrEqual(
-    sidebar.top,
-    navigation.top,
-    "The sidebar starts at the top of the window"
-  );
-  Assert.greaterOrEqual(
-    navigation.left,
-    sidebar.right - 1,
-    "Navigation starts after the sidebar"
-  );
-  Assert.greaterOrEqual(
-    page.top,
-    navigation.bottom - 1,
-    "The page starts below navigation"
-  );
-  Assert.lessOrEqual(
-    Math.abs(page.right - window.innerWidth),
-    20,
-    "The page fills the window apart from the outer margin"
-  );
-  let input = gURLBar.inputField;
-  let inputRect = input.getBoundingClientRect();
-  let target = document.elementFromPoint(
-    inputRect.x + inputRect.width / 2,
-    inputRect.y + inputRect.height / 2
-  );
-  ok(input.contains(target), "The navigation input receives pointer events");
-  ok(
-    BrowserTestUtils.isVisible(
-      document.getElementById("custom-sidebar-header")
-    ),
-    "The basic sidebar header is visible"
-  );
+  await BrowserTestUtils.withNewTab("about:mozilla", async () => {
+    let sidebar = document
+      .getElementById("sidebar-container")
+      .getBoundingClientRect();
+    let navigation = document
+      .getElementById("navigator-toolbox")
+      .getBoundingClientRect();
+    let page = document
+      .getElementById("tabbrowser-tabbox")
+      .getBoundingClientRect();
+    Assert.lessOrEqual(
+      sidebar.top,
+      navigation.top,
+      "The sidebar starts at the top of the window"
+    );
+    Assert.greaterOrEqual(
+      navigation.left,
+      sidebar.right - 1,
+      "Navigation starts after the sidebar"
+    );
+    Assert.greaterOrEqual(
+      page.top,
+      navigation.bottom - 1,
+      "The page starts below navigation"
+    );
+    Assert.lessOrEqual(
+      Math.abs(page.right - window.innerWidth),
+      20,
+      "The page fills the window apart from the outer margin"
+    );
+    let input = gURLBar.inputField;
+    let inputRect = input.getBoundingClientRect();
+    let target = document.elementFromPoint(
+      inputRect.x + inputRect.width / 2,
+      inputRect.y + inputRect.height / 2
+    );
+    ok(input.contains(target), "The navigation input receives pointer events");
+    ok(
+      BrowserTestUtils.isVisible(
+        document.getElementById("custom-sidebar-header")
+      ),
+      "The basic sidebar header is visible"
+    );
+  });
+});
+
+add_task(async function test_blank_homepage_uses_main_screen() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.startup.homepage", "about:blank"]],
+  });
+  try {
+    await BrowserTestUtils.withNewTab(HomePage.get(window), async () => {
+      await TestUtils.waitForCondition(
+        () => document.documentElement.hasAttribute("custom-newtab"),
+        "The normalized blank homepage displays the main search screen"
+      );
+      ok(
+        BrowserTestUtils.isVisible(document.getElementById("custom-newtab-logo")),
+        "The main screen logo is visible on the configured startup homepage"
+      );
+    });
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_newtab_search_and_navigation() {
+  await BrowserTestUtils.withNewTab("about:newtab", async browser => {
+    let root = document.documentElement;
+    await TestUtils.waitForCondition(
+      () => root.hasAttribute("custom-newtab"),
+      "An empty new tab uses the centered native address field"
+    );
+    ok(
+      BrowserTestUtils.isVisible(document.getElementById("custom-newtab-logo")),
+      "The temporary brand icon is visible"
+    );
+    ok(
+      BrowserTestUtils.isHidden(document.getElementById("back-button")),
+      "New tabs hide the navigation controls"
+    );
+    let page = document
+      .getElementById("tabbrowser-tabbox")
+      .getBoundingClientRect();
+    let search = gURLBar.getBoundingClientRect();
+    Assert.lessOrEqual(
+      Math.abs(search.x + search.width / 2 - page.x - page.width / 2),
+      2,
+      "The real address field is horizontally centered in the page"
+    );
+    Assert.lessOrEqual(
+      Math.abs(search.y + search.height / 2 - page.y - page.height / 2),
+      2,
+      "The search card is vertically centered in the page"
+    );
+    let input = gURLBar.inputField.getBoundingClientRect();
+    is(
+      document.elementFromPoint(
+        input.x + input.width / 2,
+        input.y + input.height / 2
+      ),
+      gURLBar.inputField,
+      "The decoration does not intercept search input"
+    );
+
+    EventUtils.synthesizeKey("l", { accelKey: true });
+    await TestUtils.waitForCondition(
+      () => document.activeElement === gURLBar.inputField,
+      "The address shortcut finishes transferring focus from content"
+    );
+    is(
+      document.activeElement,
+      gURLBar.inputField,
+      "Ctrl+L focuses native search"
+    );
+    EventUtils.sendString("about:robots");
+    let loaded = BrowserTestUtils.browserLoaded(browser, false, "about:robots");
+    EventUtils.synthesizeKey("KEY_Enter");
+    await loaded;
+    ok(
+      !root.hasAttribute("custom-newtab"),
+      "Navigating restores the normal layout"
+    );
+    ok(
+      BrowserTestUtils.isVisible(document.getElementById("back-button")),
+      "Navigation controls return on a page"
+    );
+
+    await BrowserTestUtils.withNewTab("about:newtab", async () => {
+      let newTab = gBrowser.selectedTab;
+      await BrowserTestUtils.switchTab(
+        gBrowser,
+        gBrowser.getTabForBrowser(browser)
+      );
+      ok(
+        !root.hasAttribute("custom-newtab"),
+        "Selecting a page restores navigation"
+      );
+      await BrowserTestUtils.switchTab(gBrowser, newTab);
+      ok(
+        root.hasAttribute("custom-newtab"),
+        "Selecting the new tab restores search"
+      );
+    });
+  });
 });
 
 add_task(async function test_panel_controls_and_keyboard() {

@@ -7,6 +7,11 @@ var CustomBrowserUI = {
 
   init() {
     this.panel = document.getElementById("custom-ai-panel");
+    this.brandButton = document.getElementById("custom-brand-button");
+    this.brandButton.addEventListener("click", this);
+    this.brandButton.addEventListener("keydown", this);
+    PanelUI.panel.addEventListener("popupshown", this);
+    PanelUI.panel.addEventListener("popuphidden", this);
     this.sidebarToggle = document.getElementById("custom-sidebar-toggle");
     this.button = document.getElementById("custom-ai-button");
     this.closeButton = document.getElementById("custom-ai-close");
@@ -32,6 +37,17 @@ var CustomBrowserUI = {
         document.getElementById("key_newNavigatorTab")
       );
     Services.prefs.addObserver(this.pref, this);
+    Services.prefs.addObserver("sidebar.verticalTabs", this);
+    Services.prefs.addObserver("browser.newtabpage.enabled", this);
+    gBrowser.tabContainer.addEventListener("TabSelect", this);
+    this.progressListener = {
+      onLocationChange: browser => {
+        if (browser === gBrowser.selectedBrowser) {
+          this.updateNewTab();
+        }
+      },
+    };
+    gBrowser.addTabsProgressListener(this.progressListener);
     window.addEventListener("unload", this, { once: true });
     this.updateEnabled();
     this.updateSidebarToggle();
@@ -58,6 +74,26 @@ var CustomBrowserUI = {
     if (!this.enabled) {
       this.setPanelOpen(false);
     }
+    this.updateNewTab();
+  },
+
+  updateNewTab() {
+    let browser = gBrowser.selectedBrowser;
+    let uri = browser.currentURI.spec;
+    let isEmptyNewTab =
+      uri === "about:newtab" &&
+      !Services.prefs.getBoolPref("browser.newtabpage.enabled", true);
+    let isEmptyStart =
+      !browser.browsingContext.opener &&
+      (uri === "chrome://browser/content/blanktab.html" ||
+        (uri === "about:blank" && browser.contentPrincipal?.isNullPrincipal));
+    document.documentElement.toggleAttribute(
+      "custom-newtab",
+      this.enabled &&
+        Services.prefs.getBoolPref("sidebar.verticalTabs", false) &&
+        !PrivateBrowsingUtils.isWindowPrivate(window) &&
+        (isEmptyNewTab || isEmptyStart)
+    );
   },
 
   updateSidebarToggle() {
@@ -71,8 +107,13 @@ var CustomBrowserUI = {
 
   handleEvent(event) {
     switch (event.type) {
+      case "TabSelect":
+        this.updateNewTab();
+        break;
       case "click":
-        if (event.currentTarget.id === "custom-sidebar-newtab") {
+        if (event.currentTarget === this.brandButton) {
+          PanelUI.toggle(event);
+        } else if (event.currentTarget.id === "custom-sidebar-newtab") {
           BrowserCommands.openTab({ event });
         } else if (event.currentTarget === this.sidebarToggle) {
           SidebarController.handleToolbarButtonClick();
@@ -85,15 +126,42 @@ var CustomBrowserUI = {
         }
         break;
       case "keydown":
-        if (event.key === "Escape") {
+        if (
+          event.currentTarget === this.brandButton &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!event.repeat) {
+            PanelUI.toggle(event);
+          }
+        } else if (
+          event.currentTarget === this.panel &&
+          event.key === "Escape"
+        ) {
           event.preventDefault();
           event.stopPropagation();
           this.setPanelOpen(false);
         }
         break;
+      case "popupshown":
+      case "popuphidden":
+        if (event.target === PanelUI.panel) {
+          this.brandButton.setAttribute(
+            "aria-expanded",
+            String(event.type === "popupshown")
+          );
+        }
+        break;
       case "unload":
         Services.prefs.removeObserver(this.pref, this);
+        Services.prefs.removeObserver("sidebar.verticalTabs", this);
+        Services.prefs.removeObserver("browser.newtabpage.enabled", this);
+        gBrowser.tabContainer.removeEventListener("TabSelect", this);
+        gBrowser.removeTabsProgressListener(this.progressListener);
         this.sidebarObserver.disconnect();
+        PanelUI.panel.removeEventListener("popupshown", this);
+        PanelUI.panel.removeEventListener("popuphidden", this);
         break;
     }
   },

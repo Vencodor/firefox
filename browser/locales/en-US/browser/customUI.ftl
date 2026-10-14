@@ -4,7 +4,13 @@
 
 custom-ui-brand = [browser.name]
 
+custom-ui-menu-button =
+    .aria-label = 브라우저 메뉴
+    .title = 브라우저 메뉴 열기
+
 custom-ui-new-tab = 새 탭
+
+custom-ui-search-hint = 검색어 또는 주소를 입력하고 Enter
 
 custom-ui-new-tab-button =
     .aria-label = 새 탭 열기

@@ -1570,10 +1570,6 @@
       let unpinnedRect = window.windowUtils.getBoundsWithoutFlushing(
         this._tabbrowserTabs.arrowScrollbox.scrollbox
       );
-      let tabContainerRect = window.windowUtils.getBoundsWithoutFlushing(
-        this._tabbrowserTabs
-      );
-
       if (this._tabbrowserTabs.pinnedTabsContainer.firstChild) {
         this._tabbrowserTabs.pinnedTabsContainer.scrollbox.style.height =
           pinnedRect.height + "px";
@@ -1647,18 +1643,28 @@
         // "dragtarget" contains the following rules which must only be set AFTER the above
         // elements have been adjusted. {z-index: 3 !important, position: absolute !important}
         movingTab.setAttribute("dragtarget", "");
+        let movingTabsOffsetY = 0;
+        if (this._tabbrowserTabs.verticalMode) {
+          let offsetParent = movingTab.offsetParent;
+          if (offsetParent) {
+            movingTabsOffsetY =
+              window.windowUtils.getBoundsWithoutFlushing(offsetParent).top +
+              offsetParent.clientTop -
+              offsetParent.scrollTop;
+          }
+        }
         if (isTabGroupLabel(tab)) {
           if (this._tabbrowserTabs.verticalMode) {
-            movingTab.style.top = rect.top - tabContainerRect.top + "px";
+            movingTab.style.top = rect.top - movingTabsOffsetY + "px";
           } else {
             movingTab.style.left = rect.left - movingTabsOffsetX + "px";
             movingTab.style.height = rect.height + "px";
           }
         } else if (isGrid) {
-          movingTab.style.top = rect.top - pinnedRect.top + "px";
+          movingTab.style.top = rect.top - movingTabsOffsetY + "px";
           movingTab.style.left = rect.left - movingTabsOffsetX + "px";
         } else if (this._tabbrowserTabs.verticalMode) {
-          movingTab.style.top = rect.top - tabContainerRect.top + "px";
+          movingTab.style.top = rect.top - movingTabsOffsetY + "px";
         } else if (this._rtlMode) {
           movingTab.style.left = rect.left - movingTabsOffsetX + "px";
         } else {
