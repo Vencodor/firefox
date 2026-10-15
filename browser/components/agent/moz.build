@@ -1,0 +1,14 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXTRA_JS_MODULES.agent += ["AgentObservation.sys.mjs"]
+EXTRA_JS_MODULES.agent.observation += [
+    "observation/DOMObservation.sys.mjs",
+    "observation/ObservationOverlay.sys.mjs",
+]
+FINAL_TARGET_FILES.actors += [
+    "actors/AgentObservationChild.sys.mjs",
+    "actors/AgentObservationParent.sys.mjs",
+]
+BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]

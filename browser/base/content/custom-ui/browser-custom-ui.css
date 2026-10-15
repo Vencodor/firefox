@@ -132,7 +132,7 @@
     font-weight: var(--font-weight-semibold);
   }
 
-  :is(#custom-sidebar-toggle, #custom-ai-close) {
+  #custom-ai-close {
     flex: none;
     box-sizing: border-box;
     width: var(--size-item-large);
@@ -153,14 +153,6 @@
       background-color: var(--custom-hover, var(--background-color-list-item-hover));
       color: var(--custom-ink, var(--text-color));
     }
-  }
-
-  #custom-sidebar-toggle {
-    background-image: url("chrome://browser/skin/sidebar-expanded.svg");
-  }
-
-  #sidebar-container:not([sidebar-launcher-expanded]) #custom-sidebar-toggle {
-    background-image: url("chrome://browser/skin/sidebar-collapsed.svg");
   }
 
   #custom-ai-close {
@@ -558,7 +550,7 @@
     color: var(--custom-surface);
   }
 
-  :is(#custom-brand-button, #custom-sidebar-toggle, #custom-ai-close):focus-visible {
+  :is(#custom-brand-button, #custom-ai-close):focus-visible {
     outline: var(--focus-outline);
     outline-offset: var(--focus-outline-offset);
   }
@@ -1060,7 +1052,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   :root[custom-ui] {
-    :is(#custom-brand-button, #custom-sidebar-toggle, #custom-ai-close),
+    :is(#custom-brand-button, #custom-ai-close),
     #vertical-tabs :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
       transition:
         background-color 150ms ease,

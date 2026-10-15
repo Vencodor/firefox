@@ -25,18 +25,9 @@ var CustomBrowserUI = {
     this.brandButton.addEventListener("keydown", this);
     PanelUI.panel.addEventListener("popupshown", this);
     PanelUI.panel.addEventListener("popuphidden", this);
-    this.sidebarToggle = document.getElementById("custom-sidebar-toggle");
     this.closeButton = document.getElementById("custom-ai-close");
     this.closeButton.addEventListener("click", this);
-    this.sidebarToggle.addEventListener("click", this);
     this.panel.addEventListener("keydown", this);
-    this.sidebarObserver = new MutationObserver(() =>
-      this.updateSidebarToggle()
-    );
-    this.sidebarObserver.observe(SidebarController.sidebarContainer, {
-      attributes: true,
-      attributeFilter: ["sidebar-launcher-expanded", "hidden"],
-    });
     Services.prefs.addObserver(this.pref, this);
     Services.prefs.addObserver("sidebar.verticalTabs", this);
     Services.prefs.addObserver("browser.newtabpage.enabled", this);
@@ -54,7 +45,6 @@ var CustomBrowserUI = {
     gBrowser.addTabsProgressListener(this.progressListener);
     window.addEventListener("unload", this, { once: true });
     this.updateEnabled();
-    this.updateSidebarToggle();
     if (
       this.enabled &&
       CustomizableUI.getPlacementOfWidget("stop-reload-button")?.area !==
@@ -100,15 +90,6 @@ var CustomBrowserUI = {
         !PrivateBrowsingUtils.isWindowPrivate(window) &&
         !window.CustomAgentUI?.hasState(gBrowser.selectedTab) &&
         (isEmptyNewTab || isEmptyStart)
-    );
-  },
-
-  updateSidebarToggle() {
-    let expanded = SidebarController.sidebarMain.expanded;
-    this.sidebarToggle.setAttribute("aria-expanded", String(expanded));
-    document.l10n.setAttributes(
-      this.sidebarToggle,
-      expanded ? "custom-ui-sidebar-collapse" : "custom-ui-sidebar-expand"
     );
   },
 
@@ -216,8 +197,6 @@ var CustomBrowserUI = {
       case "click":
         if (event.currentTarget === this.brandButton) {
           PanelUI.toggle(event);
-        } else if (event.currentTarget === this.sidebarToggle) {
-          SidebarController.handleToolbarButtonClick();
         } else if (event.currentTarget === this.closeButton) {
           this.setPanelOpen(false);
         }
@@ -259,7 +238,6 @@ var CustomBrowserUI = {
           gBrowser.tabContainer.removeEventListener(type, this);
         }
         gBrowser.removeTabsProgressListener(this.progressListener);
-        this.sidebarObserver.disconnect();
         PanelUI.panel.removeEventListener("popupshown", this);
         PanelUI.panel.removeEventListener("popuphidden", this);
         break;

@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Agent observation action cap fixture</title>
+<style>
+  body { margin: 0; }
+  #controls { display: grid; gap: 2px; grid-template-columns: repeat(20, 28px); }
+  button { height: 22px; padding: 0; }
+</style>
+<div id="controls"></div>
+<script>
+  const controls = document.querySelector("#controls");
+  for (let index = 0; index < 280; index++) {
+    const button = document.createElement("button");
+    button.textContent = `Control ${index}`;
+    controls.append(button);
+  }
+</script>

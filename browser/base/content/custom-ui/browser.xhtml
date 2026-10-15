@@ -62,14 +62,17 @@
   <link rel="stylesheet" href="chrome://browser/content/custom-ui/browser-custom-ui.css" />
   <link rel="stylesheet" href="chrome://browser/content/custom-ui/browser-custom-popups.css" />
   <link rel="stylesheet" href="chrome://browser/content/custom-ui/browser-custom-agent.css" />
+  <link rel="stylesheet" href="chrome://browser/content/custom-ui/browser-custom-observation.css" />
   <link rel="stylesheet" href="chrome://browser/content/custom-ui/browser-custom-notice.css" />
   <link rel="stylesheet" href="chrome://browser/content/custom-ui/browser-custom-settings-window.css" />
+  <link rel="stylesheet" href="chrome://browser/content/custom-ui/browser-custom-sidebar-navigation.css" />
 
   <link rel="localization" href="branding/brand.ftl"/>
   <link rel="localization" href="browser/allTabsMenu.ftl"/>
   <link rel="localization" href="browser/appmenu.ftl"/>
   <link rel="localization" href="browser/browser.ftl"/>
   <link rel="localization" href="browser/customUI.ftl"/>
+  <link rel="localization" href="browser/agentObservation.ftl"/>
   <link rel="localization" href="browser/browserContext.ftl"/>
   <link rel="localization" href="browser/browserSets.ftl"/>
   <link rel="localization" href="browser/firefoxRelay.ftl"/>
@@ -124,7 +127,10 @@
   <script src="chrome://browser/content/browser-main.js"></script>
   <script src="chrome://browser/content/custom-ui/browser-custom-settings-window.js"></script>
   <script src="chrome://browser/content/custom-ui/browser-custom-ui.js"></script>
+  <script src="chrome://browser/content/custom-ui/browser-custom-site-settings.js"></script>
+  <script src="chrome://browser/content/custom-ui/browser-custom-sidebar-navigation.js"></script>
   <script src="chrome://browser/content/custom-ui/browser-custom-agent.js"></script>
+  <script src="chrome://browser/content/custom-ui/browser-custom-observation.js"></script>
   <script src="chrome://browser/content/custom-ui/browser-custom-notice.js"></script>
 </head>
 <html:body xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
@@ -162,6 +168,7 @@
 #include ../navigator-toolbox.inc.xhtml
 
 #include browser-box.inc.xhtml
+#include custom-navigation-overlays.inc.xhtml
 
   <html:template id="customizationPanel">
     <box id="customization-container" flex="1" hidden="true"><![CDATA[

@@ -1,0 +1,18 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this
+     file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<html:aside id="custom-observation-panel" class="chromeclass-extrachrome" aria-labelledby="custom-observation-title" hidden="true">
+  <html:header class="custom-observation-header">
+    <html:h2 id="custom-observation-title" data-l10n-id="agent-observation-title"/>
+    <html:button id="custom-observation-close" type="button" data-l10n-id="agent-observation-close">
+      <html:img src="chrome://global/skin/icons/close.svg" width="16" height="16" alt="" aria-hidden="true"/>
+    </html:button>
+  </html:header>
+  <html:div class="custom-observation-controls">
+    <html:button id="custom-observation-toggle" type="button" data-l10n-id="agent-observation-enable"/>
+    <html:button id="custom-observation-refresh" type="button" data-l10n-id="agent-observation-refresh" disabled="disabled"/>
+  </html:div>
+  <html:p id="custom-observation-status" class="custom-observation-status" role="status" aria-live="polite" data-l10n-id="agent-observation-idle"/>
+  <html:div id="custom-observation-summary" class="custom-observation-summary" aria-live="polite"/>
+  <html:div id="custom-observation-list" class="custom-observation-list" role="list" data-l10n-id="agent-observation-list-label"/>
+</html:aside>

@@ -4,6 +4,48 @@
 
 custom-ui-brand = Mono
 
+custom-ui-navigation =
+    .aria-label = 페이지 탐색
+
+custom-ui-navigation-back =
+    .aria-label = 뒤로
+    .title = 뒤로
+
+custom-ui-navigation-forward =
+    .aria-label = 앞으로
+    .title = 앞으로
+
+custom-ui-navigation-reload =
+    .aria-label = 새로고침
+    .title = 새로고침
+
+custom-ui-navigation-stop =
+    .aria-label = 로딩 중지
+    .title = 로딩 중지
+
+custom-ui-address-new-tab = 새 탭
+    .aria-label = 주소 또는 검색어 입력
+
+custom-ui-address-input =
+    .aria-label = 주소 또는 검색어 입력
+
+custom-ui-page-settings =
+    .aria-label = 페이지 설정
+    .title = 페이지 설정
+
+custom-ui-site-permissions =
+    .label = 권한
+
+custom-ui-site-settings-back =
+    .label = 뒤로
+
+custom-ui-site-settings-close =
+    .aria-label = 페이지 설정 닫기
+    .tooltiptext = 페이지 설정 닫기
+
+custom-ui-site-settings-more-info =
+    .label = 페이지 정보
+
 custom-ui-menu-button =
     .aria-label = 브라우저 메뉴
     .title = 브라우저 메뉴 열기

@@ -494,7 +494,10 @@
           }
         }
 
-        if (shouldTranslate) {
+        if (shouldPin) {
+          this.finishAnimateTabMove();
+          this._tabbrowserTabs._notifyBackgroundTab(movingTabs.at(-1));
+        } else if (shouldTranslate) {
           this.#dropAnimationEndTime = Date.now() + DROP_ANIMATION_GRACE_MS;
           let translationPromises = [];
           for (let item of movingTabs) {

@@ -1,0 +1,8 @@
+[DEFAULT]
+support-files = [
+  "observation.html",
+  "frame.html",
+  "cap.html",
+]
+
+["browser_observation.js"]

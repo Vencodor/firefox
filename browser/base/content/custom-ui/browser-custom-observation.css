@@ -1,0 +1,312 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* stylelint-disable stylelint-plugin-mozilla/use-design-tokens -- Mono custom tokens are defined in design-tokens.css; marker colors match the content overlay. */
+
+:root:not([custom-ui]) #custom-observation-panel,
+:root:not([custom-observation-open]) #custom-observation-panel,
+:root[custom-ui]:is([inDOMFullscreen], [fullscreenNavToolboxHidden], [customizing]) #custom-observation-panel,
+#custom-observation-panel[hidden] {
+  display: none;
+}
+
+#custom-observation-button {
+  list-style-image: url("chrome://global/skin/icons/search-glass.svg");
+}
+
+:root[custom-ui][custom-sidebar-navigation] #custom-observation-panel {
+  margin-block-start: calc(var(--size-custom-navigation-control) + 2 * var(--space-custom-gap));
+}
+
+@media (-moz-pref("sidebar.verticalTabs")) {
+  :root[custom-ui][custom-observation-open]:not([inDOMFullscreen], [fullscreenNavToolboxHidden], [customizing]) {
+    body {
+      grid-template-columns: max-content max-content max-content max-content minmax(0, 1fr) max-content max-content min(340px, 32vw);
+    }
+
+    &[sidebar-positionend] body {
+      grid-template-columns: max-content max-content minmax(0, 1fr) max-content max-content max-content max-content min(340px, 32vw);
+    }
+
+    #custom-observation-panel {
+      grid-area: 2 / 8 / 3 / 9;
+      width: auto;
+      max-width: none;
+    }
+  }
+}
+
+:root[custom-ui] {
+  #custom-observation-panel {
+    position: relative;
+    flex: 0 1 min(var(--size-custom-card), 40vw);
+    align-self: stretch;
+    box-sizing: border-box;
+    width: min(var(--size-custom-card), 40vw);
+    min-width: 0;
+    max-width: 40vw;
+    min-height: 0;
+    margin: var(--space-custom-edge);
+    flex-direction: column;
+    overflow: hidden;
+    border: var(--border-width) solid var(--custom-line);
+    border-radius: var(--border-radius-custom-page);
+    background: var(--custom-surface);
+    color: var(--custom-ink);
+    box-shadow: var(--box-shadow-custom-float);
+    color-scheme: var(--toolbar-color-scheme);
+    font: var(--font-size-custom-label)/1.45 var(--font-family-custom);
+  }
+
+  .custom-observation-header,
+  .custom-observation-controls,
+  .custom-observation-summary,
+  .custom-observation-row-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-custom-gap);
+  }
+
+  .custom-observation-header {
+    flex: none;
+    padding: var(--space-custom-padding);
+    padding-block-end: var(--space-custom-inset);
+  }
+
+  #custom-observation-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: var(--font-size-custom-title);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .custom-observation-controls {
+    flex: none;
+    padding-inline: var(--space-custom-padding);
+  }
+
+  .custom-observation-controls button {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--size-custom-control);
+    padding-inline: var(--space-custom-inset);
+    border: var(--border-width) solid var(--custom-line-strong);
+    border-radius: var(--border-radius-custom-tab);
+    background: var(--custom-surface-subtle);
+    color: var(--custom-ink);
+    font: inherit;
+  }
+
+  .custom-observation-controls button:disabled {
+    opacity: var(--button-opacity-disabled);
+  }
+
+  .custom-observation-status {
+    flex: none;
+    margin: 0;
+    padding: var(--space-custom-inset) var(--space-custom-padding);
+    color: var(--custom-muted);
+    overflow-wrap: anywhere;
+  }
+
+  .custom-observation-summary {
+    flex: none;
+    flex-wrap: wrap;
+    padding: 0 var(--space-custom-padding) var(--space-custom-inset);
+    color: var(--custom-muted);
+    font:
+      var(--font-size-custom-small)/1.4 "IBM Plex Mono",
+      ui-monospace,
+      monospace;
+  }
+
+  .custom-observation-list {
+    flex: 1;
+    min-height: 0;
+    padding: var(--space-custom-inset) var(--space-custom-padding) var(--space-custom-padding);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .custom-observation-row {
+    margin-block-end: var(--space-custom-inset);
+    border: var(--border-width) solid var(--custom-line);
+    border-radius: var(--border-radius-custom-tab);
+    background: var(--custom-surface);
+  }
+
+  .custom-observation-row[data-selected="true"] {
+    border-color: #c2410c;
+    background: rgb(234 88 12 / 12%);
+  }
+
+  #custom-observation-close {
+    display: grid;
+    flex: none;
+    width: var(--size-custom-control);
+    height: var(--size-custom-control);
+    place-items: center;
+    border: 0;
+    border-radius: var(--border-radius-custom-tab);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  #custom-observation-close:hover {
+    background: var(--custom-hover);
+  }
+
+  #custom-observation-close img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .custom-observation-row-header {
+    min-width: 0;
+    padding: var(--space-custom-edge);
+  }
+
+  .custom-observation-row button {
+    min-height: var(--size-custom-control);
+    border: 0;
+    border-radius: var(--border-radius-custom-tab);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .custom-observation-select {
+    flex: 1;
+    min-width: 0;
+    padding-inline: var(--space-custom-inset);
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  .custom-observation-select::before {
+    display: inline-block;
+    width: 0.5em;
+    height: 0.5em;
+    margin-inline-end: var(--space-custom-inset);
+    border: 1px solid #2563eb;
+    border-radius: 50%;
+    background: rgb(37 99 235 / 18%);
+    content: "";
+  }
+
+  .custom-observation-select:hover,
+  .custom-observation-details-toggle:hover {
+    background: var(--custom-hover);
+  }
+
+  .custom-observation-select[aria-pressed="true"] {
+    background: transparent;
+    color: var(--custom-ink);
+    outline: var(--focus-outline);
+    outline-offset: calc(-1 * var(--focus-outline-width));
+  }
+
+  .custom-observation-row[data-selected="true"] .custom-observation-select::before {
+    border-color: #c2410c;
+    background: #c2410c;
+  }
+
+  .custom-observation-details-toggle {
+    flex: none;
+    width: var(--size-custom-control);
+  }
+
+  .custom-observation-legend {
+    display: flex;
+    flex: 0 0 100%;
+    flex-wrap: wrap;
+    gap: var(--space-custom-gap);
+
+    > span {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-custom-edge);
+    }
+  }
+
+  .custom-observation-swatch {
+    display: inline-block;
+    box-sizing: border-box;
+    width: var(--size-item-xsmall);
+    height: var(--size-item-xsmall);
+    border: 2px solid;
+    border-radius: 3px;
+  }
+
+  .custom-observation-swatch-candidate {
+    border-color: #2563eb;
+    background: rgb(37 99 235 / 12%);
+  }
+
+  .custom-observation-swatch-selected {
+    border-color: #c2410c;
+    background: rgb(234 88 12 / 23%);
+  }
+
+  .custom-observation-details {
+    padding: 0 var(--space-custom-padding) var(--space-custom-inset);
+    color: var(--custom-muted);
+    overflow-wrap: anywhere;
+  }
+
+  .custom-observation-details p {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-custom-inset);
+    margin: var(--space-custom-inset) 0 0;
+  }
+
+  .custom-observation-details strong {
+    color: var(--custom-ink);
+  }
+
+  :is(#custom-observation-panel, #custom-observation-panel button):focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+  }
+
+  @media (max-width: 720px) {
+    #custom-observation-panel {
+      flex-basis: min(var(--size-custom-card), 40vw);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #custom-observation-panel,
+    #custom-observation-panel * {
+      scroll-behavior: auto;
+      transition-duration: 0s;
+      animation-duration: 0s;
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  :root[custom-ui] {
+    .custom-observation-row,
+    .custom-observation-swatch-candidate {
+      border-color: Highlight;
+      background: Canvas;
+    }
+
+    .custom-observation-row[data-selected="true"],
+    .custom-observation-swatch-selected {
+      border-color: CanvasText;
+      border-style: dashed;
+      background: Canvas;
+    }
+  }
+}
+
+:root[custom-ui][custom-observation-open]:not([inDOMFullscreen]):not([fullscreenNavToolboxHidden]):not([customizing]) #custom-observation-panel:not([hidden]) {
+  display: flex;
+}

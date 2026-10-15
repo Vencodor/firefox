@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Agent observation fixture</title>
+<style>
+  body { font: 16px sans-serif; margin: 24px; }
+  .card { border: 1px solid; margin-block: 12px; padding: 12px; }
+  .visually-hidden { clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
+  #scroll-target { margin-top: 130vh; }
+  #hidden-frame { display: none; }
+</style>
+<iframe id="visible-frame" title="Cross-origin frame" width="280" height="100" onload="this.dataset.loaded = 'true'"></iframe>
+<iframe id="hidden-frame" title="Hidden frame" srcdoc="&lt;button&gt;Hidden frame action&lt;/button&gt;"></iframe>
+<section class="card" aria-label="Alpha">
+  <h2>Alpha</h2>
+  <button id="first-open" onclick="window.clickCount++">Open</button>
+</section>
+<section class="card" aria-label="Beta">
+  <h2>Beta</h2>
+  <button id="second-open">Open</button>
+</section>
+<label for="terms">Accept terms</label>
+<input class="visually-hidden" id="terms" type="checkbox">
+<input id="disabled-control" type="text" value="Disabled" disabled>
+<input id="password-control" type="password" value="secret">
+<button id="remove-target">Remove me</button>
+<input id="input-target" aria-label="Input target">
+<button id="page-click-target" data-click-count="0" onclick="this.dataset.clickCount = String(Number(this.dataset.clickCount) + 1)">Click through highlight</button>
+<div id="shadow-host"></div>
+<button id="scroll-target">Scroll target</button>
+<script>
+  const shadowButton = document.createElement("button");
+  shadowButton.textContent = "Shadow action";
+  document.querySelector("#shadow-host").attachShadow({ mode: "open" }).append(shadowButton);
+</script>

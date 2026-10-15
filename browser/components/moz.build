@@ -25,6 +25,7 @@ DIRS += [
     "about",
     "aboutlogins",
     "aboutwelcome",
+    "agent",
     "aiwindow",
     "asrouter",
     "attribution",

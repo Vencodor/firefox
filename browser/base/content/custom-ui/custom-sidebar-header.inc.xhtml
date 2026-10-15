@@ -7,5 +7,13 @@
     <html:img id="custom-brand-icon" src="chrome://browser/content/custom-ui/resources/mono/logo/logo-mark-small.svg" width="18" height="18" alt="" aria-hidden="true" draggable="false"/>
     <html:span id="custom-brand-name" data-l10n-id="custom-ui-brand"/>
   </html:button>
-  <html:button id="custom-sidebar-toggle" aria-controls="sidebar-container" aria-expanded="true" data-l10n-id="custom-ui-sidebar-collapse"/>
+  <html:nav id="custom-sidebar-navigation" data-l10n-id="custom-ui-navigation">
+    <html:button id="custom-back-button" type="button" disabled="" data-l10n-id="custom-ui-navigation-back"/>
+    <html:button id="custom-forward-button" type="button" disabled="" data-l10n-id="custom-ui-navigation-forward"/>
+    <html:button id="custom-reload-button" type="button" data-l10n-id="custom-ui-navigation-reload"/>
+  </html:nav>
 </html:header>
+<html:div id="custom-sidebar-address">
+  <html:button id="custom-sidebar-domain" type="button" aria-expanded="false" aria-controls="navigator-toolbox" data-l10n-id="custom-ui-address-new-tab"/>
+  <html:button id="custom-page-settings-button" type="button" aria-haspopup="true" aria-expanded="false" data-l10n-id="custom-ui-page-settings"/>
+</html:div>
