@@ -1,0 +1,21 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<vbox id="custom-ai-panel" class="chromeclass-extrachrome" hidden="true">
+  <html:aside class="custom-ai-content" aria-labelledby="custom-ai-title">
+    <html:header class="custom-ai-header">
+      <html:h2 id="custom-ai-title" data-l10n-id="custom-ui-assistant-title"/>
+      <html:button id="custom-ai-pause" disabled="disabled" data-l10n-id="custom-ui-pause"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="3" y="2.5" width="2.6" height="9" rx="1"/><rect x="8.4" y="2.5" width="2.6" height="9" rx="1"/></svg></html:button>
+      <html:button id="custom-ai-stop" disabled="disabled" data-l10n-id="custom-ui-stop"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5"/></svg></html:button>
+      <html:button id="custom-ai-close" class="close-icon" data-l10n-id="custom-ui-assistant-close"/>
+    </html:header>
+    <html:div class="custom-ai-body">
+      <html:p data-l10n-id="custom-ui-assistant-unavailable"/>
+      <html:section class="custom-ai-history" aria-labelledby="custom-ai-history-title">
+        <html:h3 id="custom-ai-history-title" data-l10n-id="custom-ui-history-title"/>
+        <html:p data-l10n-id="custom-ui-history-empty"/>
+      </html:section>
+    </html:div>
+  </html:aside>
+</vbox>

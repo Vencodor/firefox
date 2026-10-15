@@ -831,10 +831,11 @@
       }
     }
 
-    #TabsToolbar,
-    #PersonalToolbar {
-      background: var(--custom-surface);
-      color: var(--custom-ink);
+    &:not([customizing]) {
+      #TabsToolbar,
+      #PersonalToolbar {
+        display: none;
+      }
     }
 
     #browser:not([hidden]) {
