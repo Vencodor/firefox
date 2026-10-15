@@ -2341,6 +2341,12 @@ pref("sidebar.animation.expand-on-hover.delay-duration-ms", 200);
 pref("sidebar.main.tools", "");
 pref("sidebar.installed.extensions", "");
 pref("browser.customUI.enabled", true);
+// Drives the agent UI with a built-in mock agent so every state can be seen.
+pref("browser.customUI.agentMock", false);
+// A new-feature notice card, as JSON: { id, title, description, label }.
+pref("browser.customUI.notice", "");
+// A JSON array of the notice ids the user has closed.
+pref("browser.customUI.noticeDismissed", "[]");
 pref("browser.newtabpage.enabled", false);
 pref("sidebar.verticalTabs", true);
 pref("sidebar.verticalTabs.dragToPinPromo.dismissed", false);

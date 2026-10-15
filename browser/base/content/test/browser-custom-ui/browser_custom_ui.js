@@ -78,7 +78,9 @@ add_task(async function test_blank_homepage_uses_main_screen() {
         "The normalized blank homepage displays the main search screen"
       );
       ok(
-        BrowserTestUtils.isVisible(document.getElementById("custom-newtab-logo")),
+        BrowserTestUtils.isVisible(
+          document.getElementById("custom-newtab-logo")
+        ),
         "The main screen logo is visible on the configured startup homepage"
       );
     });
@@ -170,17 +172,10 @@ add_task(async function test_newtab_search_and_navigation() {
 
 add_task(async function test_panel_controls_and_keyboard() {
   let panel = document.getElementById("custom-ai-panel");
-  let button = document.getElementById("custom-ai-button");
   let closeButton = document.getElementById("custom-ai-close");
   let page = document.getElementById("tabbrowser-tabbox");
 
   ok(BrowserTestUtils.isHidden(panel), "The assistant starts closed");
-  is(
-    button.getAttribute("aria-expanded"),
-    "false",
-    "The button starts collapsed"
-  );
-  ok(BrowserTestUtils.isVisible(button), "The assistant button is available");
   ok(
     document.getElementById("custom-ai-pause").disabled,
     "Pause is unavailable"
@@ -188,20 +183,15 @@ add_task(async function test_panel_controls_and_keyboard() {
   ok(document.getElementById("custom-ai-stop").disabled, "Stop is unavailable");
 
   let pageWidth = page.getBoundingClientRect().width;
-  EventUtils.synthesizeMouseAtCenter(button, {});
+  window.CustomBrowserUI.setPanelOpen(true);
   await TestUtils.waitForCondition(
     () => BrowserTestUtils.isVisible(panel),
-    "The assistant opens from its button"
+    "The assistant can be opened programmatically"
   );
   Assert.lessOrEqual(
     Math.abs(page.getBoundingClientRect().width - pageWidth),
     1,
     "Opening the floating card preserves the page width"
-  );
-  is(
-    button.getAttribute("aria-expanded"),
-    "true",
-    "The button reflects the open panel"
   );
   is(document.activeElement, closeButton, "Focus enters the panel");
 
@@ -209,11 +199,11 @@ add_task(async function test_panel_controls_and_keyboard() {
   ok(BrowserTestUtils.isHidden(panel), "The close button closes the assistant");
   is(
     document.activeElement,
-    button,
-    "Closing returns focus to the assistant button"
+    gBrowser.selectedBrowser,
+    "Closing returns focus to the page"
   );
 
-  EventUtils.synthesizeMouseAtCenter(button, {});
+  window.CustomBrowserUI.setPanelOpen(true);
   await TestUtils.waitForCondition(
     () => document.activeElement === closeButton,
     "Focus enters the reopened panel"
@@ -221,21 +211,15 @@ add_task(async function test_panel_controls_and_keyboard() {
   EventUtils.synthesizeKey("KEY_Escape");
   ok(BrowserTestUtils.isHidden(panel), "Escape closes the assistant");
   is(
-    button.getAttribute("aria-expanded"),
-    "false",
-    "Escape updates the button state"
-  );
-  is(
     document.activeElement,
-    button,
-    "Escape returns focus to the assistant button"
+    gBrowser.selectedBrowser,
+    "Escape returns focus to the page"
   );
 });
 
 add_task(async function test_window_state_and_pref_toggle() {
   let panel = document.getElementById("custom-ai-panel");
-  let button = document.getElementById("custom-ai-button");
-  EventUtils.synthesizeMouseAtCenter(button, {});
+  window.CustomBrowserUI.setPanelOpen(true);
   let newWindow = await BrowserTestUtils.openNewBrowserWindow();
   let prefEnvPushed = false;
   try {
@@ -245,7 +229,6 @@ add_task(async function test_window_state_and_pref_toggle() {
     );
     await newWindow.SidebarController.waitUntilStable();
     let newPanel = newWindow.document.getElementById("custom-ai-panel");
-    let newButton = newWindow.document.getElementById("custom-ai-button");
     ok(
       BrowserTestUtils.isVisible(panel),
       "The original window keeps its open panel"
@@ -255,7 +238,7 @@ add_task(async function test_window_state_and_pref_toggle() {
       "A new window starts with its own closed panel"
     );
 
-    EventUtils.synthesizeMouseAtCenter(newButton, {}, newWindow);
+    newWindow.CustomBrowserUI.setPanelOpen(true);
     ok(
       BrowserTestUtils.isVisible(newPanel),
       "The second window can open its panel"
@@ -291,9 +274,9 @@ add_task(async function test_window_state_and_pref_toggle() {
       );
       ok(
         BrowserTestUtils.isHidden(
-          win.document.getElementById("custom-sidebar-footer")
+          win.document.getElementById("custom-sidebar-header")
         ),
-        "Disabling custom UI hides its sidebar controls"
+        "Disabling custom UI hides its sidebar header"
       );
     }
 
@@ -306,9 +289,9 @@ add_task(async function test_window_state_and_pref_toggle() {
       );
       ok(
         BrowserTestUtils.isVisible(
-          win.document.getElementById("custom-sidebar-footer")
+          win.document.getElementById("custom-sidebar-header")
         ),
-        "Enabling custom UI restores the sidebar controls"
+        "Enabling custom UI restores the sidebar header"
       );
       ok(
         BrowserTestUtils.isHidden(
@@ -364,10 +347,7 @@ add_task(async function test_native_tabs_and_sidebar_toggle() {
       "Native tabs can change order"
     );
 
-    EventUtils.synthesizeMouseAtCenter(
-      document.getElementById("custom-ai-button"),
-      {}
-    );
+    window.CustomBrowserUI.setPanelOpen(true);
     await SidebarController.handleToolbarButtonClick();
     await SidebarController.waitUntilStable();
     is(

@@ -502,6 +502,12 @@ export const BrowserWindowTracker = {
   },
 
   track(window) {
+    if (
+      window.document.documentElement.hasAttribute("custom-settings-window")
+    ) {
+      return null;
+    }
+
     let pending = this.pendingWindows.get(window);
     if (pending) {
       this.pendingWindows.delete(window);

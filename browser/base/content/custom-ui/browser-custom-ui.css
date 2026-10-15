@@ -2,9 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-:root:not([custom-ui]) :is(#custom-sidebar-header, #custom-sidebar-footer, #custom-ai-panel),
+#custom-sidebar-footer,
+:root:not([custom-ui]) :is(#custom-sidebar-header, #custom-ai-panel),
 :root:not([custom-ai-open]) #custom-ai-panel,
-:root[custom-ui]:is([inDOMFullscreen], [fullscreenNavToolboxHidden], [customizing]) :is(#custom-sidebar-header, #custom-sidebar-footer, #custom-ai-panel),
+:root[custom-ui]:is([inDOMFullscreen], [fullscreenNavToolboxHidden], [customizing]) :is(#custom-sidebar-header, #custom-ai-panel),
 #custom-ai-panel[hidden] {
   display: none;
 }
@@ -166,92 +167,6 @@
     background-image: url("chrome://global/skin/icons/close.svg");
   }
 
-  #custom-sidebar-footer > button {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--space-custom-gap, var(--space-medium));
-    box-sizing: border-box;
-    min-width: 0;
-    min-height: var(--size-custom-tab, var(--size-item-xlarge));
-    padding-inline: var(--space-custom-padding, var(--space-medium));
-    border: var(--border-width) solid transparent;
-    border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-    background-color: transparent;
-    color: inherit;
-    font: inherit;
-    font-size: var(--font-size-custom-label, var(--font-size-small));
-    text-align: start;
-
-    &::before {
-      content: "";
-      flex: none;
-      width: var(--icon-size-small);
-      height: var(--icon-size-small);
-      background-position: center;
-      background-repeat: no-repeat;
-      background-size: contain;
-      -moz-context-properties: fill;
-      fill: currentColor;
-    }
-
-    &:hover:not(:disabled) {
-      background-color: var(--custom-hover, var(--background-color-list-item-hover));
-    }
-
-    &:active:not(:disabled),
-    &[aria-expanded="true"] {
-      background-color: var(--custom-surface);
-    }
-  }
-
-  #custom-sidebar-footer {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--space-xxsmall);
-    margin-inline: var(--space-custom-edge, var(--space-small));
-    padding-block: var(--space-small);
-    border-block-start: var(--border-width) solid var(--custom-line);
-  }
-
-  #custom-settings-button::before {
-    background-image: url("chrome://global/skin/icons/settings.svg");
-  }
-
-  #custom-ai-button::before {
-    background-image: url("chrome://global/skin/icons/highlights.svg");
-  }
-
-  #custom-sidebar-footer > :is(#custom-ai-button, #custom-settings-button) {
-    justify-content: center;
-    width: var(--size-item-large);
-    min-height: var(--size-item-large);
-    padding-inline: 0;
-
-    .custom-sidebar-label {
-      display: none;
-    }
-  }
-
-  #custom-sidebar-footer > #custom-space-button {
-    flex: 1;
-    color: var(--custom-muted, var(--text-color-deemphasized));
-
-    &::before {
-      width: var(--size-item-medium);
-      height: var(--size-item-medium);
-      border-radius: var(--border-radius-circle);
-      background-color: var(--custom-avatar-background);
-    }
-  }
-
-  .custom-sidebar-label {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   #sidebar-container:not([sidebar-launcher-expanded]) {
     #custom-sidebar-header {
       flex-direction: column;
@@ -268,22 +183,8 @@
       padding-inline: 0;
     }
 
-    #custom-brand-name,
-    .custom-sidebar-label {
+    #custom-brand-name {
       display: none;
-    }
-
-    #custom-sidebar-footer {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    #custom-sidebar-footer > button {
-      flex: none;
-      justify-content: center;
-      width: auto;
-      min-height: var(--size-custom-tab, var(--size-item-xlarge));
-      padding-inline: 0;
     }
   }
 
@@ -657,7 +558,7 @@
     color: var(--custom-surface);
   }
 
-  :is(#custom-brand-button, #custom-sidebar-toggle, #custom-sidebar-footer > button, #custom-ai-close):focus-visible {
+  :is(#custom-brand-button, #custom-sidebar-toggle, #custom-ai-close):focus-visible {
     outline: var(--focus-outline);
     outline-offset: var(--focus-outline-offset);
   }
@@ -684,7 +585,6 @@
     --custom-line-strong: ButtonBorder;
     --custom-accent: LinkText;
     --custom-accent-subtle: Canvas;
-    --custom-avatar-background: Canvas;
 
     .tab-background[selected] {
       outline: var(--outline-custom-selected, var(--focus-outline));
@@ -814,10 +714,18 @@
     }
 
     &[custom-newtab]:not([customizing], [inDOMFullscreen], [inFullscreen], [chromehidden]) {
-      --size-custom-search-width: min(640px, calc(100% - 64px));
-      --size-custom-search-height: 132px;
+      --size-custom-search-width: min(600px, calc(100% - 64px));
+      --size-custom-search-height: 156px;
+      --size-custom-search-input: 76px;
+      --size-custom-search-actions: 52px;
       --size-custom-search-icon: 28px;
-      --space-custom-search-inset: 22px;
+      --size-custom-run: 34px;
+      --size-custom-run-icon: 14px;
+      --space-custom-search-inset: 24px;
+      --space-custom-search-divider: 22px;
+      --space-custom-search-divider-open: 14px;
+      --space-custom-run-inline: 22px;
+      --space-custom-run-block: 10px;
       --font-size-custom-search: 16px;
       --box-shadow-custom-search: 0 2px 8px light-dark(rgb(0 0 0 / 4%), rgb(0 0 0 / 16%)), 0 16px 40px -12px light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 32%));
       --custom-search-background: light-dark(#f8f9fb, #202329);
@@ -862,21 +770,12 @@
         color: var(--custom-muted, var(--text-color-deemphasized));
       }
 
-      #custom-newtab-hint {
-        position: absolute;
-        inset-inline: var(--space-custom-search-inset, var(--space-large)) var(--size-image-large);
-        inset-block-end: var(--space-custom-search-inset, var(--space-large));
-        z-index: 1;
-        margin: 0;
-        font-size: var(--font-size-custom-small, var(--font-size-small));
-        line-height: 1.5;
-      }
-
       #navigator-toolbox {
         grid-row: 1 / 3;
         grid-column-end: 6;
         place-self: center;
         width: var(--size-custom-search-width, var(--size-layout-large));
+        height: var(--size-custom-search-height, var(--size-item-xlarge));
         overflow: visible;
         border: 0;
         border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
@@ -912,12 +811,17 @@
         --urlbar-background-border-radius: var(--border-radius-custom-page);
         --urlbar-background-border-top-radius-open: var(--border-radius-custom-page);
         --urlbar-background-box-shadow-open: var(--box-shadow-custom-search);
+        --urlbar-background-border-focused: var(--urlbar-background-border);
+        --urlbar-background-outline-focused: none;
+        --urlbar-input-container-outline-open: none;
+        --urlbar-input-container-outline-open-focused: none;
         --urlbar-basic-component-size: 28px;
         --urlbar-input-growth-open-inline: 0px;
         --urlbar-input-growth-open-block: 0px;
         --urlbarview-border-radius: var(--border-radius-custom-page);
-        --urlbarview-row-border-radius: calc(var(--border-radius-custom-page) + var(--urlbarview-row-gutter));
-        --urlbarview-row-padding-inline: var(--space-custom-padding);
+        --urlbarview-row-border-radius: calc(var(--border-radius-custom-tab) + var(--urlbarview-row-gutter));
+        --urlbarview-row-min-height: var(--size-custom-suggestion);
+        --urlbarview-row-padding-inline: var(--space-custom-suggestion-inline);
         --urlbarview-row-padding-block: var(--space-custom-edge);
         --urlbarview-background-color-hover: var(--custom-hover);
         --urlbarview-background-color-selected: var(--custom-line);
@@ -934,6 +838,10 @@
         font-size: var(--font-size-custom-search, var(--font-size-large));
       }
 
+      #urlbar[open] {
+        --urlbar-height: var(--size-custom-search-input);
+      }
+
       #urlbar .urlbarView {
         font-size: var(--font-size-custom-title, var(--font-size-small));
       }
@@ -948,8 +856,26 @@
       }
 
       #urlbar .urlbar-input-container {
+        position: relative;
         align-items: flex-start;
         padding-block: var(--space-custom-search-inset, var(--space-large));
+      }
+
+      #urlbar .urlbar-input-container::after {
+        content: "";
+        position: absolute;
+        inset-block-start: calc(
+          var(--size-custom-search-height, var(--size-item-xlarge)) - var(--size-custom-search-actions, var(--size-item-xlarge)) - var(--border-width)
+        );
+        inset-inline: var(--space-custom-search-divider, var(--space-large));
+        height: 0;
+        border-block-start: var(--border-width) solid var(--custom-line, var(--border-color));
+        pointer-events: none;
+      }
+
+      #urlbar[open] .urlbar-input-container::after {
+        inset-block: auto 0;
+        inset-inline: var(--space-custom-search-divider-open, var(--space-medium));
       }
 
       #urlbar .urlbar-input-container::before {
@@ -968,16 +894,61 @@
       }
 
       #urlbar .urlbar-go-button {
+        display: none;
+      }
+
+      #custom-newtab-run {
         position: absolute;
+        inset-inline-end: var(--space-custom-run-inline, var(--space-xlarge));
+        inset-block-end: var(--space-custom-run-block, var(--space-small));
+        display: flex;
+        align-items: center;
+        gap: var(--space-small);
         box-sizing: border-box;
-        inset-inline-end: var(--space-large);
-        inset-block-end: var(--space-large);
-        width: var(--size-custom-control, var(--size-item-large));
-        height: var(--size-custom-control, var(--size-item-large));
-        padding: var(--space-custom-gap, var(--space-medium));
-        border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+        height: var(--size-custom-run, var(--size-item-large));
+        margin: 0;
+        padding-block: 0;
+        padding-inline: var(--space-custom-padding, var(--space-medium));
+        border: 0;
+        border-radius: var(--border-radius-medium);
         background-color: var(--custom-hover, var(--background-color-list-item-hover));
-        color: var(--text-color-list-item-hover);
+        color: var(--custom-ink, var(--text-color-list-item-hover));
+        font: inherit;
+        font-size: var(--font-size-custom-small, var(--font-size-small));
+        font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+        pointer-events: auto;
+
+        &:enabled:hover {
+          background-color: var(--custom-line, var(--background-color-list-item-hover));
+          color: var(--custom-ink, var(--text-color-list-item-hover));
+        }
+
+        &:disabled {
+          color: var(--custom-muted, var(--text-color-disabled));
+        }
+
+        &:focus-visible {
+          outline: var(--focus-outline);
+          outline-offset: var(--focus-outline-offset);
+        }
+
+        &[urlbar-open] {
+          display: none;
+        }
+      }
+
+      .custom-newtab-run-icon {
+        flex: none;
+        width: var(--size-custom-run-icon, var(--icon-size-xsmall));
+        height: var(--size-custom-run-icon, var(--icon-size-xsmall));
+        background-image: var(--custom-logo-on-surface);
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+      }
+
+      #custom-newtab-run:disabled .custom-newtab-run-icon {
+        opacity: var(--button-opacity-disabled);
       }
 
       &[sidebar-positionend] {
@@ -989,10 +960,6 @@
 
       @media (max-width: 720px) {
         --size-custom-search-width: calc(100% - 32px);
-
-        #custom-newtab-hint {
-          font-size: var(--font-size-custom-shortcut, var(--font-size-small));
-        }
       }
 
       @media (max-height: 500px) {
@@ -1018,6 +985,14 @@
 
         #urlbar .urlbar-background {
           box-shadow: none;
+        }
+
+        #custom-newtab-run {
+          border: var(--border-width) solid var(--button-border-color);
+        }
+
+        .custom-newtab-run-icon {
+          display: none;
         }
       }
     }
@@ -1085,7 +1060,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   :root[custom-ui] {
-    :is(#custom-brand-button, #custom-sidebar-toggle, #custom-sidebar-footer > button, #custom-ai-close),
+    :is(#custom-brand-button, #custom-sidebar-toggle, #custom-ai-close),
     #vertical-tabs :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
       transition:
         background-color 150ms ease,
@@ -1139,7 +1114,6 @@
     @media (-moz-pref("sidebar.verticalTabs")) {
       &[custom-newtab]:not([customizing], [inDOMFullscreen], [inFullscreen], [chromehidden]) {
         #navigator-toolbox,
-        #custom-newtab-hint,
         #custom-newtab-surface::before {
           animation: custom-fade-in 240ms ease-out;
         }

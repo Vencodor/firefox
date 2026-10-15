@@ -181,7 +181,11 @@ function srdSectionEnabled(section) {
       false
     );
   }
-  return srdSectionPrefs.all || srdSectionPrefs[section];
+  return (
+    srdSectionPrefs.all ||
+    srdSectionPrefs[section] ||
+    !!window.MonoPreferences?.enabled
+  );
 }
 
 var { SettingPaneManager, friendlyPrefCategoryNameToInternalName } =
@@ -524,7 +528,11 @@ function register_module(categoryName, categoryObject) {
       }
       this._initted = true;
       let template = document.getElementById("template-" + categoryName);
-      if (template && !srdSectionPrefs.all) {
+      if (
+        template &&
+        !srdSectionPrefs.all &&
+        !window.MonoPreferences?.enabled
+      ) {
         // Replace the template element with the nodes inside of it.
         template.replaceWith(template.content);
 
@@ -558,7 +566,8 @@ function init_all() {
     /** @type {HTMLElement} */ (document.querySelector(".main-content"))
   );
 
-  let redesignEnabled = srdSectionPrefs.all;
+  let redesignEnabled =
+    srdSectionPrefs.all || !!window.MonoPreferences?.enabled;
 
   if (!redesignEnabled) {
     register_module("paneGeneral", gMainPane);
@@ -596,7 +605,9 @@ function init_all() {
     register_module("paneSync", gSyncPane);
   }
   register_module("paneSearchResults", gSearchResultsPane);
-  for (let [id, config] of Object.entries(CONFIG_PANES)) {
+  let paneConfigs =
+    window.MonoPreferences?.getPanes(CONFIG_PANES) || CONFIG_PANES;
+  for (let [id, config] of Object.entries(paneConfigs)) {
     if (!redesignEnabled && config.replaces) {
       continue;
     }
@@ -604,39 +615,45 @@ function init_all() {
     SettingPaneManager.registerPane(id, config);
   }
 
-  SettingPaneManager.registerPane("customHomepage", {
-    parent: "home",
-    l10nId: "home-custom-homepage-subpage",
-    groupIds: ["customHomepage"],
-    module: "chrome://browser/content/preferences/config/home-startup.mjs",
-  });
+  if (!window.MonoPreferences?.enabled) {
+    SettingPaneManager.registerPane("customHomepage", {
+      parent: "home",
+      l10nId: "home-custom-homepage-subpage",
+      groupIds: ["customHomepage"],
+      module: "chrome://browser/content/preferences/config/home-startup.mjs",
+    });
 
-  if (redesignEnabled) {
-    if (
-      AppConstants.platform == "win" &&
-      Services.prefs.getBoolPref("browser.shell.customIcon.enabled", false) &&
-      !Services.sysinfo.getProperty("hasWinPackageId")
-    ) {
-      SettingPaneManager.registerPane("browserIcon", {
-        parent: "appearance",
-        iconSrc: "chrome://browser/skin/sidebar/firefox.svg",
-        l10nId: "appearance-browser-icon-subpage-title",
-        groupIds: ["browserIconBasic", "browserIconBonus"],
-        module: "chrome://browser/content/preferences/config/browser-icon.mjs",
-      });
-    }
-  } else {
-    NimbusFeatures.moreFromMozilla.recordExposureEvent({ once: true });
-    if (NimbusFeatures.moreFromMozilla.getVariable("enabled")) {
-      document.getElementById("category-more-from-mozilla").hidden = false;
-      gMoreFromMozillaPane.option =
-        NimbusFeatures.moreFromMozilla.getVariable("template");
-      register_module("paneMoreFromMozilla", gMoreFromMozillaPane);
+    if (redesignEnabled) {
+      if (
+        AppConstants.platform == "win" &&
+        Services.prefs.getBoolPref("browser.shell.customIcon.enabled", false) &&
+        !Services.sysinfo.getProperty("hasWinPackageId")
+      ) {
+        SettingPaneManager.registerPane("browserIcon", {
+          parent: "appearance",
+          iconSrc: "chrome://browser/skin/sidebar/firefox.svg",
+          l10nId: "appearance-browser-icon-subpage-title",
+          groupIds: ["browserIconBasic", "browserIconBonus"],
+          module:
+            "chrome://browser/content/preferences/config/browser-icon.mjs",
+        });
+      }
+    } else {
+      NimbusFeatures.moreFromMozilla.recordExposureEvent({ once: true });
+      if (NimbusFeatures.moreFromMozilla.getVariable("enabled")) {
+        document.getElementById("category-more-from-mozilla").hidden = false;
+        gMoreFromMozillaPane.option =
+          NimbusFeatures.moreFromMozilla.getVariable("template");
+        register_module("paneMoreFromMozilla", gMoreFromMozillaPane);
+      }
     }
   }
 
+  window.MonoPreferences?.initialize();
   gSearchResultsPane.init();
-  gMainPane.preInit();
+  if (!window.MonoPreferences?.enabled) {
+    gMainPane.preInit();
+  }
 
   let categories = document.getElementById("categories");
   categories.addEventListener("change-view", event => {
@@ -731,7 +748,7 @@ async function gotoPref(
   aCategory,
   aShowReason = aCategory ? "Click" : "Initial"
 ) {
-  let redesignEnabled = srdSectionPrefs.all;
+  let redesignEnabled = srdSectionPrefs.all && !window.MonoPreferences?.enabled;
   let categories = document.getElementById("categories");
   const kDefaultCategoryInternalName = redesignEnabled
     ? "paneSync"
@@ -752,13 +769,22 @@ async function gotoPref(
   // Subcategories could have new destinations when the settings-redesign pref
   // is enabled. We need to resolve the legacy category and
   // subcategory before getting the friendly name.
-  if (Services.prefs.getBoolPref("browser.settings-redesign.enabled")) {
+  if (
+    Services.prefs.getBoolPref("browser.settings-redesign.enabled") ||
+    window.MonoPreferences?.enabled
+  ) {
     let resolved = resolveLegacyCategory(category, subcategory);
     category = resolved.category;
     subcategory = resolved.subcategory;
   }
 
   category = friendlyPrefCategoryNameToInternalName(category);
+  if (window.MonoPreferences) {
+    ({ category, subcategory } = window.MonoPreferences.resolveCategory(
+      category,
+      subcategory
+    ));
+  }
   if (category != "paneSearchResults") {
     gSearchResultsPane.query = null;
     gSearchResultsPane.searchInput.value = "";

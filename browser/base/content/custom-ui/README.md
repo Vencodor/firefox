@@ -3,16 +3,22 @@
 `browser.customUI.enabled`를 켜면 `custom-ui` 속성이 있는 문서에 사용자 지정 외형을 적용한다.
 화면을 먼저 이전하고 기능 경로를 확인한 뒤 대응하는 Firefox UI를 단계적으로 교체한다.
 
+색상·로고·모서리·간격 등 제품 외형은 저장소 루트의 [Mono UI Style](../../../../Style.md)을 기준으로 한다.
+
 ## 구현 경계
 
 | 파일 | 담당 |
 | --- | --- |
 | `browser.xhtml`, `browser-box.inc.xhtml` | 브라우저 창 조립과 네이티브 기능 슬롯 연결 |
-| `custom-*.inc.xhtml` | 사용자 지정 사이드바 헤더·하단 버튼·새 탭 화면·AI 패널 |
+| `custom-*.inc.xhtml` | 사용자 지정 사이드바 헤더·새 탭 화면·AI 패널 |
 | `design-tokens.css` | 브라우저와 설정에서 공유하는 색상·간격·모서리·그림자 |
 | `browser-custom-ui.css`, `browser-custom-ui.js` | 사이드바·탭·페이지 배치와 사용자 지정 UI 상태 |
 | `browser-custom-navigation.css` | 네이티브 주소 입력·탐색·검색 제안의 사용자 지정 외형 |
 | `browser-custom-popups.css` | 네이티브 메뉴·하위 보기·브라우저 팝업의 사용자 지정 외형 |
+| `browser-custom-agent.js`, `browser-custom-agent.css`, `custom-agent-hud.inc.xhtml` | 에이전트 상태 표시: 사이드바 탭 행, 오른쪽 아래 오브·말풍선, '다음 클릭' 표시, 새 탭 Run 버튼. 에이전트는 `CustomAgentUI.connect()`로 연결하고 상태는 `setState()`로 알린다 |
+| `custom-urlbar-run.sys.mjs` | 주소창 검색 제안의 Run 행(동적 제안 공급자) |
+| `browser-custom-notice.js`, `browser-custom-notice.css`, `custom-notice-sidebar.inc.xhtml` | 새 기능 알림 카드(새 탭 검색 상자 아래, 사이드바 아래쪽). 내용은 `browser.customUI.notice`, 닫은 알림은 `browser.customUI.noticeDismissed`에 기록 |
+| `CustomSettingsWindow.sys.mjs`, `browser-custom-settings-window.js`, `browser-custom-settings-window.css`, `custom-settings-titlebar.inc.xhtml` | 설정 전용 창의 생성·재사용, Mono 헤더·창 제어 및 일반 창과의 분리 |
 | `../../../components/preferences/custom-ui/` | 설정 페이지·설정 탐색·하위 대화상자의 사용자 지정 외형 |
 
 사용자 지정 파일은 `browser/base/jar.mn`과 설정의 `jar.mn`에서 패키징한다.
@@ -23,13 +29,16 @@
 
 | 화면 | 상태 |
 | --- | --- |
-| 사이드바 헤더·하단 조작, 새 탭 표면, AI 패널 틀 | 사용자 지정 컴포넌트 |
+| 사이드바 헤더, 새 탭 표면, AI 패널 틀 | 사용자 지정 컴포넌트; 하단 개인·에이전트·설정 버튼 제거 |
 | 네이티브 세로 탭·탭 그룹 | 사용자 지정 외형, 기존 탭 동작 연결 |
 | 상단 탐색·주소창·검색 제안 | 사용자 지정 외형, 기존 탐색·검색·보안 표시 연결 |
+| 에이전트 Run 버튼·Run 제안 행·탭 상태·오브와 말풍선·'다음 클릭' 표시 | 화면과 연결 지점 구현. 에이전트가 없으면 Run은 비활성이며, 모든 상태는 `browser.customUI.agentMock`으로 확인 |
+| 기능 알림 카드 | 새 탭·사이드바 카드 구현(일러스트는 임시 그림). 오류 페이지 카드는 이전 대기 |
+| 프로필 메뉴·에이전트 현황 패널의 작업 목록 | 보류 |
 | 앱 메뉴·설정 드롭다운·메뉴 하위 보기 | 사용자 지정 외형, 기존 명령 연결 |
 | 탭·페이지 우클릭 메뉴 | 사용자 지정 외형, 기존 명령 연결 |
 | 다운로드·사이트 정보·권한·보호·알림·확장·북마크 편집·번역 팝업 | 공통 외형 적용, 각 기능별 상세 화면 확인 대상 |
-| 설정 페이지·설정 하위 창 | 사용자 지정 외형, 기존 검색·카테고리·설정 저장 연결 |
+| 설정 페이지·설정 하위 창 | 설정 명령은 별도 창으로 연결; 사용자 선택 항목과 Mono 설명을 표시하고 기존 검색·설정 저장·하위 창 재사용 |
 | 북마크·방문 기록 Library 독립 창 | 이전 대기: `chrome://browser/content/places/places.xhtml` |
 | 비밀번호 관리 | 이전 대기: `about:logins` |
 | 확장 관리 | 이전 대기: `about:addons` |

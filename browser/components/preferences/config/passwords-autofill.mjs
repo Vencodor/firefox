@@ -146,10 +146,9 @@ export class PasswordSettingHelpers {
     var noMP = !LoginHelper.isPrimaryPasswordSet();
 
     // Check if settings-redesign is enabled to determine which UI is active
-    const srdEnabled = Services.prefs.getBoolPref(
-      "browser.settings-redesign.enabled",
-      false
-    );
+    const srdEnabled =
+      Services.prefs.getBoolPref("browser.settings-redesign.enabled", false) ||
+      !!window.MonoPreferences?.enabled;
 
     const buttonId = srdEnabled
       ? "changePrimaryPassword"
@@ -307,7 +306,10 @@ Preferences.addSetting({
     FormAutofill.isAutofillTypeAvailable(lazy.AutofillDataTypes.ADDRESS),
   onUserClick: e => {
     e.preventDefault();
-    if (Services.prefs.getBoolPref("browser.settings-redesign.enabled")) {
+    if (
+      Services.prefs.getBoolPref("browser.settings-redesign.enabled") ||
+      window.MonoPreferences?.enabled
+    ) {
       window.gotoPref("paneManageAddresses");
     } else {
       window.gSubDialog.open(MANAGE_ADDRESSES_URL);
@@ -383,7 +385,10 @@ Preferences.addSetting({
   onUserClick: e => {
     e.preventDefault();
 
-    if (Services.prefs.getBoolPref("browser.settings-redesign.enabled")) {
+    if (
+      Services.prefs.getBoolPref("browser.settings-redesign.enabled") ||
+      window.MonoPreferences?.enabled
+    ) {
       window.gotoPref("paneManagePayments");
     } else {
       window.gSubDialog.open(MANAGE_CREDITCARDS_URL);

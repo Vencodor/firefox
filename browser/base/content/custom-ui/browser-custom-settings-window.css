@@ -1,0 +1,157 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#custom-settings-titlebar {
+  display: none;
+}
+
+:root[custom-settings-window] {
+  body {
+    display: flex !important;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 !important;
+  }
+
+  #custom-settings-titlebar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-custom-gap, var(--space-medium));
+    min-height: var(--size-custom-header, var(--button-min-height-large));
+    padding-inline: var(--space-custom-padding, var(--space-large));
+    border-bottom: var(--border-width) solid var(--custom-line, var(--border-color));
+    background: var(--custom-background, var(--background-color-canvas));
+    color: var(--custom-ink, var(--text-color));
+    font-family: var(--font-family-custom, inherit);
+    -moz-window-dragging: drag;
+    user-select: none;
+  }
+
+  #custom-settings-titlebar-logo {
+    flex: none;
+    width: var(--size-custom-brand, var(--icon-size-small));
+    height: var(--size-custom-brand, var(--icon-size-small));
+  }
+
+  #custom-settings-titlebar-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+    font-weight: var(--font-weight-custom-medium, var(--font-weight));
+  }
+
+  #custom-settings-window-controls {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-xsmall);
+    -moz-window-dragging: no-drag;
+
+    > button {
+      appearance: none;
+      display: grid;
+      place-items: center;
+      width: var(--size-custom-control, var(--button-min-height));
+      height: var(--size-custom-navigation-control, var(--button-min-height));
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+      background: transparent;
+      color: inherit;
+      -moz-window-dragging: no-drag;
+
+      &:hover {
+        background: var(--custom-hover, var(--button-background-color-hover));
+      }
+
+      &:active {
+        background: var(--custom-accent-subtle, var(--button-background-color-active));
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-inset);
+      }
+
+      > svg {
+        width: var(--icon-size-small);
+        height: var(--icon-size-small);
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.25;
+        pointer-events: none;
+      }
+    }
+  }
+
+  #custom-settings-minimize {
+    -moz-default-appearance: -moz-window-button-minimize;
+  }
+
+  #custom-settings-maximize {
+    -moz-default-appearance: -moz-window-button-maximize;
+  }
+
+  #custom-settings-restore {
+    -moz-default-appearance: -moz-window-button-restore;
+  }
+
+  #custom-settings-close {
+    -moz-default-appearance: -moz-window-button-close;
+  }
+
+  &:not([sizemode="maximized"], [sizemode="fullscreen"]) #custom-settings-restore,
+  &:is([sizemode="maximized"], [sizemode="fullscreen"]) #custom-settings-maximize {
+    display: none;
+  }
+
+  @media (forced-colors: active) {
+    #custom-settings-window-controls > button:hover {
+      background: var(--button-background-color-hover);
+      color: var(--button-text-color-hover);
+    }
+  }
+
+  #navigator-toolbox,
+  #sidebar-container,
+  #sidebar-launcher-splitter,
+  #sidebar-box,
+  #sidebar-splitter,
+  #ai-window-box,
+  #ai-window-splitter,
+  #custom-newtab-surface,
+  #custom-agent-hud,
+  #custom-ai-panel,
+  #fullscr-toggler {
+    display: none !important;
+  }
+
+  #browser:not([hidden]) {
+    display: flex !important;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  #tabbrowser-tabbox {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  :is(#tabbrowser-tabpanels, .browserContainer, .browserStack) {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

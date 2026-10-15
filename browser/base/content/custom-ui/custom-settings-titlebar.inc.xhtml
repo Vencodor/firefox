@@ -1,0 +1,40 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<html:header id="custom-settings-titlebar">
+  <html:img id="custom-settings-titlebar-logo"
+            src="chrome://browser/content/custom-ui/resources/mono/logo/logo-mark-small.svg"
+            width="18" height="18" alt="" aria-hidden="true" draggable="false"/>
+  <html:span id="custom-settings-titlebar-title" data-l10n-id="custom-ui-settings-window-title"/>
+  <html:div id="custom-settings-window-controls">
+    <html:button id="custom-settings-minimize" type="button"
+                 data-settings-window-command="cmd_minimizeWindow"
+                 data-l10n-id="custom-ui-settings-window-minimize">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M3 8h10"/>
+      </svg>
+    </html:button>
+    <html:button id="custom-settings-maximize" type="button"
+                 data-settings-window-command="cmd_maximizeWindow"
+                 data-l10n-id="custom-ui-settings-window-maximize">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <rect x="3" y="3" width="10" height="10" rx="1"/>
+      </svg>
+    </html:button>
+    <html:button id="custom-settings-restore" type="button"
+                 data-settings-window-command="cmd_restoreWindow"
+                 data-l10n-id="custom-ui-settings-window-restore">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M5 5V2h9v9h-3M2 5h9v9H2z"/>
+      </svg>
+    </html:button>
+    <html:button id="custom-settings-close" type="button"
+                 data-settings-window-command="cmd_closeWindow"
+                 data-l10n-id="custom-ui-settings-window-close">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="m3 3 10 10M3 13 13 3"/>
+      </svg>
+    </html:button>
+  </html:div>
+</html:header>

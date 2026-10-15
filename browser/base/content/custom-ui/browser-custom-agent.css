@@ -1,0 +1,680 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:root:not([custom-ui]) #custom-agent-hud,
+:root[custom-ui]:is([inDOMFullscreen], [fullscreenNavToolboxHidden], [customizing], [custom-ai-open]) #custom-agent-hud,
+:root[custom-ui] #custom-agent-hud[hidden],
+#custom-agent-hud [hidden],
+.custom-agent-ring,
+.custom-agent-title,
+.custom-agent-summary,
+.custom-agent-trail {
+  display: none;
+}
+
+#custom-agent-announce {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[custom-ui] {
+  #custom-agent-hud {
+    --custom-agent-orb-ring: var(--custom-ink);
+    --custom-agent-orb-fill: var(--custom-ink);
+    position: absolute;
+    inset-inline-end: var(--space-custom-hud, var(--space-xlarge));
+    inset-block-end: var(--space-custom-hud, var(--space-xlarge));
+    z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 1);
+    display: flex;
+    align-items: center;
+    gap: var(--space-custom-hud-gap, var(--space-medium));
+    box-sizing: border-box;
+    max-width: calc(100% - 2 * var(--space-custom-hud, var(--size-item-medium)));
+    color: var(--custom-ink, var(--text-color));
+    font-family: var(--font-family-custom);
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+  }
+
+  #custom-agent-hud[data-status="confirm"] {
+    --custom-agent-orb-ring: var(--custom-attention);
+    --custom-agent-orb-fill: var(--custom-attention);
+  }
+
+  #custom-agent-hud[data-status="paused"] {
+    --custom-agent-orb-ring: var(--custom-muted);
+    --custom-agent-orb-fill: color-mix(in srgb, var(--custom-ink) 78%, var(--custom-surface));
+  }
+
+  #custom-agent-orb {
+    position: relative;
+    flex: none;
+    box-sizing: border-box;
+    width: var(--size-custom-orb, var(--size-image-medium));
+    height: var(--size-custom-orb, var(--size-image-medium));
+    padding: 0;
+    border: 0;
+    border-radius: var(--border-radius-circle);
+    background-color: var(--custom-surface, var(--background-color-box));
+    box-shadow: var(--box-shadow-custom-float, var(--box-shadow-level-3));
+  }
+
+  .custom-agent-orb-art {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .custom-agent-orb-track {
+    fill: none;
+    stroke: var(--custom-line-strong, var(--icon-color));
+    stroke-width: 3;
+  }
+
+  .custom-agent-orb-value {
+    fill: none;
+    stroke: var(--custom-agent-orb-ring, var(--icon-color));
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: var(--custom-agent-progress, 0) 100;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  #custom-agent-hud[data-empty] .custom-agent-orb-value {
+    visibility: hidden;
+  }
+
+  #custom-agent-hud[data-indeterminate] .custom-agent-orb-value {
+    stroke-dasharray: 28 100;
+  }
+
+  .custom-agent-orb-disc {
+    fill: var(--custom-agent-orb-fill, var(--icon-color));
+  }
+
+  :is(.custom-agent-orb-pause, .custom-agent-orb-check, .custom-agent-orb-alert) {
+    display: none;
+    stroke: var(--custom-accent-ink, var(--icon-color));
+  }
+
+  .custom-agent-orb-pause {
+    fill: var(--custom-accent-ink, var(--icon-color));
+    stroke: none;
+  }
+
+  :is(.custom-agent-orb-check, .custom-agent-orb-alert) {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  #custom-agent-hud[data-status="paused"] .custom-agent-orb-pause,
+  #custom-agent-hud[data-status="done"] .custom-agent-orb-check,
+  #custom-agent-hud[data-status="confirm"] .custom-agent-orb-alert {
+    display: inline;
+  }
+
+  .custom-agent-orb-logo {
+    position: absolute;
+    inset: 0;
+    width: var(--icon-size-large);
+    height: var(--icon-size-large);
+    margin: auto;
+    background-image: var(--custom-logo-on-ink);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    pointer-events: none;
+  }
+
+  #custom-agent-hud:not([data-status="working"]) .custom-agent-orb-logo {
+    display: none;
+  }
+
+  #custom-agent-bubble {
+    position: relative;
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: var(--space-custom-gap, var(--space-medium));
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: var(--size-custom-bubble, var(--size-layout-medium));
+    padding: var(--space-custom-gap, var(--space-medium));
+    padding-inline-start: var(--space-xlarge);
+    border: var(--border-width) solid var(--custom-line, var(--border-color));
+    border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+    background-color: var(--custom-surface, var(--background-color-box));
+    box-shadow: var(--box-shadow-custom-float, var(--box-shadow-level-3));
+  }
+
+  #custom-agent-bubble::after {
+    content: "";
+    position: absolute;
+    inset-inline-end: calc(-0.5 * var(--size-custom-glyph, var(--icon-size-xsmall)));
+    inset-block-start: 50%;
+    width: var(--size-custom-glyph, var(--icon-size-xsmall));
+    height: var(--size-custom-glyph, var(--icon-size-xsmall));
+    border-block-start: var(--border-width) solid var(--custom-line, var(--border-color));
+    border-inline-end: var(--border-width) solid var(--custom-line, var(--border-color));
+    background-color: var(--custom-surface, var(--background-color-box));
+    transform: translateY(-50%) rotate(45deg);
+    pointer-events: none;
+
+    &:-moz-locale-dir(rtl) {
+      transform: translateY(-50%) rotate(-45deg);
+    }
+  }
+
+  #custom-agent-hud:not([bubble-open]) #custom-agent-bubble {
+    visibility: hidden;
+    opacity: 0;
+    translate: 0 8px;
+    pointer-events: none;
+  }
+
+  .custom-agent-bubble-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  :is(#custom-agent-bubble-title, #custom-agent-bubble-detail) {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #custom-agent-bubble-title {
+    font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+    line-height: 18px;
+  }
+
+  #custom-agent-bubble-detail {
+    margin-block-start: var(--space-xxsmall);
+    color: var(--custom-muted, var(--text-color-deemphasized));
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: var(--font-size-custom-shortcut, var(--font-size-small));
+    line-height: 16px;
+  }
+
+  .custom-agent-bubble-actions {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-medium);
+  }
+
+  #custom-agent-hud[data-status="done"] .custom-agent-bubble-actions {
+    display: none;
+  }
+
+  #custom-agent-hud[data-status="confirm"] #custom-agent-bubble {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-medium);
+    padding: var(--space-custom-bubble-confirm, var(--space-medium));
+  }
+
+  #custom-agent-hud[data-status="confirm"] :is(#custom-agent-bubble-title, #custom-agent-bubble-detail) {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  #custom-agent-hud[data-status="confirm"] #custom-agent-bubble-title {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  #custom-agent-hud[data-status="confirm"] #custom-agent-bubble-detail {
+    margin-block-start: var(--space-small);
+    color: var(--custom-muted, var(--text-color-deemphasized));
+    font-family: inherit;
+    font-size: var(--font-size-custom-small, var(--font-size-small));
+    line-height: 18px;
+  }
+
+  .custom-agent-stop {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: var(--size-custom-control, var(--size-item-large));
+    height: var(--size-custom-control, var(--size-item-large));
+    padding: 0;
+    border: 0;
+    border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    background-color: transparent;
+    color: var(--custom-muted, var(--text-color-deemphasized));
+
+    &:hover {
+      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+      color: var(--custom-ink, var(--text-color));
+    }
+  }
+
+  .custom-agent-stop-glyph {
+    width: var(--size-custom-glyph, var(--icon-size-xsmall));
+    height: var(--size-custom-glyph, var(--icon-size-xsmall));
+    border-radius: var(--border-radius-xsmall);
+    background-color: currentColor;
+    pointer-events: none;
+  }
+
+  .custom-agent-action {
+    box-sizing: border-box;
+    height: var(--button-min-height-large);
+    padding-inline: var(--space-custom-action-inline, var(--space-large));
+    border: var(--border-width) solid var(--custom-line-strong, var(--border-color));
+    border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    background-color: transparent;
+    color: var(--custom-ink, var(--text-color));
+    font: inherit;
+    font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+
+    &:hover {
+      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+      color: var(--custom-ink, var(--text-color));
+    }
+  }
+
+  .custom-agent-action-primary {
+    border-color: transparent;
+    background-color: var(--custom-ink, var(--button-background-color-primary));
+    color: var(--custom-accent-ink, var(--button-text-color-primary));
+
+    &:hover {
+      background-color: color-mix(in srgb, var(--custom-ink, var(--button-background-color-primary)) 86%, var(--custom-surface, var(--background-color-box)));
+    }
+  }
+
+  :is(#custom-agent-orb, .custom-agent-stop, .custom-agent-action):focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+  }
+
+  #custom-agent-marker {
+    position: fixed;
+    overflow: clip;
+    opacity: 0;
+    pointer-events: none;
+
+    &[data-visible] {
+      opacity: 1;
+    }
+  }
+
+  .custom-agent-marker-target {
+    --custom-agent-marker-halo: 0 0 0 7px color-mix(in srgb, var(--custom-ink) 10%, transparent);
+    position: absolute;
+    box-sizing: border-box;
+    border: var(--focus-outline-width) solid var(--custom-ink, var(--border-color));
+    box-shadow: var(--custom-agent-marker-halo, var(--box-shadow-level-1));
+  }
+
+  .custom-agent-marker-label {
+    position: absolute;
+    inset-block-start: calc(-1 * var(--space-custom-marker-label, var(--space-xlarge)));
+    inset-inline-start: 0;
+    padding: var(--space-custom-marker-label-block, var(--space-xxsmall)) var(--space-custom-marker-label-inline, var(--space-small));
+    border-radius: var(--border-radius-small);
+    background-color: var(--custom-ink, var(--button-background-color-primary));
+    color: var(--custom-accent-ink, var(--button-text-color-primary));
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: var(--font-size-custom-shortcut, var(--font-size-small));
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .custom-agent-marker-target[data-label-below] .custom-agent-marker-label {
+    inset-block: auto calc(-1 * var(--space-custom-marker-label, var(--space-xlarge)));
+  }
+
+  @media (max-width: 720px) {
+    --space-custom-hud: var(--space-medium);
+  }
+
+  @media (forced-colors: active) {
+    #custom-agent-orb {
+      border: var(--border-width) solid var(--button-border-color);
+    }
+
+    .custom-agent-orb-logo {
+      background: none;
+      width: var(--size-item-xsmall);
+      height: var(--icon-size-medium);
+      border: var(--focus-outline-width) solid var(--custom-accent-ink, var(--border-color));
+      border-radius: var(--border-radius-small);
+    }
+  }
+}
+
+@media (-moz-pref("sidebar.verticalTabs")) {
+  :root[custom-ui] {
+    #custom-agent-hud {
+      grid-area: 2 / 5 / 3 / 6;
+    }
+
+    &[sidebar-positionend] #custom-agent-hud {
+      grid-column: 3 / 4;
+    }
+  }
+}
+
+:root[custom-ui] #tabbrowser-tabs[orient="vertical"] {
+  .tabbrowser-tab[custom-agent-state] {
+    --custom-agent-ring-size: var(--size-custom-ring);
+    --custom-agent-ring-cell: var(--icon-size);
+    --custom-agent-ring-stroke: 1.6;
+    --custom-agent-ring-color: var(--custom-ink);
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"] {
+    --custom-agent-ring-color: var(--custom-attention);
+  }
+
+  .tabbrowser-tab[custom-agent-state="paused"] {
+    --custom-agent-ring-color: var(--custom-muted);
+  }
+
+  .tabbrowser-tab[custom-agent-state] .custom-agent-ring {
+    display: block;
+    width: var(--custom-agent-ring-size, var(--icon-size-large));
+    height: var(--custom-agent-ring-size, var(--icon-size-large));
+    margin: calc(var(--custom-agent-ring-cell, var(--space-large)) / 2 - var(--custom-agent-ring-size, var(--space-large)) / 2);
+    pointer-events: none;
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+  }
+
+  .tabbrowser-tab[custom-agent-state] .tab-icon-image {
+    scale: 0.875;
+  }
+
+  .tabbrowser-tab:is([custom-agent-state="confirm"], [custom-agent-state="done"]) .tab-icon-image {
+    visibility: hidden;
+  }
+}
+
+.custom-agent-ring-track {
+  fill: none;
+  stroke: var(--custom-line-strong, var(--icon-color));
+  stroke-width: var(--custom-agent-ring-stroke);
+}
+
+.custom-agent-ring-value {
+  fill: none;
+  stroke: var(--custom-agent-ring-color, var(--icon-color));
+  stroke-width: var(--custom-agent-ring-stroke);
+  stroke-dasharray: var(--custom-agent-progress, 0) 100;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+:is(.custom-agent-ring-fill, .custom-agent-ring-check, .custom-agent-ring-alert, .custom-agent-ring-dot) {
+  display: none;
+}
+
+.custom-agent-ring-fill {
+  fill: var(--custom-ink, var(--icon-color));
+}
+
+:is(.custom-agent-ring-check, .custom-agent-ring-alert) {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.custom-agent-ring-check {
+  stroke: var(--custom-accent-ink, var(--icon-color));
+}
+
+.custom-agent-ring-alert {
+  stroke: var(--custom-attention, var(--icon-color));
+}
+
+.custom-agent-ring-dot {
+  fill: var(--custom-attention, var(--icon-color));
+  stroke: var(--custom-background, var(--icon-color));
+  stroke-width: 2.2;
+}
+
+/* Ring parts per state. The value arc is always drawn; progress is 100 while
+   confirming and when done. */
+:root[custom-ui] #tabbrowser-tabs[orient="vertical"] {
+  [custom-agent-indeterminate] .custom-agent-ring-value {
+    stroke-dasharray: 28 100;
+  }
+
+  :is([custom-agent-state="confirm"], [custom-agent-state="done"]) .custom-agent-ring-track {
+    display: none;
+  }
+
+  [custom-agent-state="confirm"] .custom-agent-ring-alert,
+  [custom-agent-state="done"] :is(.custom-agent-ring-fill, .custom-agent-ring-check) {
+    display: inline;
+  }
+}
+
+/* Expanded sidebar rows: ring, title, one-line summary, and what sits at the end. */
+:root[custom-ui] #tabbrowser-tabs[orient="vertical"][expanded] .tabbrowser-tab[custom-agent-state]:not([pinned]) {
+  --tab-min-height: var(--size-custom-agent-row);
+
+  .tab-content {
+    align-items: flex-start;
+    padding-block: var(--space-custom-gap, var(--space-medium));
+  }
+
+  .tab-icon-stack {
+    align-self: flex-start;
+    margin-block-start: 1px;
+  }
+
+  .tab-label {
+    display: none;
+  }
+
+  .tab-label-container {
+    align-self: flex-start;
+    mask-image: none;
+  }
+
+  :is(.custom-agent-title, .custom-agent-summary) {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .custom-agent-title {
+    line-height: 18px;
+  }
+
+  .custom-agent-summary {
+    margin-block-start: var(--space-xxsmall);
+    color: var(--custom-muted, var(--text-color-deemphasized));
+    font-size: var(--font-size-custom-shortcut, var(--font-size-small));
+    font-weight: normal;
+    line-height: 16px;
+  }
+
+  .custom-agent-trail {
+    display: flex;
+    flex: none;
+    align-items: center;
+    align-self: flex-start;
+    gap: var(--space-small);
+    height: var(--size-custom-trail, var(--icon-size-medium));
+    margin-inline-start: var(--space-custom-gap, var(--space-medium));
+    color: var(--custom-muted, var(--text-color-deemphasized));
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: var(--font-size-custom-shortcut, var(--font-size-small));
+  }
+
+  .custom-agent-trail > * {
+    display: none;
+  }
+}
+
+:root[custom-ui] #tabbrowser-tabs[orient="vertical"][expanded] {
+  .tabbrowser-tab[custom-agent-state="working"]:not([pinned], [selected]) .custom-agent-count,
+  .tabbrowser-tab[custom-agent-state="paused"]:not([pinned]) .custom-agent-count {
+    display: block;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabbrowser-tab[custom-agent-state="working"][selected]:not([pinned]) .custom-agent-stop {
+    display: flex;
+    width: var(--size-item-large);
+    height: var(--size-item-large);
+    margin-block: calc(var(--size-custom-trail, var(--space-large)) / 2 - var(--size-item-large) / 2);
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"]:not([pinned]) .custom-agent-confirm {
+    display: flex;
+    align-items: center;
+    height: var(--size-custom-confirm, var(--size-item-large));
+    margin-block: calc(var(--size-custom-trail, var(--space-large)) / 2 - var(--size-custom-confirm, var(--size-item-large)) / 2);
+    padding-inline: var(--space-custom-gap, var(--space-medium));
+    border-radius: var(--border-radius-small);
+    background-color: var(--custom-ink, var(--button-background-color-primary));
+    color: var(--custom-accent-ink, var(--button-text-color-primary));
+    font-family: var(--font-family-custom);
+    font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+  }
+
+  .tabbrowser-tab[custom-agent-state="done"]:not([pinned]) .custom-agent-done {
+    display: block;
+    color: var(--custom-ink, var(--text-color));
+    font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+  }
+
+  .tabbrowser-tab:is([custom-agent-state="working"], [custom-agent-state="confirm"]):not([pinned]) .tab-close-button {
+    display: none;
+  }
+
+  .tabbrowser-tab:is([custom-agent-state="confirm"], [custom-agent-state="done"]):not([pinned]) .custom-agent-title {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"]:not([pinned]) .custom-agent-summary {
+    color: var(--custom-attention-ink, var(--text-color));
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"]:not([pinned]) .tab-background {
+    --custom-agent-confirm-ring: inset 0 0 0 var(--border-width) var(--custom-line-strong);
+    background-color: var(--custom-surface, var(--background-color-box));
+    box-shadow: var(--custom-agent-confirm-ring, var(--box-shadow-level-1));
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"]:not([pinned]) .tab-background:is([selected], [multiselected]) {
+    box-shadow: var(--custom-agent-confirm-ring, var(--box-shadow-level-1)), var(--box-shadow-custom-tab, var(--box-shadow-level-1));
+  }
+}
+
+/* Pinned tiles: the ring surrounds a smaller icon. */
+:root[custom-ui]:not([sidebar-expand-on-hover]) #tabbrowser-tabs[orient="vertical"][expanded] > #pinned-tabs-container[orient="vertical"] {
+  .tabbrowser-tab[custom-agent-state] {
+    --custom-agent-ring-size: var(--size-custom-ring-pinned);
+    --custom-agent-ring-cell: var(--size-custom-pinned-icon);
+    --custom-agent-ring-stroke: 1.4;
+  }
+
+  .tabbrowser-tab[custom-agent-state] .tab-icon-image {
+    width: var(--size-custom-pinned-icon, var(--icon-size-small));
+    height: var(--size-custom-pinned-icon, var(--icon-size-small));
+    scale: 1;
+  }
+}
+
+/* Collapsed rail: ring only; a dot marks a tab waiting for confirmation. */
+:root[custom-ui] #tabbrowser-tabs[orient="vertical"]:not([expanded]) {
+  .tabbrowser-tab[custom-agent-state] {
+    --custom-agent-ring-size: var(--size-custom-ring-rail);
+    --custom-agent-ring-stroke: 1.5;
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"] :is(.custom-agent-ring-value, .custom-agent-ring-alert) {
+    display: none;
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"] .custom-agent-ring-dot {
+    display: inline;
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"] .tab-icon-image {
+    visibility: visible;
+    scale: 1;
+  }
+
+  .tabbrowser-tab[custom-agent-state="confirm"][selected] .custom-agent-ring-dot {
+    stroke: var(--custom-surface, var(--icon-color));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[custom-ui] {
+    .custom-agent-orb-value {
+      transition:
+        stroke-dasharray 300ms ease,
+        stroke 150ms ease;
+    }
+
+    .custom-agent-orb-disc {
+      transition: fill 150ms ease;
+    }
+
+    #custom-agent-orb {
+      animation: custom-card-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    #custom-agent-bubble {
+      transition:
+        opacity 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        translate 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        visibility 0s;
+    }
+
+    #custom-agent-hud:not([bubble-open]) #custom-agent-bubble {
+      transition:
+        opacity 160ms ease,
+        translate 160ms ease,
+        visibility 0s linear 160ms;
+    }
+
+    #custom-agent-hud[data-indeterminate] .custom-agent-orb-art,
+    #tabbrowser-tabs [custom-agent-indeterminate] .custom-agent-ring svg {
+      animation: custom-agent-spin 1.2s linear infinite;
+    }
+
+    .custom-agent-ring-value {
+      transition: stroke-dasharray 300ms ease;
+    }
+
+    #custom-agent-marker {
+      transition: opacity 120ms ease;
+    }
+  }
+}
+
+@keyframes custom-agent-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

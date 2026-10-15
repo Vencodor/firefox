@@ -48,8 +48,9 @@
     --urlbarview-text-color-action: var(--custom-muted);
     --urlbarview-text-color-secondary: var(--custom-muted);
     --urlbarview-separator-color: var(--custom-line);
+    --urlbarview-row-min-height: var(--size-custom-suggestion);
     --urlbarview-row-padding-block: var(--space-small);
-    --urlbarview-row-padding-inline: var(--space-custom-padding);
+    --urlbarview-row-padding-inline: var(--space-custom-suggestion-inline);
     --urlbarview-row-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
     color: var(--custom-ink, var(--text-color));
     background-color: transparent;
@@ -85,6 +86,50 @@
     }
   }
 
+  #urlbar .urlbarView-row[dynamicType="mono-run"] {
+    .urlbarView-dynamic-mono-run-content {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .urlbarView-dynamic-mono-run-icon {
+      background-image: var(--custom-logo-on-surface);
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: contain;
+    }
+
+    .urlbarView-dynamic-mono-run-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .urlbarView-dynamic-mono-run-pill {
+      flex: none;
+      box-sizing: border-box;
+      height: var(--size-custom-pill, var(--size-item-medium));
+      padding-inline: var(--space-custom-pill, var(--space-small));
+      border: var(--border-width) solid transparent;
+      border-radius: var(--border-radius-circle);
+      background-color: var(--custom-ink, var(--button-background-color-primary));
+      color: var(--custom-accent-ink, var(--button-text-color-primary));
+      font-size: var(--font-size-custom-small, var(--font-size-small));
+      font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+      line-height: calc(var(--size-custom-pill, var(--size-item-medium)) - 2 * var(--border-width));
+    }
+
+    .urlbarView-dynamic-mono-run-content[data-unavailable] .urlbarView-dynamic-mono-run-pill {
+      border-color: var(--custom-line-strong, var(--border-color));
+      background-color: transparent;
+      color: var(--custom-muted, var(--text-color-deemphasized));
+    }
+  }
+
   &:not([custom-newtab], [customizing]) {
     #nav-bar {
       --toolbarbutton-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
@@ -112,7 +157,7 @@
     }
 
     #urlbar .urlbarView {
-      font-size: var(--font-size-custom-label, var(--font-size-small));
+      font-size: var(--font-size-custom-title, var(--font-size-small));
     }
 
     #urlbar .urlbarView-row {
@@ -143,6 +188,10 @@
       --urlbar-box-text-color-hover: var(--button-text-color-hover);
       --urlbar-box-text-color-active: var(--button-text-color-active);
       --urlbar-box-text-color-focus: var(--button-text-color);
+    }
+
+    #urlbar .urlbarView-dynamic-mono-run-icon {
+      background-image: none;
     }
 
     #urlbar .searchmode-switcher {

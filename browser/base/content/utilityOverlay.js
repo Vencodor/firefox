@@ -20,6 +20,8 @@ ChromeUtils.defineESModuleGetters(this, {
     "chrome://browser/content/usercontext/ContainerCreationPanel.mjs",
   ContextualIdentityService:
     "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
+  CustomSettingsWindow:
+    "chrome://browser/content/custom-ui/CustomSettingsWindow.sys.mjs",
   ExtensionSettingsStore:
     "resource://gre/modules/ExtensionSettingsStore.sys.mjs",
   ExtensionUtils: "resource://gre/modules/ExtensionUtils.sys.mjs",
@@ -436,6 +438,11 @@ function openReferralsPage() {
 }
 
 async function openPreferences(paneID, extraArgs) {
+  if (Services.prefs.getBoolPref("browser.customUI.enabled", false)) {
+    await CustomSettingsWindow.open(paneID, extraArgs);
+    return;
+  }
+
   // This function is duplicated from preferences.js.
   function internalPrefCategoryNameToFriendlyName(aName) {
     return (aName || "").replace(/^pane./, function (toReplace) {

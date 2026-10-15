@@ -2021,6 +2021,12 @@ class _SessionStore {
    *        Window reference
    */
   #onBeforeBrowserWindowShown(aWindow) {
+    if (
+      aWindow.document.documentElement.hasAttribute("custom-settings-window")
+    ) {
+      return;
+    }
+
     // Do not track Document Picture-in-Picture windows or mini windows since
     // these are ephemeral and tied to a specific tab's browser document.
     if (

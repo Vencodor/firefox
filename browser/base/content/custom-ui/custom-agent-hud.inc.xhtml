@@ -1,0 +1,35 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<html:div id="custom-agent-hud" class="chromeclass-extrachrome" hidden="true">
+  <html:div id="custom-agent-bubble" role="group" aria-labelledby="custom-agent-bubble-title">
+    <html:div class="custom-agent-bubble-text">
+      <html:p id="custom-agent-bubble-title"/>
+      <html:p id="custom-agent-bubble-detail"/>
+    </html:div>
+    <html:div class="custom-agent-bubble-actions">
+      <html:button id="custom-agent-approve" class="custom-agent-action custom-agent-action-primary" data-l10n-id="custom-ui-agent-approve" hidden="true"/>
+      <html:button id="custom-agent-takeover" class="custom-agent-action" data-l10n-id="custom-ui-agent-takeover" hidden="true"/>
+      <html:button id="custom-agent-resume" class="custom-agent-action custom-agent-action-primary" data-l10n-id="custom-ui-agent-resume" hidden="true"/>
+      <html:button id="custom-agent-stop" class="custom-agent-stop" data-l10n-id="custom-ui-agent-stop"><html:span class="custom-agent-stop-glyph"/></html:button>
+    </html:div>
+  </html:div>
+  <html:button id="custom-agent-orb" data-l10n-id="custom-ui-agent-orb">
+    <svg xmlns="http://www.w3.org/2000/svg" class="custom-agent-orb-art" viewBox="0 0 56 56" aria-hidden="true">
+      <circle class="custom-agent-orb-track" cx="28" cy="28" r="26"/>
+      <circle class="custom-agent-orb-value" cx="28" cy="28" r="26" pathLength="100"/>
+      <circle class="custom-agent-orb-disc" cx="28" cy="28" r="21"/>
+      <g class="custom-agent-orb-pause"><rect x="21.6" y="20" width="4.4" height="16" rx="1.8"/><rect x="30" y="20" width="4.4" height="16" rx="1.8"/></g>
+      <path class="custom-agent-orb-check" d="M20.5 28.5 L26 34 L36.5 22.5"/>
+      <path class="custom-agent-orb-alert" d="M28 19.5 V30.5 M28 36.5 V36.5"/>
+    </svg>
+    <html:span class="custom-agent-orb-logo" aria-hidden="true"/>
+  </html:button>
+  <html:div id="custom-agent-marker" aria-hidden="true">
+    <html:div class="custom-agent-marker-target">
+      <html:span class="custom-agent-marker-label" data-l10n-id="custom-ui-agent-next-click"/>
+    </html:div>
+  </html:div>
+  <html:div id="custom-agent-announce" role="status" aria-live="polite"/>
+</html:div>

@@ -9,6 +9,7 @@ browser.jar:
    content/browser/preferences/custom-ui/preferences.css          (custom-ui/preferences.css)
    content/browser/preferences/custom-ui/preferences.js           (custom-ui/preferences.js)
    content/browser/preferences/custom-ui/navigation.css           (custom-ui/navigation.css)
+   content/browser/preferences/custom-ui/settings-config.mjs      (custom-ui/settings-config.mjs)
 
    content/browser/preferences/main.js
    content/browser/preferences/translations.js

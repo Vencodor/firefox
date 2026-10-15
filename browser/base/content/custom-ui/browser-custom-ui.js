@@ -18,6 +18,7 @@ var CustomBrowserUI = {
   ],
 
   init() {
+    document.getElementById("custom-sidebar-footer")?.remove();
     this.panel = document.getElementById("custom-ai-panel");
     this.brandButton = document.getElementById("custom-brand-button");
     this.brandButton.addEventListener("click", this);
@@ -25,14 +26,9 @@ var CustomBrowserUI = {
     PanelUI.panel.addEventListener("popupshown", this);
     PanelUI.panel.addEventListener("popuphidden", this);
     this.sidebarToggle = document.getElementById("custom-sidebar-toggle");
-    this.button = document.getElementById("custom-ai-button");
     this.closeButton = document.getElementById("custom-ai-close");
-    this.button.addEventListener("click", this);
     this.closeButton.addEventListener("click", this);
     this.sidebarToggle.addEventListener("click", this);
-    document
-      .getElementById("custom-settings-button")
-      .addEventListener("click", this);
     this.panel.addEventListener("keydown", this);
     this.sidebarObserver = new MutationObserver(() =>
       this.updateSidebarToggle()
@@ -102,6 +98,7 @@ var CustomBrowserUI = {
       this.enabled &&
         Services.prefs.getBoolPref("sidebar.verticalTabs", false) &&
         !PrivateBrowsingUtils.isWindowPrivate(window) &&
+        !window.CustomAgentUI?.hasState(gBrowser.selectedTab) &&
         (isEmptyNewTab || isEmptyStart)
     );
   },
@@ -221,12 +218,8 @@ var CustomBrowserUI = {
           PanelUI.toggle(event);
         } else if (event.currentTarget === this.sidebarToggle) {
           SidebarController.handleToolbarButtonClick();
-        } else if (event.currentTarget.id === "custom-settings-button") {
-          openPreferences();
         } else if (event.currentTarget === this.closeButton) {
           this.setPanelOpen(false);
-        } else {
-          this.togglePanel();
         }
         break;
       case "keydown":
@@ -273,24 +266,15 @@ var CustomBrowserUI = {
     }
   },
 
-  togglePanel() {
-    this.setPanelOpen(this.panel.hidden);
-  },
-
   setPanelOpen(open, restoreFocus = true) {
     open = open && this.enabled;
     let wasOpen = !this.panel.hidden;
     this.panel.hidden = !open;
-    this.button.setAttribute("aria-expanded", String(open));
     document.documentElement.toggleAttribute("custom-ai-open", open);
     if (open) {
       this.closeButton.focus();
     } else if (wasOpen && restoreFocus) {
-      if (this.enabled && !this.button.closest("#sidebar-container").hidden) {
-        this.button.focus();
-      } else {
-        gBrowser.selectedBrowser.focus();
-      }
+      gBrowser.selectedBrowser.focus();
     }
   },
 };

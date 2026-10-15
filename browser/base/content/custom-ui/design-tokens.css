@@ -32,7 +32,6 @@
   --font-size-custom-shortcut: 11px;
   --font-size-custom-small: 12px;
   --font-size-custom-title: 14px;
-  --custom-avatar-background: light-dark(#cdd2d9, #4a515e);
   --custom-pin-background: color-mix(in srgb, var(--custom-ink) 5%, transparent);
   --outline-custom-selected: var(--border-width) solid Highlight;
   --box-shadow-custom-tab: 0 1px 2px light-dark(rgb(27 29 33 / 8%), rgb(0 0 0 / 20%)), 0 4px 12px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 14%));
@@ -44,6 +43,47 @@
   --size-custom-navigation-header: 52px;
   --size-custom-address: 36px;
   --size-custom-navigation-control: 32px;
+  --custom-attention: light-dark(#b45309, #f59e0b);
+  --custom-attention-ink: light-dark(#92400e, #fbbf24);
+  --size-custom-orb: 56px;
+  --size-custom-ring: 24px;
+  --size-custom-ring-pinned: 28px;
+  --size-custom-ring-rail: 22px;
+  --size-custom-agent-row: 56px;
+  --space-custom-hud: 22px;
+  --space-custom-hud-gap: 14px;
+  --size-custom-glyph: 10px;
+  --size-custom-trail: 18px;
+  --size-custom-confirm: 28px;
+  --size-custom-pinned-icon: 14px;
+  --size-custom-bubble: 320px;
+  --space-custom-action-inline: 18px;
+  --space-custom-bubble-confirm: 14px;
+  --font-weight-custom-medium: 500;
+  --size-custom-suggestion: 44px;
+  --size-custom-pill: 24px;
+  --space-custom-suggestion-inline: 14px;
+  --space-custom-pill: 10px;
+  --space-custom-marker-label: 27px;
+  --space-custom-marker-label-block: 3px;
+  --space-custom-marker-label-inline: 6px;
+  --size-custom-notice-height: 132px;
+  --size-custom-notice-art: 180px;
+  --size-custom-notice-close: 44px;
+  --size-custom-notice-small-width: 224px;
+  --size-custom-notice-small-art: 64px;
+  --space-custom-notice-gap: 24px;
+  --space-custom-notice-bleed: 10px;
+  --font-size-custom-notice-title: 19px;
+  --custom-notice-art: url("chrome://browser/content/custom-ui/resources/notice/placeholder.svg");
+  --custom-logo-on-surface: light-dark(
+    url("chrome://browser/content/custom-ui/resources/mono/logo/logo-outline-small.svg"),
+    url("chrome://browser/content/custom-ui/resources/mono/logo/logo-outline-small-on-dark.svg")
+  );
+  --custom-logo-on-ink: light-dark(
+    url("chrome://browser/content/custom-ui/resources/mono/logo/logo-outline-small-on-dark.svg"),
+    url("chrome://browser/content/custom-ui/resources/mono/logo/logo-outline-small.svg")
+  );
 
   @media (forced-colors: active) {
     --custom-background: Canvas;
@@ -57,7 +97,8 @@
     --custom-accent: LinkText;
     --custom-accent-subtle: Canvas;
     --custom-accent-ink: Canvas;
-    --custom-avatar-background: Canvas;
+    --custom-attention: CanvasText;
+    --custom-attention-ink: CanvasText;
     --box-shadow-custom-tab: none;
     --box-shadow-custom-page: none;
     --box-shadow-custom-float: none;

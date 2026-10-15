@@ -304,9 +304,10 @@
         movingTabs?.reverse();
       }
 
-      let overPinnedDropIndicator =
-        this._pinnedDropIndicator.hasAttribute("visible") &&
-        this._pinnedDropIndicator.hasAttribute("interactive");
+      let overPinnedDropIndicator = this._customVerticalMode
+        ? this._isWithinCustomPinnedDropTarget(event, draggedTab)
+        : this._pinnedDropIndicator.hasAttribute("visible") &&
+          this._pinnedDropIndicator.hasAttribute("interactive");
       this._resetTabsAfterDrop(draggedTab);
 
       this._tabDropIndicator.hidden = true;
@@ -940,6 +941,37 @@
 
     get _rtlMode() {
       return !this._tabbrowserTabs.verticalMode && RTL_UI;
+    }
+
+    get _customVerticalMode() {
+      return (
+        this._tabbrowserTabs.verticalMode &&
+        document.documentElement.hasAttribute("custom-ui")
+      );
+    }
+
+    _isWithinCustomPinnedDropTarget(event, draggedTab) {
+      let bounds = element =>
+        window.windowUtils.getBoundsWithoutFlushing(element);
+      let tabstrip = bounds(this._tabbrowserTabs);
+      let target = bounds(
+        gBrowser.pinnedTabCount
+          ? this._tabbrowserTabs.pinnedTabsContainer
+          : this._pinnedDropIndicator
+      );
+      if (
+        !target.height &&
+        !(event.screenY < draggedTab?._dragData?.screenY)
+      ) {
+        return false;
+      }
+      let bottom = target.height ? target.bottom + 12 : tabstrip.top + 40;
+      return (
+        event.clientX >= tabstrip.left &&
+        event.clientX <= tabstrip.right &&
+        event.clientY >= tabstrip.top &&
+        event.clientY <= bottom
+      );
     }
 
     #setMovingTabMode(movingTab) {
@@ -2208,6 +2240,35 @@
 
       let isPinned = draggedTab.pinned;
       let numPinned = gBrowser.pinnedTabCount;
+      let overCustomPinTarget =
+        this._customVerticalMode &&
+        isTab(draggedTab) &&
+        !isPinned &&
+        this._isWithinCustomPinnedDropTarget(event, draggedTab);
+      if (this._customVerticalMode) {
+        if (overCustomPinTarget && !numPinned) {
+          this._pinnedDropIndicator.setAttribute("visible", "");
+        }
+        this._pinnedDropIndicator.toggleAttribute(
+          "interactive",
+          overCustomPinTarget
+        );
+        if (overCustomPinTarget) {
+          for (let attribute of [
+            "movingtab-group",
+            "movingtab-addToGroup",
+            "movingtab-ungroup",
+          ]) {
+            this._tabbrowserTabs.removeAttribute(attribute);
+          }
+          this._resetGroupTarget(
+            document.querySelector("[dragover-groupTarget]")
+          );
+          this._setDragOverGroupColor(null);
+          delete dragData.shouldCreateGroupOnDrop;
+          delete dragData.shouldDropIntoCollapsedTabGroup;
+        }
+      }
       let dragAndDropElements = this._tabbrowserTabs.dragAndDropElements;
       let tabs = dragAndDropElements.slice(
         isPinned ? 0 : numPinned,
@@ -2271,7 +2332,11 @@
         translate = Math.min(Math.max(translate, startBound), endBound);
       }
 
-      if (!gBrowser.pinnedTabCount && !this._dragToPinPromoCard.shouldRender) {
+      if (
+        !this._customVerticalMode &&
+        !gBrowser.pinnedTabCount &&
+        !this._dragToPinPromoCard.shouldRender
+      ) {
         let pinnedDropIndicatorMargin = parseFloat(
           window.getComputedStyle(this._pinnedDropIndicator).marginInline
         );
@@ -2535,6 +2600,18 @@
             ) / 100
           : 0.5;
         moveOverThreshold = Math.min(1, Math.max(0, moveOverThreshold));
+        if (
+          this._customVerticalMode &&
+          Tabbrowser.prefs.tabGroupsEnabled &&
+          !isPinned &&
+          Services.prefs.getBoolPref("browser.tabs.dragDrop.createGroup.enabled") &&
+          (isTab(draggedTab) || isSplitViewWrapper(draggedTab)) &&
+          (isTab(dropElement) || isSplitViewWrapper(dropElement)) &&
+          !dropElement.group &&
+          !movingTabsSet.has(dropElement)
+        ) {
+          moveOverThreshold = Math.max(moveOverThreshold, 0.9);
+        }
         let shouldMoveOver = overlapPercent > moveOverThreshold;
         if (logicalForward && shouldMoveOver) {
           newDropElementIndex++;
@@ -2602,6 +2679,7 @@
       }
 
       if (
+        !overCustomPinTarget &&
         Tabbrowser.prefs.tabGroupsEnabled &&
         (isTab(draggedTab) || isSplitViewWrapper(draggedTab)) &&
         !isPinned &&

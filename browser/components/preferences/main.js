@@ -616,7 +616,8 @@ function initSettingGroup(id) {
       }
       group.config = config;
       group.getSetting = Preferences.getSetting.bind(Preferences);
-      group.srdEnabled = srdSectionPrefs.all;
+      group.srdEnabled =
+        srdSectionPrefs.all || !!window.MonoPreferences?.enabled;
     }
   }
 }

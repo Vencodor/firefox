@@ -308,6 +308,7 @@ export class PrivacySettingHelpers {
 }
 
 const SECURITY_PRIVACY_STATUS_CARD_ENABLED =
+  !!window.MonoPreferences?.enabled ||
   Services.prefs.getBoolPref("browser.settings-redesign.enabled", false) ||
   Services.prefs.getBoolPref(
     "browser.settings-redesign.securityPrivacyStatus.enabled",
@@ -2142,6 +2143,7 @@ Preferences.addSetting({
 Preferences.addSetting({
   id: "settingsRedesignEnabled",
   pref: "browser.settings-redesign.enabled",
+  get: value => value || !!window.MonoPreferences?.enabled,
 });
 Preferences.addSetting({
   id: "ipProtectionExceptions",
