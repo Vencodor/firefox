@@ -6,6 +6,9 @@ browser.jar:
    content/browser/preferences/preferences.js
    content/browser/preferences/extensionControlled.js
 *  content/browser/preferences/preferences.xhtml
+   content/browser/preferences/custom-ui/preferences.css          (custom-ui/preferences.css)
+   content/browser/preferences/custom-ui/preferences.js           (custom-ui/preferences.js)
+   content/browser/preferences/custom-ui/navigation.css           (custom-ui/navigation.css)
 
    content/browser/preferences/main.js
    content/browser/preferences/translations.js

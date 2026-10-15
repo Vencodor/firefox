@@ -1,0 +1,159 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:root[custom-ui][custom-newtab]:not([customizing]) #urlbar .searchmode-switcher {
+  display: none;
+}
+
+:root[custom-ui][customizing] #urlbar :is(.searchmode-switcher, .searchmode-switcher-panel) {
+  pointer-events: auto;
+}
+
+:root[custom-ui] {
+  #urlbar-container {
+    flex: 1;
+    min-width: 0;
+    margin-inline: var(--space-custom-gap, var(--space-medium));
+    padding-block: var(--space-custom-edge, var(--space-small));
+  }
+
+  #urlbar {
+    --urlbar-height: var(--size-custom-navigation-control);
+    --urlbar-container-min-width: 0px;
+    --urlbar-input-container-padding: var(--space-small);
+    --urlbar-basic-component-size: calc(var(--urlbar-height) - 2 * var(--urlbar-input-container-padding));
+    --urlbar-component-gap: var(--space-small);
+    --urlbar-icon-padding: var(--space-small);
+    --toolbar-field-background-color: var(--custom-surface);
+    --toolbar-field-background-color-focus: var(--custom-surface);
+    --toolbar-field-text-color: var(--custom-ink, var(--text-color));
+    --toolbar-field-text-color-focus: var(--custom-ink);
+    --toolbar-field-border-color: var(--custom-line);
+    --toolbar-field-border-color-focus: var(--custom-accent);
+    --urlbar-background-color: var(--custom-surface);
+    --urlbar-background-color-focus: var(--custom-surface);
+    --urlbar-box-background-color: var(--custom-hover, var(--background-color-list-item-hover));
+    --urlbar-box-background-color-hover: var(--custom-line);
+    --urlbar-box-background-color-active: var(--custom-line-strong);
+    --urlbar-box-background-color-focus: var(--custom-hover);
+    --urlbar-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --urlbar-background-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --urlbarview-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --chrome-box-shadow: var(--color-custom-chrome-shadow);
+    --urlbarview-background-color-hover: var(--custom-hover);
+    --urlbarview-background-color-selected: var(--custom-line);
+    --urlbarview-text-color-hover: var(--custom-ink);
+    --urlbarview-text-color-selected: var(--custom-ink);
+    --urlbarview-text-color-action: var(--custom-muted);
+    --urlbarview-text-color-secondary: var(--custom-muted);
+    --urlbarview-separator-color: var(--custom-line);
+    --urlbarview-row-padding-block: var(--space-small);
+    --urlbarview-row-padding-inline: var(--space-custom-padding);
+    --urlbarview-row-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    color: var(--custom-ink, var(--text-color));
+    background-color: transparent;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+  }
+
+  #urlbar .searchmode-switcher {
+    --button-border-radius: var(--border-radius-small);
+    --button-padding: 0 var(--space-custom-edge);
+    --button-background-color-muted: transparent;
+    --button-background-color-muted-hover: var(--custom-hover);
+    --button-background-color-muted-active: var(--custom-line);
+    --button-background-color-muted-selected: var(--custom-hover);
+  }
+
+  #urlbar .searchmode-switcher::part(button) {
+    background-image: none;
+    box-shadow: none;
+  }
+
+  @media not (forced-colors) {
+    .searchmode-switcher-panel-list {
+      --panel-list-background-color: var(--custom-surface);
+      --panel-list-text-color: var(--custom-ink);
+      --panel-list-border-color: var(--custom-line);
+      --panel-list-border-radius: var(--border-radius-custom-page);
+      --panel-list-box-shadow: var(--box-shadow-custom-float);
+      --panel-item-button-border-radius: var(--border-radius-custom-tab);
+      --panel-item-button-margin: 0 var(--space-small);
+      --panel-item-button-padding: var(--space-small) var(--space-medium);
+      font-family: inherit;
+      font-size: var(--font-size-custom-label, var(--font-size-small));
+    }
+  }
+
+  &:not([custom-newtab], [customizing]) {
+    #nav-bar {
+      --toolbarbutton-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+      --toolbarbutton-hover-background: var(--custom-hover);
+      --toolbarbutton-active-background: var(--custom-line);
+      min-height: var(--size-custom-navigation-header, var(--size-item-xlarge));
+    }
+
+    #nav-bar .toolbarbutton-1:not([disabled]) {
+      color: var(--custom-ink, var(--text-color));
+    }
+
+    #urlbar {
+      --urlbar-height: var(--size-custom-address);
+      --toolbar-field-background-color: var(--custom-surface-subtle, var(--background-color-box));
+      --toolbar-field-border-color-focus: var(--custom-muted);
+      --urlbar-background-color: var(--custom-surface-subtle, var(--background-color-box));
+      --urlbar-background-border-top-radius-open: var(--border-radius-custom-page);
+      --urlbar-background-box-shadow-open: var(--box-shadow-custom-float);
+      --urlbar-border-radius: var(--border-radius-custom-page);
+      --urlbar-background-border-radius: var(--border-radius-custom-page);
+      --urlbarview-border-radius: var(--border-radius-custom-page);
+      --urlbar-input-growth-open-inline: 0px;
+      --urlbar-input-growth-open-block: 0px;
+    }
+
+    #urlbar .urlbarView {
+      font-size: var(--font-size-custom-label, var(--font-size-small));
+    }
+
+    #urlbar .urlbarView-row {
+      border-radius: var(--urlbarview-row-border-radius, var(--border-radius-medium));
+    }
+
+    #urlbar:not([popover-open]) .urlbar-background {
+      box-shadow: none;
+    }
+
+    #nav-bar .toolbarbutton-1:focus-visible {
+      outline-color: var(--custom-accent, var(--focus-outline-color));
+    }
+  }
+
+  @media (forced-colors: active) {
+    #urlbar,
+    &:not([custom-newtab], [customizing]) #urlbar {
+      --urlbarview-background-color-selected: Highlight;
+      --urlbarview-text-color-selected: HighlightText;
+      --toolbar-field-border-color-focus: Highlight;
+      --urlbar-background-box-shadow-open: none;
+      --urlbar-box-background-color: var(--button-background-color);
+      --urlbar-box-background-color-hover: var(--button-background-color-hover);
+      --urlbar-box-background-color-active: var(--button-background-color-active);
+      --urlbar-box-background-color-focus: var(--button-background-color);
+      --urlbar-box-text-color: var(--button-text-color);
+      --urlbar-box-text-color-hover: var(--button-text-color-hover);
+      --urlbar-box-text-color-active: var(--button-text-color-active);
+      --urlbar-box-text-color-focus: var(--button-text-color);
+    }
+
+    #urlbar .searchmode-switcher {
+      --button-background-color-muted: var(--button-background-color);
+      --button-background-color-muted-hover: var(--button-background-color-hover);
+      --button-background-color-muted-active: var(--button-background-color-active);
+      --button-background-color-muted-selected: var(--button-background-color-hover);
+      --button-text-color-muted: var(--button-text-color);
+      --button-text-color-muted-hover: var(--button-text-color-hover);
+      --button-text-color-muted-active: var(--button-text-color-active);
+      --button-text-color-muted-selected: var(--button-text-color-hover);
+    }
+  }
+}

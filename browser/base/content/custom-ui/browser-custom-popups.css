@@ -1,0 +1,122 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@media not (forced-colors) {
+  :root[custom-ui]
+    :is(
+      #appMenu-popup,
+      .searchmode-switcher-panel,
+      #widget-overflow,
+      #unified-extensions-panel,
+      #downloadsPanel,
+      #identity-popup,
+      #permission-popup,
+      #protections-popup,
+      #notification-popup,
+      #extension-notification-panel,
+      #editBookmarkPanel,
+      #pageActionPanel,
+      #full-page-translations-panel,
+      #select-translations-panel,
+      #sidebar-tools-overflow
+    ) {
+    --panel-background-color: var(--custom-surface);
+    --panel-text-color: var(--custom-ink, var(--text-color));
+    --panel-border-color: var(--custom-line);
+    --panel-border-radius: var(--border-radius-custom-page);
+    --panel-box-shadow: var(--box-shadow-custom-float);
+    --panel-box-shadow-margin: var(--space-xxlarge);
+    --panel-separator-color: var(--custom-line);
+    --panel-footer-background-color: var(--custom-surface-subtle, var(--background-color-box));
+    --panel-footer-text-color: var(--custom-ink, var(--text-color));
+    --panel-menuitem-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --panel-menuitem-margin-inline: var(--space-small);
+    --panel-menuitem-padding-block: var(--space-small);
+    --panel-menuitem-padding-inline: var(--space-medium);
+    --text-color-deemphasized: var(--custom-muted);
+    --button-background-color-menu: transparent;
+    --button-background-color-menu-hover: var(--custom-hover);
+    --button-background-color-menu-active: var(--custom-line);
+    --button-background-color-menu-selected: var(--custom-accent-subtle);
+    --button-text-color-menu: var(--custom-ink);
+    --button-text-color-menu-hover: var(--custom-ink);
+    --button-text-color-menu-active: var(--custom-ink);
+    --button-text-color-menu-selected: var(--custom-ink);
+    font-family: inherit;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+  }
+
+  :root[custom-ui]
+    :is(#mainPopupSet, #navigator-toolbox, #appMenu-popup, #notification-popup, #editBookmarkPanel, #downloadsPanel)
+    menupopup:not(.in-menulist) {
+    --panel-background-color: var(--custom-surface);
+    --panel-text-color: var(--custom-ink, var(--text-color));
+    --panel-border-color: var(--custom-line);
+    --panel-border-radius: var(--border-radius-custom-page);
+    --panel-box-shadow: var(--box-shadow-custom-float);
+    --panel-box-shadow-margin: var(--space-xxlarge);
+    --panel-padding-block: var(--space-small);
+    --panel-separator-color: var(--custom-line);
+    --menuitem-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    --menuitem-padding-block: var(--space-xsmall);
+    --menuitem-padding-inline: var(--space-medium);
+    --menuitem-margin: 0 var(--space-xsmall);
+    --button-background-color-menu-hover: var(--custom-hover);
+    --button-background-color-menu-active: var(--custom-line);
+    --button-text-color-menu-hover: var(--custom-ink);
+    --button-text-color-menu-active: var(--custom-ink);
+    --text-color-deemphasized: var(--custom-muted);
+    appearance: none;
+    font-family: inherit;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+
+    :is(menu, menuitem)[_moz-menuactive]:not([disabled]) {
+      color: var(--custom-ink, var(--text-color));
+      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+    }
+
+    :is(menu, menuitem)[_moz-menuactive]:not([disabled]):active {
+      background-color: var(--custom-line, var(--background-color-box));
+    }
+  }
+
+  :root[custom-ui] #appMenu-popup {
+    --panel-subview-body-padding-block: var(--space-small);
+    --panel-separator-padding-block: var(--space-small);
+    --panel-separator-padding-inline: var(--space-medium);
+
+    .subview-subheader {
+      color: var(--custom-muted, var(--text-color-deemphasized));
+      font-size: var(--font-size-custom-small, var(--font-size-small));
+      font-weight: var(--font-weight-semibold);
+    }
+
+    #appMenu-zoom-controls {
+      border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+      background-color: var(--custom-surface-subtle, var(--background-color-box));
+    }
+  }
+
+  :root[custom-ui] :is(#full-page-translations-panel, #select-translations-panel, #editBookmarkPanel, #permission-popup) menulist:not([disabled]) {
+    --select-background-color: var(--custom-surface-subtle, var(--background-color-box));
+    --select-background-color-hover: var(--custom-hover);
+    --select-text-color: var(--custom-ink, var(--text-color));
+    --select-text-color-hover: var(--custom-ink);
+    --select-border-color: var(--custom-line-strong);
+    --select-border-color-hover: var(--custom-ink);
+    --select-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+
+    > menupopup {
+      --panel-background-color: var(--custom-surface);
+      --panel-text-color: var(--custom-ink, var(--text-color));
+      --panel-border-color: var(--custom-line);
+      --panel-border-radius: var(--border-radius-custom-page);
+      --panel-box-shadow: var(--box-shadow-custom-float);
+      --panel-box-shadow-margin: var(--space-xxlarge);
+      --panel-padding-block: var(--space-small);
+      --menuitem-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+      --menuitem-margin: 0 var(--space-xsmall);
+    }
+  }
+}

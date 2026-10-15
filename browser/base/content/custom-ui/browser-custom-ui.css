@@ -9,73 +9,30 @@
   display: none;
 }
 
-:root[custom-ui]:not([customizing]) #urlbar .searchmode-switcher {
-  display: none;
-}
-
-:root[custom-ui][customizing] #urlbar :is(.searchmode-switcher, .searchmode-switcher-panel) {
-  pointer-events: auto;
-}
-
 #custom-newtab-surface,
 .custom-tab-group-summary {
   display: none;
 }
 
 :root[custom-ui] {
-  --custom-background: light-dark(#eceef1, #191b20);
-  --custom-surface: light-dark(#ffffff, #25282f);
-  --custom-surface-subtle: light-dark(#fcfcfd, #22252b);
-  --custom-hover: light-dark(#f4f5f7, #30343d);
-  --custom-ink: light-dark(#1b1d21, #eceef2);
-  --custom-muted: light-dark(#5a5f67, #acb3bf);
-  --custom-line: light-dark(#e2e5e9, #3b404a);
-  --custom-line-strong: light-dark(#d9dde3, #4a515e);
-  --custom-accent: light-dark(#3b5bdb, #a3b4ff);
-  --custom-accent-subtle: light-dark(#eef2fd, #2b344f);
-  --border-radius-custom-page: 14px;
-  --border-radius-custom-tab: 10px;
-  --border-radius-custom-pin: 12px;
-  --size-custom-brand: 18px;
-  --size-custom-header: 44px;
-  --size-custom-control: 36px;
-  --size-custom-card: 340px;
-  --size-custom-splitter: 10px;
-  --size-custom-tab: 40px;
-  --space-custom-gap: 10px;
-  --space-custom-edge: 6px;
-  --space-custom-inset: 8px;
-  --space-custom-padding: 12px;
-  --space-custom-section: 16px;
-  --space-custom-groups: 14px;
-  --font-size-custom-label: 13px;
-  --font-size-custom-shortcut: 11px;
-  --font-size-custom-small: 12px;
-  --font-size-custom-title: 14px;
-  --custom-avatar-background: light-dark(#cdd2d9, #4a515e);
-  --custom-pin-background: color-mix(in srgb, var(--custom-ink) 5%, transparent);
-  --outline-custom-selected: var(--border-width) solid Highlight;
-  --box-shadow-custom-tab: 0 1px 2px light-dark(rgb(27 29 33 / 8%), rgb(0 0 0 / 20%)), 0 4px 12px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 14%));
-  --box-shadow-custom-page: 0 1px 2px light-dark(rgb(27 29 33 / 4%), rgb(0 0 0 / 20%)), 0 16px 40px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 15%));
-  --box-shadow-custom-float: 0 2px 4px light-dark(rgb(27 29 33 / 5%), rgb(0 0 0 / 24%)), 0 18px 44px light-dark(rgb(27 29 33 / 14%), rgb(0 0 0 / 32%));
   --sidebar-expanded-launcher-width: 252px;
   --sidebar-background-color: var(--custom-background);
-  --sidebar-text-color: var(--custom-ink);
+  --sidebar-text-color: var(--custom-ink, var(--text-color));
   --sidebar-border-color: var(--custom-line);
   --toolbox-background-color: var(--custom-background);
   --toolbox-background-color-inactive: var(--custom-background);
   --toolbox-background-gradient: none;
-  --toolbox-text-color: var(--custom-ink);
+  --toolbox-text-color: var(--custom-ink, var(--text-color));
   --toolbar-background-color: var(--custom-surface);
-  --toolbar-color: var(--custom-ink);
+  --toolbar-color: var(--custom-ink, var(--text-color));
   --toolbarbutton-icon-fill: var(--custom-muted);
   --tab-background-color-selected: var(--custom-surface);
   --tab-background-color-hover: var(--custom-hover);
-  --tab-text-color: var(--custom-ink);
+  --tab-text-color: var(--custom-ink, var(--text-color));
   --tab-text-color-hover: var(--custom-ink);
   --tab-text-color-selected: var(--custom-ink);
-  color: var(--custom-ink);
-  font-family: "IBM Plex Sans KR", system-ui, sans-serif;
+  color: var(--custom-ink, var(--text-color));
+  font-family: var(--font-family-custom);
 
   body,
   #browser {
@@ -90,7 +47,7 @@
     flex-direction: column;
     min-height: 0;
     background: var(--custom-background);
-    color: var(--custom-ink);
+    color: var(--custom-ink, var(--text-color));
   }
 
   #sidebar-container > sidebar-main {
@@ -104,7 +61,7 @@
     display: none;
   }
 
-  :is(#sidebar-button, #firefox-view-button, #fxa-toolbar-menu-button, #unified-extensions-button, #ai-window-button, #alltabs-button),
+  :is(#sidebar-button, #firefox-view-button, #fxa-toolbar-menu-button, #ai-window-button, #alltabs-button),
   #PanelUI-button,
   #personal-toolbar-empty,
   #nav-bar-customization-target > toolbarspring {
@@ -113,55 +70,6 @@
 
   #stop-reload-button {
     display: flex !important;
-  }
-
-  #urlbar-container {
-    flex: 1;
-    min-width: 0;
-    margin-inline: var(--space-custom-gap, var(--space-medium));
-    padding-block: var(--space-custom-edge, var(--space-small));
-  }
-
-  #urlbar {
-    --urlbar-height: 32px;
-    --urlbar-container-min-width: 0px;
-    --urlbar-input-container-padding: 4px;
-    --urlbar-basic-component-size: calc(var(--urlbar-height) - 2 * var(--urlbar-input-container-padding));
-    --urlbar-component-gap: 4px;
-    --urlbar-icon-padding: 4px;
-    --toolbar-field-background-color: var(--custom-surface);
-    --toolbar-field-background-color-focus: var(--custom-surface);
-    --toolbar-field-text-color: var(--custom-ink);
-    --toolbar-field-text-color-focus: var(--custom-ink);
-    --toolbar-field-border-color: var(--custom-line);
-    --toolbar-field-border-color-focus: var(--custom-accent);
-    --urlbar-background-color: var(--custom-surface);
-    --urlbar-background-color-focus: var(--custom-surface);
-    --urlbar-box-background-color: var(--custom-hover);
-    --urlbar-box-background-color-hover: var(--custom-line);
-    --urlbar-box-background-color-active: var(--custom-line-strong);
-    --urlbar-box-background-color-focus: var(--custom-hover);
-    --urlbar-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-    --urlbar-background-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-    --urlbarview-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-    --chrome-box-shadow: light-dark(rgb(27 29 33 / 10%), rgb(0 0 0 / 25%));
-    color: var(--custom-ink);
-    background-color: transparent;
-    font-size: var(--font-size-custom-label, var(--font-size-small));
-  }
-
-  #urlbar .searchmode-switcher {
-    --button-border-radius: var(--border-radius-small);
-    --button-padding: 0 var(--space-custom-edge);
-    --button-background-color-muted: transparent;
-    --button-background-color-muted-hover: var(--custom-hover);
-    --button-background-color-muted-active: var(--custom-line);
-    --button-background-color-muted-selected: var(--custom-hover);
-  }
-
-  #urlbar .searchmode-switcher::part(button) {
-    background-image: none;
-    box-shadow: none;
   }
 
   #custom-brand-icon {
@@ -183,13 +91,14 @@
     border: 0;
     border-radius: var(--border-radius-small);
     background-color: transparent;
-    color: var(--custom-ink);
+    color: var(--custom-ink, var(--text-color));
     font: inherit;
     text-align: start;
     -moz-window-dragging: no-drag;
 
     &:hover {
-      background-color: var(--custom-hover);
+      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+      color: var(--text-color-list-item-hover);
     }
 
     &:active,
@@ -231,7 +140,7 @@
     border: var(--border-width) solid transparent;
     border-radius: var(--border-radius-medium);
     background-color: transparent;
-    color: var(--custom-muted);
+    color: var(--custom-muted, var(--text-color-deemphasized));
     background-repeat: no-repeat;
     background-position: center;
     background-size: var(--icon-size-small);
@@ -240,8 +149,8 @@
     -moz-window-dragging: no-drag;
 
     &:hover {
-      background-color: var(--custom-hover);
-      color: var(--custom-ink);
+      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+      color: var(--custom-ink, var(--text-color));
     }
   }
 
@@ -287,7 +196,7 @@
     }
 
     &:hover:not(:disabled) {
-      background-color: var(--custom-hover);
+      background-color: var(--custom-hover, var(--background-color-list-item-hover));
     }
 
     &:active:not(:disabled),
@@ -327,7 +236,7 @@
 
   #custom-sidebar-footer > #custom-space-button {
     flex: 1;
-    color: var(--custom-muted);
+    color: var(--custom-muted, var(--text-color-deemphasized));
 
     &::before {
       width: var(--size-item-medium);
@@ -483,7 +392,7 @@
         padding-inline: var(--custom-group-label-start, var(--space-xxlarge)) var(--custom-group-summary-space, var(--space-xxlarge));
         border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
         background-color: transparent;
-        color: var(--custom-ink);
+        color: var(--custom-ink, var(--text-color));
         text-align: start;
         font-size: var(--font-size-custom-label, var(--font-size-small));
       }
@@ -496,7 +405,7 @@
         width: var(--icon-size-xsmall);
         height: var(--icon-size-xsmall);
         background: url("chrome://global/skin/icons/arrow-down-12.svg") center / contain no-repeat;
-        color: var(--custom-muted);
+        color: var(--custom-muted, var(--text-color-deemphasized));
         -moz-context-properties: fill;
         fill: currentColor;
         transform: translateY(-50%);
@@ -517,7 +426,8 @@
       }
 
       .tab-group-label:hover {
-        background-color: var(--custom-hover);
+        background-color: var(--custom-hover, var(--background-color-list-item-hover));
+        color: var(--text-color-list-item-hover);
       }
 
       tab-group[collapsed] .tab-group-label::before {
@@ -532,7 +442,7 @@
         align-items: center;
         gap: var(--space-small);
         transform: translateY(-50%);
-        color: var(--custom-muted);
+        color: var(--custom-muted, var(--text-color-deemphasized));
         font-family: "IBM Plex Mono", ui-monospace, monospace;
         font-size: var(--font-size-custom-shortcut, var(--font-size-small));
         pointer-events: none;
@@ -584,7 +494,7 @@
     --tab-height-with-margin-padding: calc(var(--custom-pin-height) + var(--custom-pin-gap));
     --tab-margin-inline-pinned-expanded: calc(var(--custom-pin-gap) / 2);
     --tab-container-margin-inline-pinned-expanded: calc(var(--space-custom-edge) - var(--custom-pin-gap) / 2);
-    --tab-attention-dot-color: var(--custom-ink);
+    --tab-attention-dot-color: var(--custom-ink, var(--text-color));
 
     &::part(items-wrapper) {
       grid-template-columns: repeat(var(--custom-pin-columns), minmax(0, 1fr));
@@ -599,7 +509,7 @@
     }
 
     .tabbrowser-tab:not(:hover) > .tab-stack > .tab-background:not([selected], [multiselected]) {
-      background-color: var(--custom-pin-background);
+      background-color: var(--custom-pin-background, var(--background-color-box));
     }
 
     .tab-content {
@@ -629,7 +539,7 @@
   }
 
   #vertical-tabs #tabbrowser-tabs[orient="vertical"] :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
-    color: var(--custom-ink);
+    color: var(--custom-ink, var(--text-color));
     fill: currentColor;
     font-size: var(--font-size-custom-label, var(--font-size-small));
   }
@@ -658,7 +568,7 @@
     border: var(--border-width) solid var(--custom-line);
     border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
     background-color: var(--custom-surface);
-    color: var(--custom-ink);
+    color: var(--custom-ink, var(--text-color));
     box-shadow: var(--box-shadow-custom-float, var(--box-shadow-level-3));
     color-scheme: var(--toolbar-color-scheme);
   }
@@ -701,13 +611,13 @@
       padding: var(--space-custom-gap, var(--space-medium)) var(--space-medium);
       border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
       background-color: var(--custom-accent-subtle);
-      color: var(--custom-ink);
+      color: var(--custom-ink, var(--text-color));
     }
   }
 
   .custom-ai-history {
     margin-block-start: var(--space-medium);
-    color: var(--custom-muted);
+    color: var(--custom-muted, var(--text-color-deemphasized));
 
     h3 {
       margin-block: 0 var(--space-small);
@@ -732,8 +642,8 @@
     padding: 0;
     border: var(--border-width) solid var(--custom-line-strong);
     border-radius: var(--border-radius-medium);
-    background-color: var(--custom-surface-subtle);
-    color: var(--custom-muted);
+    background-color: var(--custom-surface-subtle, var(--background-color-box));
+    color: var(--custom-muted, var(--text-color-deemphasized));
     font: inherit;
 
     &:disabled {
@@ -743,7 +653,7 @@
 
   #custom-ai-stop {
     border-color: transparent;
-    background-color: var(--custom-ink);
+    background-color: var(--custom-ink, var(--text-color));
     color: var(--custom-surface);
   }
 
@@ -777,7 +687,7 @@
     --custom-avatar-background: Canvas;
 
     .tab-background[selected] {
-      outline: var(--outline-custom-selected);
+      outline: var(--outline-custom-selected, var(--focus-outline));
     }
   }
 }
@@ -909,8 +819,7 @@
       --size-custom-search-icon: 28px;
       --space-custom-search-inset: 22px;
       --font-size-custom-search: 16px;
-      --box-shadow-custom-search:
-        0 2px 8px light-dark(rgb(0 0 0 / 4%), rgb(0 0 0 / 16%)), 0 16px 40px -12px light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 32%));
+      --box-shadow-custom-search: 0 2px 8px light-dark(rgb(0 0 0 / 4%), rgb(0 0 0 / 16%)), 0 16px 40px -12px light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 32%));
       --custom-search-background: light-dark(#f8f9fb, #202329);
 
       #tabbrowser-tabbox {
@@ -925,7 +834,7 @@
         grid-area: 1 / 5 / 3 / 6;
         place-items: center;
         min-width: 0;
-        color: var(--custom-muted);
+        color: var(--custom-muted, var(--text-color-deemphasized));
         pointer-events: none;
 
         &::before {
@@ -950,7 +859,7 @@
         position: absolute;
         inset-block-end: calc(100% + var(--space-xxlarge));
         inset-inline-start: calc(50% - var(--size-custom-search-icon, var(--icon-size-large)));
-        color: var(--custom-muted);
+        color: var(--custom-muted, var(--text-color-deemphasized));
       }
 
       #custom-newtab-hint {
@@ -1017,11 +926,11 @@
         --urlbarview-text-color-action: var(--custom-muted);
         --urlbarview-text-color-secondary: var(--custom-muted);
         --urlbarview-separator-color: var(--custom-line);
-        --urlbarview-small-font-size: var(--font-size-custom-small);
+        --urlbarview-small-font-size: var(--font-size-custom-small, var(--font-size-small));
         --toolbar-field-border-color: var(--custom-line);
         --toolbar-field-border-color-focus: var(--custom-muted);
-        --focus-outline-color: var(--custom-muted);
-        --link-color: var(--custom-muted);
+        --focus-outline-color: var(--custom-muted, var(--text-color-deemphasized));
+        --link-color: var(--custom-muted, var(--text-color-deemphasized));
         font-size: var(--font-size-custom-search, var(--font-size-large));
       }
 
@@ -1067,7 +976,8 @@
         height: var(--size-custom-control, var(--size-item-large));
         padding: var(--space-custom-gap, var(--space-medium));
         border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-        background-color: var(--custom-hover);
+        background-color: var(--custom-hover, var(--background-color-list-item-hover));
+        color: var(--text-color-list-item-hover);
       }
 
       &[sidebar-positionend] {

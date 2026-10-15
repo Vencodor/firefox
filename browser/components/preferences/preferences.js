@@ -131,6 +131,7 @@ ChromeUtils.defineLazyGetter(this, "gSubDialog", function () {
       styleSheets: [
         "chrome://browser/skin/preferences/dialog.css",
         "chrome://browser/skin/preferences/preferences.css",
+        "chrome://browser/content/preferences/custom-ui/preferences.css",
       ],
       resizeCallback: async ({ title, frame }) => {
         // Search within main document and highlight matched keyword.

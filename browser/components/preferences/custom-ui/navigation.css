@@ -1,0 +1,16 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host([custom-ui]) {
+  .page-nav-heading-wrapper > .logo {
+    background-image: url("chrome://browser/content/custom-ui/resources/mono/logo/logo-mark-small.svg");
+    -moz-context-properties: fill;
+    fill: var(--custom-ink, var(--icon-color));
+  }
+
+  .page-nav-heading {
+    font-size: var(--font-size-large);
+    letter-spacing: -0.02em;
+  }
+}

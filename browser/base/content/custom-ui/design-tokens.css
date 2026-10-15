@@ -1,0 +1,65 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:root[custom-ui] {
+  --custom-background: light-dark(#eceef1, #191b20);
+  --custom-surface: light-dark(#ffffff, #25282f);
+  --custom-surface-subtle: light-dark(#fcfcfd, #22252b);
+  --custom-hover: light-dark(#f4f5f7, #30343d);
+  --custom-ink: light-dark(#1b1d21, #eceef2);
+  --custom-muted: light-dark(#5a5f67, #acb3bf);
+  --custom-line: light-dark(#e2e5e9, #3b404a);
+  --custom-line-strong: light-dark(#d9dde3, #4a515e);
+  --custom-accent: light-dark(#34383f, #d3d7df);
+  --custom-accent-subtle: light-dark(#e4e7eb, #393e47);
+  --border-radius-custom-page: 14px;
+  --border-radius-custom-tab: 10px;
+  --border-radius-custom-pin: 12px;
+  --size-custom-brand: 18px;
+  --size-custom-header: 44px;
+  --size-custom-control: 36px;
+  --size-custom-card: 340px;
+  --size-custom-splitter: 10px;
+  --size-custom-tab: 40px;
+  --space-custom-gap: 10px;
+  --space-custom-edge: 6px;
+  --space-custom-inset: 8px;
+  --space-custom-padding: 12px;
+  --space-custom-section: 16px;
+  --space-custom-groups: 14px;
+  --font-size-custom-label: 13px;
+  --font-size-custom-shortcut: 11px;
+  --font-size-custom-small: 12px;
+  --font-size-custom-title: 14px;
+  --custom-avatar-background: light-dark(#cdd2d9, #4a515e);
+  --custom-pin-background: color-mix(in srgb, var(--custom-ink) 5%, transparent);
+  --outline-custom-selected: var(--border-width) solid Highlight;
+  --box-shadow-custom-tab: 0 1px 2px light-dark(rgb(27 29 33 / 8%), rgb(0 0 0 / 20%)), 0 4px 12px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 14%));
+  --box-shadow-custom-page: 0 1px 2px light-dark(rgb(27 29 33 / 4%), rgb(0 0 0 / 20%)), 0 16px 40px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 15%));
+  --box-shadow-custom-float: 0 2px 4px light-dark(rgb(27 29 33 / 5%), rgb(0 0 0 / 24%)), 0 18px 44px light-dark(rgb(27 29 33 / 14%), rgb(0 0 0 / 32%));
+  --custom-accent-ink: light-dark(#ffffff, #1b1d21);
+  --color-custom-chrome-shadow: light-dark(rgb(27 29 33 / 10%), rgb(0 0 0 / 25%));
+  --font-family-custom: "IBM Plex Sans KR", system-ui, sans-serif;
+  --size-custom-navigation-header: 52px;
+  --size-custom-address: 36px;
+  --size-custom-navigation-control: 32px;
+
+  @media (forced-colors: active) {
+    --custom-background: Canvas;
+    --custom-surface: Canvas;
+    --custom-surface-subtle: Canvas;
+    --custom-hover: ButtonFace;
+    --custom-ink: CanvasText;
+    --custom-muted: CanvasText;
+    --custom-line: ButtonBorder;
+    --custom-line-strong: ButtonBorder;
+    --custom-accent: LinkText;
+    --custom-accent-subtle: Canvas;
+    --custom-accent-ink: Canvas;
+    --custom-avatar-background: Canvas;
+    --box-shadow-custom-tab: none;
+    --box-shadow-custom-page: none;
+    --box-shadow-custom-float: none;
+  }
+}
