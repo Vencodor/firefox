@@ -2,10 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-:root:not([custom-ui]) :is(#custom-sidebar-header, #custom-sidebar-newtab, #custom-sidebar-footer, #custom-drift, #custom-ai-panel),
+:root:not([custom-ui]) :is(#custom-sidebar-header, #custom-sidebar-footer, #custom-ai-panel),
 :root:not([custom-ai-open]) #custom-ai-panel,
-:root[custom-ui]:is([inDOMFullscreen], [fullscreenNavToolboxHidden], [customizing])
-  :is(#custom-sidebar-header, #custom-sidebar-newtab, #custom-sidebar-footer, #custom-drift, #custom-ai-panel),
+:root[custom-ui]:is([inDOMFullscreen], [fullscreenNavToolboxHidden], [customizing]) :is(#custom-sidebar-header, #custom-sidebar-footer, #custom-ai-panel),
 #custom-ai-panel[hidden] {
   display: none;
 }
@@ -18,7 +17,8 @@
   pointer-events: auto;
 }
 
-#custom-newtab-surface {
+#custom-newtab-surface,
+.custom-tab-group-summary {
   display: none;
 }
 
@@ -35,6 +35,7 @@
   --custom-accent-subtle: light-dark(#eef2fd, #2b344f);
   --border-radius-custom-page: 14px;
   --border-radius-custom-tab: 10px;
+  --border-radius-custom-pin: 12px;
   --size-custom-brand: 18px;
   --size-custom-header: 44px;
   --size-custom-control: 36px;
@@ -52,6 +53,7 @@
   --font-size-custom-small: 12px;
   --font-size-custom-title: 14px;
   --custom-avatar-background: light-dark(#cdd2d9, #4a515e);
+  --custom-pin-background: color-mix(in srgb, var(--custom-ink) 5%, transparent);
   --outline-custom-selected: var(--border-width) solid Highlight;
   --box-shadow-custom-tab: 0 1px 2px light-dark(rgb(27 29 33 / 8%), rgb(0 0 0 / 20%)), 0 4px 12px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 14%));
   --box-shadow-custom-page: 0 1px 2px light-dark(rgb(27 29 33 / 4%), rgb(0 0 0 / 20%)), 0 16px 40px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 15%));
@@ -98,9 +100,7 @@
 
   sidebar-main::part(tools),
   sidebar-main::part(tools-splitter),
-  sidebar-main::part(bottom-actions),
-  #tabs-newtab-button,
-  #vertical-tabs-newtab-button {
+  sidebar-main::part(bottom-actions) {
     display: none;
   }
 
@@ -257,7 +257,7 @@
     background-image: url("chrome://global/skin/icons/close.svg");
   }
 
-  :is(#custom-sidebar-newtab, #custom-sidebar-footer > button) {
+  #custom-sidebar-footer > button {
     display: flex;
     flex: none;
     align-items: center;
@@ -296,53 +296,10 @@
     }
   }
 
-  #sidebar-container > #custom-sidebar-newtab {
-    margin-inline: var(--space-custom-edge, var(--space-small));
-    margin-block-end: var(--space-custom-section, var(--space-large));
-    border-color: var(--custom-line-strong);
-    background-color: color-mix(in srgb, var(--custom-surface) 60%, transparent);
-
-    &::before {
-      background-image: url("chrome://global/skin/icons/plus.svg");
-    }
-
-    &:hover {
-      background-color: var(--custom-surface);
-    }
-
-    .custom-shortcut {
-      margin-inline-start: auto;
-      color: var(--custom-muted);
-      font-family: "IBM Plex Mono", ui-monospace, monospace;
-      font-size: var(--font-size-custom-shortcut, var(--font-size-small));
-      white-space: nowrap;
-    }
-  }
-
-  #custom-drift {
-    flex: none;
-    margin-inline: var(--space-small);
-    padding-block: var(--space-medium);
-    padding-inline: var(--space-small);
-    border-block-start: var(--border-width) solid var(--custom-line);
-    color: var(--custom-muted);
-    font-size: var(--font-size-custom-small, var(--font-size-small));
-
-    h3 {
-      margin-block: 0 var(--space-small);
-      font: inherit;
-    }
-
-    p {
-      margin: 0;
-      line-height: 1.5;
-    }
-  }
-
   #custom-sidebar-footer {
     display: flex;
     flex: none;
-    flex-direction: column;
+    align-items: center;
     gap: var(--space-xxsmall);
     margin-inline: var(--space-custom-edge, var(--space-small));
     padding-block: var(--space-small);
@@ -357,10 +314,19 @@
     background-image: url("chrome://global/skin/icons/highlights.svg");
   }
 
-  #custom-space-button {
-    margin-block-start: var(--space-small);
-    border-block-start-color: var(--custom-line);
-    border-radius: 0;
+  #custom-sidebar-footer > :is(#custom-ai-button, #custom-settings-button) {
+    justify-content: center;
+    width: var(--size-item-large);
+    min-height: var(--size-item-large);
+    padding-inline: 0;
+
+    .custom-sidebar-label {
+      display: none;
+    }
+  }
+
+  #custom-sidebar-footer > #custom-space-button {
+    flex: 1;
     color: var(--custom-muted);
 
     &::before {
@@ -394,14 +360,20 @@
     }
 
     #custom-brand-name,
-    #custom-drift,
-    .custom-sidebar-label,
-    .custom-shortcut {
+    .custom-sidebar-label {
       display: none;
     }
 
-    :is(#custom-sidebar-newtab, #custom-sidebar-footer > button) {
+    #custom-sidebar-footer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    #custom-sidebar-footer > button {
+      flex: none;
       justify-content: center;
+      width: auto;
+      min-height: var(--size-custom-tab, var(--size-item-xlarge));
       padding-inline: 0;
     }
   }
@@ -455,6 +427,19 @@
 
       tab-group {
         --tab-group-line-color: var(--custom-line-strong);
+        --tab-group-line-thickness: 1px;
+        --custom-group-indent: 24px;
+        --custom-group-dot-size: 8px;
+        --custom-group-icon-overlap: 4px;
+        --custom-group-icon-ring: 0 0 0 1.5px var(--custom-background);
+        --custom-group-summary-space: 32px;
+        --custom-group-label-start: calc(var(--space-custom-inset) * 3 + var(--icon-size-xsmall) + var(--custom-group-dot-size));
+        --custom-group-content-start: calc(var(--space-custom-edge) + var(--space-custom-padding) + var(--custom-group-indent));
+        --custom-group-line-start: calc(var(--space-custom-edge) + var(--space-custom-inset) + var(--icon-size-xsmall) / 2);
+      }
+
+      tab-group[collapsed] {
+        --custom-group-summary-space: 64px;
       }
 
       tab-group:not(:first-child) {
@@ -465,6 +450,14 @@
         margin-inline-start: 0;
       }
 
+      tab-group > .tabbrowser-tab > .tab-stack > .tab-background {
+        margin-inline-start: calc(var(--tab-margin-inline-inner) + var(--custom-group-indent, var(--space-xlarge)));
+      }
+
+      tab-group > .tabbrowser-tab > .tab-stack > .tab-content {
+        padding-inline-start: var(--custom-group-content-start, var(--space-xxlarge));
+      }
+
       .tab-group-label-container {
         margin-block: 0;
         padding-block-end: var(--space-xxsmall);
@@ -472,6 +465,7 @@
       }
 
       .tab-group-label-hover-highlight {
+        position: relative;
         flex: 1;
         min-width: 0;
         margin-inline-end: var(--space-custom-edge, var(--space-small));
@@ -486,7 +480,7 @@
         width: 100%;
         min-width: 0;
         max-width: none;
-        padding-inline: calc(var(--icon-size-small) + var(--space-custom-inset, var(--space-small))) var(--space-custom-inset, var(--space-small));
+        padding-inline: var(--custom-group-label-start, var(--space-xxlarge)) var(--custom-group-summary-space, var(--space-xxlarge));
         border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
         background-color: transparent;
         color: var(--custom-ink);
@@ -509,6 +503,19 @@
         pointer-events: none;
       }
 
+      .tab-group-label::after {
+        content: "";
+        position: absolute;
+        inset-inline-start: calc(var(--space-custom-inset) * 2 + var(--icon-size-xsmall));
+        inset-block-start: 50%;
+        width: var(--custom-group-dot-size, var(--size-item-xsmall));
+        height: var(--custom-group-dot-size, var(--size-item-xsmall));
+        border-radius: var(--border-radius-circle);
+        background-color: var(--tab-group-background-color, var(--tab-group-color));
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+
       .tab-group-label:hover {
         background-color: var(--custom-hover);
       }
@@ -516,10 +523,123 @@
       tab-group[collapsed] .tab-group-label::before {
         transform: translateY(-50%) rotate(-90deg);
       }
+
+      .custom-tab-group-summary {
+        position: absolute;
+        inset-inline-end: var(--space-custom-inset, var(--space-small));
+        inset-block-start: 50%;
+        display: flex;
+        align-items: center;
+        gap: var(--space-small);
+        transform: translateY(-50%);
+        color: var(--custom-muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: var(--font-size-custom-shortcut, var(--font-size-small));
+        pointer-events: none;
+      }
+
+      .custom-tab-group-icons {
+        display: flex;
+      }
+
+      tab-group:not([collapsed]) .custom-tab-group-icons {
+        display: none;
+      }
+
+      .custom-tab-group-icon {
+        width: var(--icon-size-xsmall);
+        height: var(--icon-size-xsmall);
+        border-radius: var(--border-radius-small);
+        box-shadow: var(--custom-group-icon-ring, var(--box-shadow-level-1));
+        -moz-context-properties: fill;
+        fill: currentColor;
+      }
+
+      .custom-tab-group-icon + .custom-tab-group-icon {
+        margin-inline-start: calc(-1 * var(--custom-group-icon-overlap, var(--space-xsmall)));
+      }
     }
   }
 
-  .tab-icon-image[src="chrome://branding/content/icon32.png"]:not([busy], [sharing], [crashed], [pictureinpicture]) {
+  #vertical-tabs #tabbrowser-tabs[orient="vertical"][expanded] tab-group {
+    .tab-group-line {
+      inset-inline-start: var(--custom-group-line-start);
+    }
+
+    > .tab-group-overflow-count-container {
+      margin-inline-start: var(--custom-group-indent, var(--space-xlarge));
+
+      &::after {
+        inset-inline-start: calc(var(--custom-group-line-start) - var(--custom-group-indent));
+      }
+    }
+  }
+
+  &:not([sidebar-expand-on-hover]) #tabbrowser-tabs[orient="vertical"][expanded] > #pinned-tabs-container[orient="vertical"] {
+    --custom-pin-columns: 2;
+    --custom-pin-gap: 6px;
+    --custom-pin-height: clamp(44px, calc(22.5cqi - 4px), 68px);
+    --custom-pin-icon: clamp(18px, calc(7cqi + 4.6px), 24px);
+    --tab-min-height: var(--custom-pin-height);
+    --tab-height-with-margin-padding: calc(var(--custom-pin-height) + var(--custom-pin-gap));
+    --tab-margin-inline-pinned-expanded: calc(var(--custom-pin-gap) / 2);
+    --tab-container-margin-inline-pinned-expanded: calc(var(--space-custom-edge) - var(--custom-pin-gap) / 2);
+    --tab-attention-dot-color: var(--custom-ink);
+
+    &::part(items-wrapper) {
+      grid-template-columns: repeat(var(--custom-pin-columns), minmax(0, 1fr));
+    }
+
+    .tabbrowser-tab {
+      padding-block: calc(var(--custom-pin-gap, var(--space-small)) / 2);
+    }
+
+    .tab-background {
+      border-radius: var(--border-radius-custom-pin, var(--border-radius-medium));
+    }
+
+    .tabbrowser-tab:not(:hover) > .tab-stack > .tab-background:not([selected], [multiselected]) {
+      background-color: var(--custom-pin-background);
+    }
+
+    .tab-content {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .tab-icon-image {
+      width: var(--custom-pin-icon, var(--icon-size-large));
+      height: var(--custom-pin-icon, var(--icon-size-large));
+    }
+
+    .tab-throbber {
+      place-self: center;
+    }
+
+    .tabbrowser-tab > .tab-stack > .tab-content:is([titlechanged], [attention]):not([selected]) {
+      background-image: radial-gradient(circle, var(--tab-attention-dot-color) 3px, transparent 3.5px);
+      background-position: right 9px top 9px;
+      background-size: 7px 7px;
+      background-repeat: no-repeat;
+
+      &:-moz-locale-dir(rtl) {
+        background-position: left 9px top 9px;
+      }
+    }
+  }
+
+  #vertical-tabs #tabbrowser-tabs[orient="vertical"] :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
+    color: var(--custom-ink);
+    fill: currentColor;
+    font-size: var(--font-size-custom-label, var(--font-size-small));
+  }
+
+  #vertical-tabs #tabbrowser-tabs[orient="vertical"][expanded] :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
+    padding-inline: var(--space-custom-padding, var(--space-medium));
+  }
+
+  .tab-icon-image[src="chrome://branding/content/icon32.png"]:not([busy], [sharing], [crashed], [pictureinpicture]),
+  .custom-tab-group-icon[src="chrome://branding/content/icon32.png"] {
     content: url("chrome://global/skin/icons/defaultFavicon.svg");
   }
 
@@ -627,7 +747,7 @@
     color: var(--custom-surface);
   }
 
-  :is(#custom-brand-button, #custom-sidebar-toggle, #custom-sidebar-newtab, #custom-sidebar-footer > button, #custom-ai-close):focus-visible {
+  :is(#custom-brand-button, #custom-sidebar-toggle, #custom-sidebar-footer > button, #custom-ai-close):focus-visible {
     outline: var(--focus-outline);
     outline-offset: var(--focus-outline-offset);
   }
@@ -640,10 +760,6 @@
       inset-block-end: var(--space-medium);
       max-width: calc(100% - var(--size-item-medium));
       max-height: calc(100% - var(--size-item-medium));
-    }
-
-    #custom-sidebar-newtab .custom-shortcut {
-      display: none;
     }
   }
 
@@ -1045,5 +1161,117 @@
         box-shadow: none;
       }
     }
+  }
+}
+
+@container vertical-tabs-container (min-width: 330px) {
+  :root[custom-ui]:not([sidebar-expand-on-hover]) #tabbrowser-tabs[orient="vertical"][expanded] > #pinned-tabs-container[orient="vertical"] {
+    --custom-pin-columns: 3;
+    --custom-pin-height: clamp(44px, calc(15cqi - 3.5px), 64px);
+    --custom-pin-icon: clamp(18px, calc(4.6cqi + 5.5px), 24px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[custom-ui] {
+    :is(#custom-brand-button, #custom-sidebar-toggle, #custom-sidebar-footer > button, #custom-ai-close),
+    #vertical-tabs :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
+    }
+
+    #tabbrowser-tabs[orient="vertical"]:not([movingtab]) {
+      .tab-background {
+        transition:
+          background-color 150ms ease,
+          box-shadow 200ms ease;
+      }
+
+      .tab-group-label {
+        transition:
+          box-shadow var(--tab-group-label-animation-duration),
+          background-color 150ms ease;
+      }
+
+      #pinned-tabs-container .tab-stack {
+        transition: scale 120ms ease;
+      }
+
+      #pinned-tabs-container .tabbrowser-tab:active > .tab-stack {
+        scale: 0.96;
+      }
+    }
+
+    #tabbrowser-tabs[orient="vertical"] {
+      .tabbrowser-tab[custom-opening] > .tab-stack {
+        animation: custom-tab-open 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      tab-group[custom-expanding] > .tabbrowser-tab > .tab-stack {
+        animation: custom-tab-reveal 200ms ease-out;
+      }
+
+      .tab-group-label::before {
+        transition: transform 180ms ease;
+      }
+
+      .custom-tab-group-icons {
+        animation: custom-fade-in 160ms ease-out;
+      }
+    }
+
+    #custom-ai-panel {
+      animation: custom-card-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    @media (-moz-pref("sidebar.verticalTabs")) {
+      &[custom-newtab]:not([customizing], [inDOMFullscreen], [inFullscreen], [chromehidden]) {
+        #navigator-toolbox,
+        #custom-newtab-hint,
+        #custom-newtab-surface::before {
+          animation: custom-fade-in 240ms ease-out;
+        }
+
+        #custom-newtab-logo {
+          animation: custom-rise-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+      }
+    }
+  }
+}
+
+@keyframes custom-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes custom-rise-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+@keyframes custom-tab-open {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+
+@keyframes custom-tab-reveal {
+  from {
+    opacity: 0;
+    translate: 0 -3px;
+  }
+}
+
+@keyframes custom-card-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+    scale: 0.98;
   }
 }

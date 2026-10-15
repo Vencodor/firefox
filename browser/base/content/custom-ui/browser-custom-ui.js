@@ -5,6 +5,18 @@
 var CustomBrowserUI = {
   pref: "browser.customUI.enabled",
 
+  tabStripEvents: [
+    "TabOpen",
+    "TabClose",
+    "TabMove",
+    "TabAttrModified",
+    "TabGrouped",
+    "TabUngrouped",
+    "TabGroupCreate",
+    "TabGroupCollapse",
+    "TabGroupExpand",
+  ],
+
   init() {
     this.panel = document.getElementById("custom-ai-panel");
     this.brandButton = document.getElementById("custom-brand-button");
@@ -19,9 +31,6 @@ var CustomBrowserUI = {
     this.closeButton.addEventListener("click", this);
     this.sidebarToggle.addEventListener("click", this);
     document
-      .getElementById("custom-sidebar-newtab")
-      .addEventListener("click", this);
-    document
       .getElementById("custom-settings-button")
       .addEventListener("click", this);
     this.panel.addEventListener("keydown", this);
@@ -32,14 +41,13 @@ var CustomBrowserUI = {
       attributes: true,
       attributeFilter: ["sidebar-launcher-expanded", "hidden"],
     });
-    document.getElementById("custom-newtab-shortcut").textContent =
-      ShortcutUtils.prettifyShortcut(
-        document.getElementById("key_newNavigatorTab")
-      );
     Services.prefs.addObserver(this.pref, this);
     Services.prefs.addObserver("sidebar.verticalTabs", this);
     Services.prefs.addObserver("browser.newtabpage.enabled", this);
     gBrowser.tabContainer.addEventListener("TabSelect", this);
+    for (let type of this.tabStripEvents) {
+      gBrowser.tabContainer.addEventListener(type, this);
+    }
     this.progressListener = {
       onLocationChange: browser => {
         if (browser === gBrowser.selectedBrowser) {
@@ -75,6 +83,8 @@ var CustomBrowserUI = {
       this.setPanelOpen(false);
     }
     this.updateNewTab();
+    this.updateNewTabButtons();
+    this.scheduleTabGroupUpdate();
   },
 
   updateNewTab() {
@@ -105,16 +115,110 @@ var CustomBrowserUI = {
     );
   },
 
+  updateNewTabButtons() {
+    let l10nId =
+      this.enabled && Services.prefs.getBoolPref("sidebar.verticalTabs", false)
+        ? "custom-ui-tabstrip-new-tab"
+        : "tabs-toolbar-new-tab";
+    for (let id of ["tabs-newtab-button", "vertical-tabs-newtab-button"]) {
+      document.l10n.setAttributes(document.getElementById(id), l10nId);
+    }
+  },
+
+  scheduleTabGroupUpdate() {
+    if (!this.enabled || this.tabGroupUpdatePending) {
+      return;
+    }
+    this.tabGroupUpdatePending = true;
+    requestAnimationFrame(() => {
+      this.tabGroupUpdatePending = false;
+      for (let group of gBrowser.tabGroups) {
+        this.updateTabGroup(group);
+      }
+    });
+  },
+
+  updateTabGroup(group) {
+    let highlight = group.querySelector(".tab-group-label-hover-highlight");
+    if (!highlight) {
+      return;
+    }
+    let summary = highlight.querySelector(".custom-tab-group-summary");
+    if (!summary) {
+      summary = document.createElement("span");
+      summary.className = "custom-tab-group-summary";
+      summary.setAttribute("aria-hidden", "true");
+      let icons = document.createElement("span");
+      icons.className = "custom-tab-group-icons";
+      for (let i = 0; i < 3; i++) {
+        let icon = document.createElement("img");
+        icon.className = "custom-tab-group-icon";
+        icon.alt = "";
+        icons.append(icon);
+      }
+      let count = document.createElement("span");
+      count.className = "custom-tab-group-count";
+      summary.append(icons, count);
+      highlight.append(summary);
+    }
+    let tabs = group.tabs.filter(tab => !tab.closing);
+    summary.querySelector(".custom-tab-group-count").textContent = tabs.length;
+    summary.querySelectorAll(".custom-tab-group-icon").forEach((icon, i) => {
+      let tab = tabs[i];
+      icon.hidden = !tab;
+      if (!tab) {
+        return;
+      }
+      let src =
+        tab.getAttribute("image") ||
+        "chrome://global/skin/icons/defaultFavicon.svg";
+      if (icon.getAttribute("src") !== src) {
+        icon.setAttribute("src", src);
+      }
+    });
+  },
+
+  animate(element, attribute) {
+    if (
+      !this.enabled ||
+      !gBrowser.tabContainer.verticalMode ||
+      !Services.prefs.getBoolPref("sidebar.animation.enabled", true)
+    ) {
+      return;
+    }
+    element.setAttribute(attribute, "");
+    setTimeout(() => element.removeAttribute(attribute), 400);
+  },
+
   handleEvent(event) {
     switch (event.type) {
       case "TabSelect":
         this.updateNewTab();
         break;
+      case "TabOpen":
+        this.animate(event.target, "custom-opening");
+        this.scheduleTabGroupUpdate();
+        break;
+      case "TabGroupExpand":
+        this.animate(event.target, "custom-expanding");
+        this.scheduleTabGroupUpdate();
+        break;
+      case "TabAttrModified":
+        if (event.target.group && event.detail.changed.includes("image")) {
+          this.scheduleTabGroupUpdate();
+        }
+        break;
+      case "TabClose":
+      case "TabMove":
+      case "TabGrouped":
+      case "TabUngrouped":
+      case "TabGroupCreate":
+      case "TabGroupCollapse":
+        this.scheduleTabGroupUpdate();
+        break;
       case "click":
         if (event.currentTarget === this.brandButton) {
           PanelUI.toggle(event);
-        } else if (event.currentTarget.id === "custom-sidebar-newtab") {
-          BrowserCommands.openTab({ event });
         } else if (event.currentTarget === this.sidebarToggle) {
           SidebarController.handleToolbarButtonClick();
         } else if (event.currentTarget.id === "custom-settings-button") {
@@ -158,6 +262,9 @@ var CustomBrowserUI = {
         Services.prefs.removeObserver("sidebar.verticalTabs", this);
         Services.prefs.removeObserver("browser.newtabpage.enabled", this);
         gBrowser.tabContainer.removeEventListener("TabSelect", this);
+        for (let type of this.tabStripEvents) {
+          gBrowser.tabContainer.removeEventListener(type, this);
+        }
         gBrowser.removeTabsProgressListener(this.progressListener);
         this.sidebarObserver.disconnect();
         PanelUI.panel.removeEventListener("popupshown", this);

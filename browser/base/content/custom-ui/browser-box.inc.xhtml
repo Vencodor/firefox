@@ -6,31 +6,23 @@
   <box context="sidebar-context-menu" id="sidebar-container" hidden="true">
     <html:header id="custom-sidebar-header">
       <html:button id="custom-brand-button" type="button" aria-haspopup="menu" aria-controls="appMenu-popup" aria-expanded="false" data-l10n-id="custom-ui-menu-button">
-        <svg xmlns="http://www.w3.org/2000/svg" id="custom-brand-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M2 12.5h16" stroke-opacity=".5"/></svg>
+        <html:img id="custom-brand-icon" src="chrome://browser/content/custom-ui/resources/mono/logo/logo-mark-small.svg" width="18" height="18" alt="" aria-hidden="true" draggable="false"/>
         <html:span id="custom-brand-name" data-l10n-id="custom-ui-brand"/>
       </html:button>
       <html:button id="custom-sidebar-toggle" aria-controls="sidebar-container" aria-expanded="true" data-l10n-id="custom-ui-sidebar-collapse"/>
     </html:header>
-    <html:button id="custom-sidebar-newtab" data-l10n-id="custom-ui-new-tab-button">
-      <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-new-tab"/>
-      <html:kbd id="custom-newtab-shortcut" class="custom-shortcut"/>
-    </html:button>
     <html:sidebar-main flex="1">
       <box id="vertical-tabs" slot="tabstrip" customizable="true" contextmenu="toolbar-context-menu"></box>
     </html:sidebar-main>
-    <html:section id="custom-drift" aria-labelledby="custom-drift-title">
-      <html:h3 id="custom-drift-title" data-l10n-id="custom-ui-drift-title"/>
-      <html:p data-l10n-id="custom-ui-drift-schedule"/>
-    </html:section>
     <html:div id="custom-sidebar-footer">
-      <html:button id="custom-settings-button" data-l10n-id="custom-ui-settings-button">
-        <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-settings"/>
+      <html:button id="custom-space-button" disabled="disabled" data-l10n-id="custom-ui-space-button">
+        <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-space"/>
       </html:button>
       <html:button id="custom-ai-button" aria-controls="custom-ai-panel" aria-expanded="false" data-l10n-id="custom-ui-assistant-button">
         <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-assistant"/>
       </html:button>
-      <html:button id="custom-space-button" disabled="disabled" data-l10n-id="custom-ui-space-button">
-        <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-space"/>
+      <html:button id="custom-settings-button" data-l10n-id="custom-ui-settings-button">
+        <html:span class="custom-sidebar-label" data-l10n-id="custom-ui-settings"/>
       </html:button>
     </html:div>
   </box>
@@ -53,7 +45,7 @@
   <splitter id="sidebar-splitter" class="chromeclass-extrachrome sidebar-splitter" resizebefore="sibling" resizeafter="none" hidden="true" role="separator" aria-controls="sidebar-box" data-l10n-id="sidebar-resize-splitter"/>
   <html:div id="custom-newtab-surface">
     <html:div class="custom-newtab-content">
-      <svg xmlns="http://www.w3.org/2000/svg" id="custom-newtab-logo" width="56" height="56" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M2 12.5h16" stroke-opacity=".5"/></svg>
+      <html:img id="custom-newtab-logo" src="chrome://browser/content/custom-ui/resources/mono/logo/logo-mark.svg" width="56" height="56" alt="" aria-hidden="true" draggable="false"/>
       <html:p id="custom-newtab-hint" data-l10n-id="custom-ui-search-hint"/>
     </html:div>
   </html:div>

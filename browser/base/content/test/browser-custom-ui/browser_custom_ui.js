@@ -332,7 +332,7 @@ add_task(async function test_native_tabs_and_sidebar_toggle() {
   try {
     let newTabPromise = BrowserTestUtils.waitForNewTab(gBrowser);
     EventUtils.synthesizeMouseAtCenter(
-      document.getElementById("custom-sidebar-newtab"),
+      document.getElementById("tabs-newtab-button"),
       {}
     );
     tabs.push(await newTabPromise);
@@ -401,6 +401,93 @@ add_task(async function test_native_tabs_and_sidebar_toggle() {
       if (tab.isConnected) {
         await BrowserTestUtils.removeTab(tab);
       }
+    }
+  }
+});
+
+add_task(async function test_tab_strip_design() {
+  let originalExpanded = SidebarController.sidebarMain.expanded;
+  let tabs = [];
+  let group;
+  try {
+    if (!originalExpanded) {
+      await SidebarController.handleToolbarButtonClick();
+      await SidebarController.waitUntilStable();
+    }
+    ok(
+      !document.getElementById("custom-drift"),
+      "The sidebar has no drifted tabs section"
+    );
+
+    for (let i = 0; i < 5; i++) {
+      tabs.push(
+        await BrowserTestUtils.openNewForegroundTab(gBrowser, "about:blank")
+      );
+    }
+    let newTabButton = document.getElementById("tabs-newtab-button");
+    await TestUtils.waitForCondition(
+      () => newTabButton.getAttribute("label") === "새 탭",
+      "The new tab item uses the sidebar label"
+    );
+    ok(
+      BrowserTestUtils.isVisible(newTabButton),
+      "The new tab item is part of the tab list"
+    );
+    Assert.greaterOrEqual(
+      newTabButton.getBoundingClientRect().top,
+      tabs.at(-1).getBoundingClientRect().bottom - 1,
+      "The new tab item follows the last tab"
+    );
+
+    for (let tab of tabs.slice(0, 3)) {
+      gBrowser.pinTab(tab);
+    }
+    let [first, second, third] = tabs
+      .slice(0, 3)
+      .map(tab => tab.getBoundingClientRect());
+    Assert.lessOrEqual(
+      Math.abs(first.top - second.top),
+      1,
+      "Two pinned tiles share a row"
+    );
+    Assert.less(first.left, second.left, "Pinned tiles sit side by side");
+    Assert.greater(first.width, 80, "Pinned tiles fill their column");
+    Assert.greaterOrEqual(
+      third.top,
+      first.bottom - 1,
+      "A third pinned tile starts a new row"
+    );
+
+    group = gBrowser.addTabGroup(tabs.slice(3), { label: "test" });
+    let count;
+    await TestUtils.waitForCondition(() => {
+      count = group.querySelector(".custom-tab-group-count");
+      return count?.textContent === "2";
+    }, "The group header shows its tab count");
+    ok(BrowserTestUtils.isVisible(count), "The tab count is visible");
+    let icons = group.querySelector(".custom-tab-group-icons");
+    ok(BrowserTestUtils.isHidden(icons), "An open group hides its favicons");
+
+    await BrowserTestUtils.switchTab(gBrowser, tabs[0]);
+    group.collapsed = true;
+    ok(BrowserTestUtils.isVisible(icons), "A collapsed group shows favicons");
+    is(
+      icons.querySelectorAll(".custom-tab-group-icon:not([hidden])").length,
+      2,
+      "Each grouped tab adds one favicon"
+    );
+  } finally {
+    if (group?.isConnected) {
+      await gBrowser.removeTabGroup(group);
+    }
+    for (let tab of tabs) {
+      if (tab.isConnected) {
+        await BrowserTestUtils.removeTab(tab);
+      }
+    }
+    if (SidebarController.sidebarMain.expanded !== originalExpanded) {
+      await SidebarController.handleToolbarButtonClick();
+      await SidebarController.waitUntilStable();
     }
   }
 });

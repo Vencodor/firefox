@@ -2,19 +2,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-custom-ui-brand = [browser.name]
+custom-ui-brand = Mono
 
 custom-ui-menu-button =
     .aria-label = 브라우저 메뉴
     .title = 브라우저 메뉴 열기
 
-custom-ui-new-tab = 새 탭
+custom-ui-tabstrip-new-tab =
+    .label = 새 탭
 
 custom-ui-search-hint = 검색어 또는 주소를 입력하고 Enter
-
-custom-ui-new-tab-button =
-    .aria-label = 새 탭 열기
-    .title = 새 탭 열기
 
 custom-ui-sidebar-collapse =
     .aria-label = 탭 사이드바 접기
@@ -23,10 +20,6 @@ custom-ui-sidebar-collapse =
 custom-ui-sidebar-expand =
     .aria-label = 탭 사이드바 펼치기
     .title = 탭 사이드바 펼치기
-
-custom-ui-drift-title = 흘러간 탭
-
-custom-ui-drift-schedule = 12시간 뒤 정리 · 준비 중
 
 custom-ui-space = 개인
 
