@@ -12,7 +12,9 @@
   --size-custom-address-input: 64px;
   --size-custom-address-results: 400px;
   --size-custom-address-clearance: 180px;
-  --size-custom-window-hotspot-inline: 128px;
+  --size-custom-window-control-inline: 46px;
+  --size-custom-window-control-block: 40px;
+  --size-custom-window-hotspot-inline: 160px;
   --size-custom-window-hotspot-block: 56px;
 
   #custom-sidebar-header {
@@ -171,7 +173,8 @@
   #nav-bar-customization-target > :not(#urlbar-container),
   #nav-bar > :not(#nav-bar-customization-target),
   #urlbar :is(#identity-box, #trust-icon-container, #page-action-buttons, #tracking-protection-icon-container),
-  :is(#tabs-newtab-button, #vertical-tabs-newtab-button, #new-tab-button, #unified-extensions-button) {
+  :is(#new-tab-button, #unified-extensions-button),
+  #tabbrowser-tabs:not([orient="vertical"]) :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
     display: none;
   }
 
@@ -309,22 +312,25 @@
     background: transparent;
   }
 
+  /* Flush with the window corner so the pointer can be thrown at it. */
   #custom-window-controls {
     position: fixed;
-    inset-block-start: var(--space-custom-gap);
-    inset-inline-end: var(--space-custom-gap);
+    inset-block-start: 0;
+    inset-inline-end: 0;
     z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 4);
     display: flex;
     align-items: center;
-    padding: var(--space-small);
-    border-radius: var(--border-radius-custom-page);
+    overflow: hidden;
+    border-end-start-radius: var(--border-radius-custom-page);
     background: transparent;
     -moz-window-dragging: no-drag;
 
     > button {
       display: grid;
       place-items: center;
-      width: var(--size-custom-control);
+      width: var(--size-custom-window-control-inline);
+      height: var(--size-custom-window-control-block);
+      border-radius: 0;
 
       > svg {
         width: var(--icon-size-small);

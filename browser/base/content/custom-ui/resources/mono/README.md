@@ -5,7 +5,7 @@
 
 ## 구성
 
-- `logo/`: 정적 SVG 로고 3개. 세리프 소문자 `m`과 커서 머리로 된 심볼입니다.
+- `logo/`: 정적 SVG 로고 4개. 세리프 소문자 `m`과 커서 머리로 된 심볼입니다.
 - `app-icon/`: Windows 창·작업 표시줄용 `mono-app.ico`와 원본 `mono-app.svg`.
 - `animation/`: 사용자 제공 `mono-brand.zip`의 SVG 애니메이션 7개와 원본 미리보기 페이지.
   이전 세로 막대 심볼 기준이며, 새 로고용 애니메이션으로 교체할 예정입니다.
@@ -18,7 +18,8 @@
 | 파일 | 구분 | 사용처 |
 | --- | --- | --- |
 | `logo/mono-glyph.svg` | 심볼 (32px 이상) | 새 탭 중앙, 에이전트 채팅 빈 화면 |
-| `logo/mono-glyph-small.svg` | 심볼 (32px 미만) | 사이드바, 설정 창 제목줄, 에이전트 채팅 제목·파비콘·작성자, 주소창 제안 |
+| `logo/mono-glyph-small.svg` | 심볼 (32px 미만) | 사이드바, 설정 창 제목줄, 에이전트 채팅 제목·파비콘·작성자 |
+| `logo/mono-glyph-black.svg` | 검은색 심볼 (어두운 테마는 흰색) | 주소창 추천의 브라우저 대화 항목 |
 | `logo/mono-glyph-context.svg` | 단색 심볼 (`context-fill`) | 설정 탐색 제목, 에이전트 HUD |
 | `app-icon/mono-app.svg` | Windows 아이콘 원본 (크게 배치, 고정 색상) | `mono-app.ico` 제작용. 패키지에 포함하지 않음 |
 | `app-icon/mono-app.ico` | Windows 아이콘 | Windows 브라우저 창·작업 표시줄 |
@@ -28,8 +29,20 @@
 
 ## 애니메이션
 
-아래 용도는 ZIP의 미리보기에 적힌 시안 설명입니다. 실제 브라우저 상태나
-에이전트 기능에는 아직 연결하지 않았습니다.
+### 심볼 애니메이션
+
+| 파일 | 동작 | 사용처 |
+| --- | --- | --- |
+| `animation/mono-glyph-spin-small.svg` | 광원 회전, 2.4초 반복 | 채팅 답변 생성 중 작성자 표시·탭 파비콘 |
+| `animation/mono-glyph-spin.svg` | 광원 회전, 8초 반복 | 채팅 빈 화면 로고 |
+| `animation/mono-glyph-draw.svg` | 획 그리기, 0.9초 한 번 | 브라우저 실행 후 첫 새 탭 홈 화면 로고 |
+| `animation/mono-glyph-done.svg` | 완료 반짝임, 0.9초 한 번 | 채팅 답변 완료 시 작성자 표시 |
+
+동작 줄이기 설정에서는 정적 심볼로 표시됩니다. 상세 규칙은 `Style.md` 3장을 따릅니다.
+
+### 이전 애니메이션
+
+사용자 제공 `mono-brand.zip`의 세로 막대 심볼 애니메이션입니다. 현재 사용하지 않습니다.
 
 | 파일 | 미리보기 이름 | 시안 용도 |
 | --- | --- | --- |
@@ -43,7 +56,7 @@
 
 ## 브라우저에서 참조
 
-SVG 10개는 `browser/base/jar.mn`에, `app-icon/mono-app.ico`는 `browser/base/moz.build`에
+SVG 15개는 `browser/base/jar.mn`에, `app-icon/mono-app.ico`는 `browser/base/moz.build`에
 등록되어 빌드에 포함됩니다.
 리소스 주소의 공통 경로는 다음과 같습니다.
 

@@ -51,7 +51,7 @@ custom-ui-menu-button =
     .title = 브라우저 메뉴 열기
 
 custom-ui-tabstrip-new-tab =
-    .label = 새 탭
+    .label = New Tab
 
 
 custom-ui-sidebar-collapse =

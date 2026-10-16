@@ -35,6 +35,7 @@ var AgentChatPage = {
     this.list = document.getElementById("chat-messages");
     this.empty = document.getElementById("chat-empty");
     this.status = document.getElementById("chat-status");
+    this.icon = document.getElementById("chat-icon");
     this.form.addEventListener("submit", event => {
       event.preventDefault();
       this.submit();
@@ -133,6 +134,27 @@ var AgentChatPage = {
     this.sendButton.hidden = this.pending;
     this.stopButton.hidden = !this.pending;
     this.list.setAttribute("aria-busy", String(this.pending));
+    let icon = this.pending
+      ? "chrome://browser/content/custom-ui/resources/mono/animation/mono-glyph-spin-small.svg"
+      : "chrome://browser/content/custom-ui/resources/mono/logo/mono-glyph-small.svg";
+    if (this.icon.getAttribute("href") !== icon) {
+      this.icon.setAttribute("href", icon);
+    }
+  },
+
+  /**
+   * Plays the finish flash on a completed answer's author icon. Each answer
+   * gets its own image URL so the one-shot animation starts from the
+   * beginning instead of sharing an earlier, finished timeline.
+   *
+   * @param {HTMLElement} article
+   */
+  playFinished(article) {
+    this.finishCount = (this.finishCount ?? 0) + 1;
+    article.style.setProperty(
+      "--chat-author-icon",
+      `url("chrome://browser/content/custom-ui/resources/mono/animation/mono-glyph-done.svg?${this.finishCount}")`
+    );
   },
 
   appendMessage(role, content) {
@@ -228,6 +250,7 @@ var AgentChatPage = {
       request.body.removeAttribute("data-l10n-id");
       request.body.textContent = content;
       delete request.article.dataset.pending;
+      this.playFinished(request.article);
       this.messages.push({ role: "assistant", content });
       this.request = null;
       this.updateAvailability("agent-chat-ready");

@@ -234,9 +234,9 @@ var CustomSidebarNavigation = {
 
   /**
    * Shows the window controls while the pointer is in the window's top-right
-   * margin or over the controls, or while a control has focus. Showing waits
-   * briefly so passing over the margin doesn't flash them, and hiding waits so
-   * the pointer can move from the margin onto the controls.
+   * margin or over the controls, or while a control has focus. Showing is
+   * immediate so a click right after reaching the corner lands on a control;
+   * hiding waits so the pointer can move from the margin onto the controls.
    *
    * @param {Event} event
    */
@@ -262,17 +262,16 @@ var CustomSidebarNavigation = {
     if (reveal === this.windowControls.hasAttribute("revealed")) {
       return;
     }
-    if (this.windowControlsFocused) {
+    if (reveal) {
       this.windowControls.setAttribute("revealed", "");
       return;
     }
     this.windowControlsTimer = setTimeout(
-      () => this.windowControls.toggleAttribute("revealed", reveal),
-      reveal ? this.windowControlsRevealDelayMs : this.windowControlsHideDelayMs
+      () => this.windowControls.removeAttribute("revealed"),
+      this.windowControlsHideDelayMs
     );
   },
 
-  windowControlsRevealDelayMs: 80,
   windowControlsHideDelayMs: 300,
 
   handleEvent(event) {
@@ -287,7 +286,11 @@ var CustomSidebarNavigation = {
           return;
         }
         if (button === this.domain) {
-          this.openAddress();
+          if (this.root.hasAttribute("custom-newtab")) {
+            gURLBar.select();
+          } else {
+            this.openAddress();
+          }
         } else if (button === this.settings) {
           CustomSiteSettings.open(event);
         } else if (button === this.back) {

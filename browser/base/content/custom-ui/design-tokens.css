@@ -76,7 +76,7 @@
   --space-custom-notice-bleed: 10px;
   --font-size-custom-notice-title: 19px;
   --custom-notice-art: url("chrome://browser/content/custom-ui/resources/notice/placeholder.svg");
-  --custom-logo-on-surface: url("chrome://browser/content/custom-ui/resources/mono/logo/mono-glyph-small.svg");
+  --custom-logo-on-surface: url("chrome://browser/content/custom-ui/resources/mono/logo/mono-glyph-black.svg");
   --custom-logo-on-ink: url("chrome://browser/content/custom-ui/resources/mono/logo/mono-glyph-context.svg");
 
   @media (forced-colors: active) {

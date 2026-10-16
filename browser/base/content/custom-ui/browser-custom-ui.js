@@ -96,6 +96,7 @@ var CustomBrowserUI = {
       !browser.browsingContext.opener &&
       (uri === "chrome://browser/content/blanktab.html" ||
         (uri === "about:blank" && browser.contentPrincipal?.isNullPrincipal));
+    let wasNewTab = document.documentElement.hasAttribute("custom-newtab");
     let isNewTab = document.documentElement.toggleAttribute(
       "custom-newtab",
       this.enabled &&
@@ -107,6 +108,9 @@ var CustomBrowserUI = {
     // A tab opened from a page focuses the address field while the page is
     // still shown, which queues opening the centered address editor; the new
     // tab search replaces it after that queued work.
+    if (isNewTab && !wasNewTab) {
+      this.playNewTabLogo();
+    }
     if (isNewTab) {
       queueMicrotask(() => {
         if (
@@ -117,6 +121,22 @@ var CustomBrowserUI = {
         }
       });
     }
+  },
+
+  /**
+   * Draws the new tab logo stroke by stroke the first time a new tab screen
+   * appears after startup. Later new tab screens, in this or any other open
+   * window, keep the static logo.
+   */
+  playNewTabLogo() {
+    for (let win of Services.wm.getEnumerator("navigator:browser")) {
+      if (win.CustomBrowserUI?.newTabLogoPlayed) {
+        return;
+      }
+    }
+    this.newTabLogoPlayed = true;
+    document.getElementById("custom-newtab-logo").src =
+      "chrome://browser/content/custom-ui/resources/mono/animation/mono-glyph-draw.svg";
   },
 
   limitNewTabQuery(queryContext) {

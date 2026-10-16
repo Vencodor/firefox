@@ -87,11 +87,20 @@
   }
 
   #urlbar .urlbarView-row[dynamicType="mono-run"] {
+    :root:not([uidensity="compact"]) & {
+      min-height: var(--urlbarview-row-min-height);
+    }
+
     .urlbarView-dynamic-mono-run-content {
       display: flex;
       flex: 1;
       align-items: center;
       min-width: 0;
+      padding-block: var(--urlbarview-row-padding-block);
+
+      :root:not([uidensity="compact"]) & {
+        min-height: var(--urlbarview-row-inner-min-height, var(--size-item-large));
+      }
     }
 
     .urlbarView-dynamic-mono-run-icon {
@@ -121,6 +130,7 @@
       font-size: var(--font-size-custom-small, var(--font-size-small));
       font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
       line-height: calc(var(--size-custom-pill, var(--size-item-medium)) - 2 * var(--border-width));
+      margin-block: calc((1lh - var(--size-custom-pill, var(--size-item-medium))) / 2);
     }
 
     .urlbarView-dynamic-mono-run-content[data-unavailable] .urlbarView-dynamic-mono-run-pill {

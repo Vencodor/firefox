@@ -433,9 +433,17 @@
   }
 
   #vertical-tabs #tabbrowser-tabs[orient="vertical"] :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
-    color: var(--custom-ink, var(--text-color));
+    color: var(--custom-muted, var(--text-color-deemphasized));
     fill: currentColor;
     font-size: var(--font-size-custom-label, var(--font-size-small));
+
+    > .toolbarbutton-text {
+      color: inherit;
+    }
+
+    &:hover {
+      color: var(--text-color);
+    }
   }
 
   #vertical-tabs #tabbrowser-tabs[orient="vertical"][expanded] :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
