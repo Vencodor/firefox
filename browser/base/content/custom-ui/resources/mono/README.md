@@ -21,7 +21,7 @@
 | `logo/mono-glyph-small.svg` | 심볼 (32px 미만) | 사이드바, 설정 창 제목줄, 에이전트 채팅 제목·파비콘·작성자 |
 | `logo/mono-glyph-black.svg` | 검은색 심볼 (어두운 테마는 흰색) | 주소창 추천의 브라우저 대화 항목 |
 | `logo/mono-glyph-context.svg` | 단색 심볼 (`context-fill`) | 설정 탐색 제목, 에이전트 HUD |
-| `app-icon/mono-app.svg` | Windows 아이콘 원본 (크게 배치, 고정 색상) | `mono-app.ico` 제작용. 패키지에 포함하지 않음 |
+| `app-icon/mono-app.svg` | Windows 아이콘 원본 (굵은 전용 디자인, 하늘색→민트 그라데이션) | `mono-app.ico` 제작용. 패키지에 포함하지 않음 |
 | `app-icon/mono-app.ico` | Windows 아이콘 | Windows 브라우저 창·작업 표시줄 |
 
 심볼 SVG는 내부의 `prefers-color-scheme`으로 밝은·어두운 테마 색을 바꿉니다.

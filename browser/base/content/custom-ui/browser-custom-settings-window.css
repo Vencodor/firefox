@@ -15,60 +15,52 @@
     padding: 0 !important;
   }
 
+  /* No title bar: a transparent strip over the page's top margin drags the
+     window, and the controls sit in its corner like the browser window's. */
   #custom-settings-titlebar {
     display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--space-custom-gap, var(--space-medium));
-    min-height: var(--size-custom-header, var(--button-min-height-large));
-    padding-inline: var(--space-custom-padding, var(--space-large));
-    border-bottom: var(--border-width) solid var(--custom-line, var(--border-color));
-    background: var(--custom-background, var(--background-color-canvas));
-    color: var(--custom-ink, var(--text-color));
-    font-family: var(--font-family-custom, inherit);
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 4);
+    justify-content: flex-end;
+    height: var(--size-item-medium);
+    color: var(--custom-muted, var(--text-color-deemphasized));
     -moz-window-dragging: drag;
     user-select: none;
   }
 
-  #custom-settings-titlebar-logo {
-    flex: none;
-    width: var(--size-custom-brand, var(--icon-size-small));
-    height: var(--size-custom-brand, var(--icon-size-small));
-  }
-
-  #custom-settings-titlebar-title {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: var(--font-size-custom-label, var(--font-size-small));
-    font-weight: var(--font-weight-custom-medium, var(--font-weight));
+  :is(#custom-settings-titlebar-logo, #custom-settings-titlebar-title, #custom-settings-maximize, #custom-settings-restore) {
+    display: none !important;
   }
 
   #custom-settings-window-controls {
     display: flex;
     flex: none;
-    align-items: center;
-    gap: var(--space-xsmall);
+    align-self: flex-start;
+    overflow: hidden;
+    border-end-start-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+    background: var(--custom-surface, var(--background-color-box));
+    box-shadow: var(--box-shadow-custom-tab, var(--box-shadow-level-1));
     -moz-window-dragging: no-drag;
 
     > button {
       appearance: none;
       display: grid;
       place-items: center;
-      width: var(--size-custom-control, var(--button-min-height));
-      height: var(--size-custom-navigation-control, var(--button-min-height));
+      width: var(--size-custom-window-control-inline, var(--button-min-height));
+      height: var(--size-custom-window-control-block, var(--button-min-height));
       margin: 0;
       padding: 0;
       border: 0;
-      border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+      border-radius: 0;
       background: transparent;
       color: inherit;
       -moz-window-dragging: no-drag;
 
       &:hover {
         background: var(--custom-hover, var(--button-background-color-hover));
+        color: var(--custom-ink, var(--text-color));
       }
 
       &:active {

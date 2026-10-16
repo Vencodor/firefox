@@ -1,0 +1,45 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this
+     file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<popupset id="custom-page-popupset">
+  <panel id="custom-page-panel" class="panel-no-padding" type="arrow" role="group" orient="vertical" data-l10n-id="custom-ui-page-panel">
+    <panelmultiview id="custom-page-multiview" mainViewId="custom-page-main-view">
+      <panelview id="custom-page-main-view">
+        <vbox class="panel-subview-body">
+          <html:div id="custom-page-extensions" role="group" data-l10n-id="custom-ui-page-extensions" hidden=""/>
+          <html:div id="custom-page-actions" class="custom-page-toolbar">
+            <html:button id="custom-page-bookmark" class="custom-page-icon-button" type="button" data-l10n-id="custom-ui-page-bookmark"/>
+            <html:button id="custom-page-translate" class="custom-page-icon-button" type="button" data-l10n-id="custom-ui-page-translate"/>
+            <html:button id="custom-page-extensions-manage" class="custom-page-icon-button" type="button" data-l10n-id="custom-ui-page-extensions-manage"/>
+            <html:div class="custom-page-zoom" role="group" data-l10n-id="custom-ui-page-zoom">
+              <html:button id="custom-page-zoom-out" class="custom-page-icon-button" type="button" data-l10n-id="custom-ui-page-zoom-out"/>
+              <html:button id="custom-page-zoom-reset" type="button" data-l10n-id="custom-ui-page-zoom-reset" data-l10n-args='{"zoom": 100}'/>
+              <html:button id="custom-page-zoom-in" class="custom-page-icon-button" type="button" data-l10n-id="custom-ui-page-zoom-in"/>
+            </html:div>
+          </html:div>
+          <toolbarseparator/>
+          <html:button id="custom-page-site-settings" class="custom-page-row custom-page-row-nav" type="button" data-l10n-id="custom-ui-page-site-settings"/>
+        </vbox>
+      </panelview>
+      <panelview id="custom-page-site-view" data-l10n-id="custom-ui-page-site-view">
+        <vbox class="panel-subview-body">
+          <html:button id="custom-page-site-info" class="custom-page-row custom-page-row-nav" type="button">
+            <html:span class="custom-page-row-label" data-l10n-id="custom-ui-page-site-info"/>
+            <html:span id="custom-page-connection" class="custom-page-row-value"/>
+          </html:button>
+          <html:button id="custom-page-tracking" class="custom-page-row" type="button" role="switch" aria-checked="true">
+            <html:span class="custom-page-row-label" data-l10n-id="custom-ui-page-tracking-protection"/>
+            <html:span class="custom-page-switch" aria-hidden="true"/>
+          </html:button>
+          <html:div id="custom-page-permissions" role="group" aria-labelledby="custom-page-permissions-title" hidden="">
+            <toolbarseparator/>
+            <html:h2 id="custom-page-permissions-title" data-l10n-id="custom-ui-page-permissions"/>
+            <html:ul id="custom-page-permission-list"/>
+          </html:div>
+          <toolbarseparator/>
+          <html:button id="custom-page-clear-data" class="custom-page-row" type="button" data-l10n-id="custom-ui-page-clear-site-data"/>
+        </vbox>
+      </panelview>
+    </panelmultiview>
+  </panel>
+</popupset>

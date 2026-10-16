@@ -451,6 +451,7 @@ var BrowserPageActions = {
       ),
       document.getElementById(this.mainButtonNode.id),
       document.getElementById("identity-icon"),
+      document.getElementById("custom-page-settings-button"),
     ];
     for (let node of potentialAnchorNodes) {
       if (node && !node.hidden) {

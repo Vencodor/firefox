@@ -132,6 +132,9 @@ var MonoPreferences = {
     }
     document.getElementById("nav-separator").remove();
     document.getElementById("helpButton").remove();
+    let searchInput = document.getElementById("searchInput");
+    searchInput.slot = "subheading";
+    document.getElementById("categories").append(searchInput);
     for (let template of document.querySelectorAll(
       "#mainPrefPane > template"
     )) {

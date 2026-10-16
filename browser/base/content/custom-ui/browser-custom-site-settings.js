@@ -6,10 +6,33 @@ var CustomSiteSettings = {
   init({ onOpen, onClose } = {}) {
     this.onOpen = onOpen;
     this.onClose = onClose;
-    this.panels = new Set();
-    this.resizeObserver = new ResizeObserver(() => this.center());
+    this.button = document.getElementById("custom-page-settings-button");
+    this.panel = document.getElementById("custom-page-panel");
+    this.panel.setAttribute("consumeoutsideclicks", "false");
+    this.multiView = document.getElementById("custom-page-multiview");
+    this.mainView = document.getElementById("custom-page-main-view");
+    this.siteView = document.getElementById("custom-page-site-view");
+    this.extensions = document.getElementById("custom-page-extensions");
+    this.bookmark = document.getElementById("custom-page-bookmark");
+    this.translate = document.getElementById("custom-page-translate");
+    this.zoomOut = document.getElementById("custom-page-zoom-out");
+    this.zoomReset = document.getElementById("custom-page-zoom-reset");
+    this.zoomIn = document.getElementById("custom-page-zoom-in");
+    this.connection = document.getElementById("custom-page-connection");
+    this.siteInfo = document.getElementById("custom-page-site-info");
+    this.tracking = document.getElementById("custom-page-tracking");
+    this.permissions = document.getElementById("custom-page-permissions");
+    this.permissionList = document.getElementById(
+      "custom-page-permission-list"
+    );
+    this.clearData = document.getElementById("custom-page-clear-data");
+
+    for (let type of ["popupshowing", "popuphidden", "click"]) {
+      this.panel.addEventListener(type, this);
+    }
+    this.mainView.addEventListener("ViewShowing", this);
+    this.siteView.addEventListener("ViewShowing", this);
     gBrowser.tabContainer.addEventListener("TabSelect", this);
-    window.addEventListener("resize", this);
     this.progressListener = {
       onLocationChange: browser => {
         if (browser === gBrowser.selectedBrowser) {
@@ -22,15 +45,13 @@ var CustomSiteSettings = {
 
   uninit() {
     this.close({ restoreFocus: false });
-    this.resizeObserver.disconnect();
     gBrowser.tabContainer.removeEventListener("TabSelect", this);
-    window.removeEventListener("resize", this);
     gBrowser.removeTabsProgressListener(this.progressListener);
-    for (let panel of this.panels) {
-      panel.removeEventListener("popupshown", this);
-      panel.removeEventListener("popuppositioned", this);
-      panel.removeEventListener("popuphidden", this);
-    }
+    gBrowser.removeEventListener("FullZoomChange", this);
+  },
+
+  get isOpen() {
+    return ["open", "showing"].includes(this.panel.state);
   },
 
   open(event) {
@@ -40,223 +61,329 @@ var CustomSiteSettings = {
     ) {
       return;
     }
-    if (this.currentPanel) {
+    if (this.isOpen) {
       this.close();
       return;
     }
-    gIdentityHandler._initializePopup();
-    let panel = document.getElementById("identity-popup");
-    this.prepare(panel);
-    gIdentityHandler._openPopup(
-      event,
-      document.getElementById("custom-page-settings-button")
-    );
-  },
-
-  openPermissions(event) {
-    gPermissionPanel._initializePopup();
-    let panel = document.getElementById("permission-popup");
-    this.prepare(panel);
-    gPermissionPanel.openPopup(
-      event,
-      document.getElementById("custom-page-settings-button")
-    );
-  },
-
-  prepare(panel) {
-    if (!this.panels.has(panel)) {
-      this.panels.add(panel);
-      panel.addEventListener("popupshown", this);
-      panel.addEventListener("popuppositioned", this);
-      panel.addEventListener("popuphidden", this);
-      this.addControls(panel);
-    }
-    panel.setAttribute("custom-centered-site-panel", "true");
-    panel.setAttribute("animate", "false");
-    panel.removeAttribute("custom-site-panel-ready");
-    for (let control of panel.querySelectorAll("[data-custom-site-settings]")) {
-      control.hidden = false;
-    }
-    this.currentPanel = panel;
-    this.onOpen?.();
-  },
-
-  addControls(panel) {
-    let isIdentity = panel.id === "identity-popup";
-    let mainView = panel.querySelector("panelview");
-    let header = mainView.querySelector(".panel-header");
-    let addButton = (parent, id, l10nId, onCommand, className = "") => {
-      let button = document.createXULElement("toolbarbutton");
-      button.id = id;
-      button.className = `subviewbutton ${className}`;
-      button.setAttribute("data-custom-site-settings", "true");
-      document.l10n.setAttributes(button, l10nId);
-      button.addEventListener("command", onCommand);
-      parent.append(button);
-      return button;
-    };
-
-    if (!isIdentity) {
-      let back = addButton(
-        header,
-        "custom-site-settings-back",
-        "custom-ui-site-settings-back",
-        event => this.switchPanel(() => this.open(event)),
-        "custom-site-settings-back"
-      );
-      header.prepend(back);
-    }
-    addButton(
-      header,
-      `${panel.id}-custom-close`,
-      "custom-ui-site-settings-close",
-      () => this.close(),
-      "custom-site-settings-close"
-    );
-    if (isIdentity) {
-      addButton(
-        mainView.querySelector(".panel-subview-body"),
-        "custom-site-settings-permissions",
-        "custom-ui-site-permissions",
-        event => this.switchPanel(() => this.openPermissions(event)),
-        "subviewbutton-nav"
-      );
-    }
-    addButton(
-      mainView,
-      `${panel.id}-custom-more-info`,
-      "custom-ui-site-settings-more-info",
-      () => {
-        this.close({ restoreFocus: false });
-        BrowserCommands.pageInfo(null, isIdentity ? "securityTab" : "permTab");
-      },
-      "panel-subview-footer-button"
-    );
-  },
-
-  async switchPanel(openPanel) {
-    let browser = gBrowser.selectedBrowser;
-    let uri = browser.currentURI.spec;
-    let panel = this.currentPanel;
-    if (panel && panel.state !== "closed") {
-      let hidden = new Promise(resolve => {
-        let onHidden = event => {
-          if (this.panelForEvent(event) === panel) {
-            panel.removeEventListener("popuphidden", onHidden);
-            resolve();
-          }
-        };
-        panel.addEventListener("popuphidden", onHidden);
-      });
-      this.close({ restoreFocus: false });
-      await hidden;
-    }
-    if (browser === gBrowser.selectedBrowser && browser.currentURI.spec === uri) {
-      openPanel();
-    }
+    PanelMultiView.openPopup(this.panel, this.button, {
+      position: "end_before",
+      triggerEvent: event,
+    }).catch(console.error);
   },
 
   close({ restoreFocus = true } = {}) {
-    let panel = this.currentPanel;
-    if (!panel) {
+    if (this.panel.state === "closed") {
       return;
     }
-    this.currentPanel = null;
-    this.onClose?.();
-    if (!restoreFocus) {
-      panel.setAttribute("norestorefocus", "true");
-    }
-    PanelMultiView.hidePopup(panel);
-    this.resizeObserver.unobserve(panel);
+    this.panel.toggleAttribute("norestorefocus", !restoreFocus);
+    PanelMultiView.hidePopup(this.panel);
   },
 
-  panelForEvent(event) {
-    return event.target.localName === "panelmultiview"
-      ? event.target.parentElement
-      : event.target;
-  },
-
-  async center() {
-    let panel = this.currentPanel;
+  /**
+   * Moves a browser popup whose anchor is hidden by the custom UI, such as a
+   * toolbar or address bar button, next to the page settings button.
+   *
+   * @param {Element} anchor
+   * @param {object|string} options
+   *   The position options passed to openPopup.
+   * @returns {Array} The anchor and options to open the popup with.
+   */
+  redirectPopup(anchor, options) {
     if (
-      !panel ||
-      !["showing", "open"].includes(panel.state) ||
-      this.centerPending === panel
+      !anchor ||
+      !this.button?.checkVisibility() ||
+      (anchor !== this.button && anchor.checkVisibility())
     ) {
+      return [anchor, options];
+    }
+    let position = "end_before";
+    return [
+      this.button,
+      options && typeof options === "object"
+        ? { ...options, position }
+        : position,
+    ];
+  },
+
+  updateMainView() {
+    this.updateExtensions();
+    let starred = BookmarkingUI.star?.hasAttribute("starred");
+    this.bookmark.toggleAttribute("starred", starred);
+    document.l10n.setAttributes(
+      this.bookmark,
+      starred ? "custom-ui-page-bookmark-edit" : "custom-ui-page-bookmark"
+    );
+    let translations = document.getElementById("translations-button");
+    this.translate.disabled = !translations || translations.hidden;
+    this.translate.toggleAttribute(
+      "translationsactive",
+      !!translations?.hasAttribute("translationsactive")
+    );
+    this.updateZoom();
+  },
+
+  updateExtensions() {
+    let buttons = [];
+    for (let id of CustomizableUI.getWidgetIdsInArea(
+      CustomizableUI.AREA_NAVBAR
+    )) {
+      if (!CustomizableUI.isWebExtensionWidget(id)) {
+        continue;
+      }
+      let node = CustomizableUI.getWidget(id)?.forWindow(window).node;
+      let action = node?.querySelector(
+        ".unified-extensions-item-action-button"
+      );
+      if (!action) {
+        continue;
+      }
+      let label =
+        node.querySelector(".unified-extensions-item-name")?.textContent ||
+        action.getAttribute("label");
+      let button = document.createElement("button");
+      button.type = "button";
+      button.className = "custom-page-extension";
+      button.dataset.widgetId = id;
+      button.disabled = action.hasAttribute("disabled");
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.setAttribute("style", action.getAttribute("style") || "");
+      let badge = action.getAttribute("badge");
+      if (badge) {
+        let badgeNode = document.createElement("span");
+        badgeNode.className = "custom-page-extension-badge";
+        badgeNode.textContent = badge;
+        button.append(badgeNode);
+      }
+      buttons.push(button);
+    }
+    this.extensions.replaceChildren(...buttons);
+    this.extensions.hidden = !buttons.length;
+  },
+
+  updateZoom() {
+    let zoom = ZoomManager.getZoomForBrowser(gBrowser.selectedBrowser);
+    document.l10n.setAttributes(this.zoomReset, "custom-ui-page-zoom-reset", {
+      zoom: Math.round(zoom * 100),
+    });
+    this.zoomOut.disabled = zoom <= ZoomManager.MIN;
+    this.zoomIn.disabled = zoom >= ZoomManager.MAX;
+  },
+
+  updateSiteView(event) {
+    let connection = gIdentityHandler.getConnectionSecurityInformation();
+    let secure = connection.startsWith("secure");
+    let notSecure = [
+      "not-secure",
+      "cert-error-page",
+      "https-only-error-page",
+      "net-error-page",
+    ].includes(connection);
+    if (secure || notSecure) {
+      let state = secure ? "secure" : "not-secure";
+      this.siteInfo.setAttribute("connection", state);
+      document.l10n.setAttributes(
+        this.connection,
+        `custom-ui-page-connection-${state}`
+      );
+    } else {
+      this.siteInfo.setAttribute("connection", "other");
+      this.connection.removeAttribute("data-l10n-id");
+      this.connection.textContent = "";
+    }
+
+    this.tracking.hidden = !ContentBlockingAllowList.canHandle(
+      gBrowser.selectedBrowser
+    );
+    this.tracking.setAttribute(
+      "aria-checked",
+      String(!gProtectionsHandler.hasException)
+    );
+
+    this.updatePermissions();
+
+    this.clearData.hidden = true;
+    if (
+      !PrivateBrowsingUtils.isWindowPrivate(window) &&
+      gIdentityHandler._uriHasHost &&
+      !gIdentityHandler._pageExtensionPolicy
+    ) {
+      event.detail.addBlocker(
+        SiteDataManager.hasSiteData(gIdentityHandler._uri.asciiHost).then(
+          hasData => {
+            this.clearData.hidden = !hasData;
+            return true;
+          },
+          () => true
+        )
+      );
+    }
+  },
+
+  updatePermissions() {
+    let browser = gBrowser.selectedBrowser;
+    let items = [];
+    for (let permission of SitePermissions.getAllForBrowser(browser)) {
+      let label = SitePermissions.getPermissionLabel(permission.id);
+      if (label === null) {
+        continue;
+      }
+      let [id] = permission.id.split(SitePermissions.PERM_KEY_DELIMITER);
+      let item = document.createElement("li");
+      item.className = "custom-page-permission";
+
+      let icon = document.createXULElement("image");
+      icon.classList.add("custom-page-permission-icon", `${id}-icon`);
+      icon.classList.toggle(
+        "blocked-permission-icon",
+        permission.state === SitePermissions.BLOCK ||
+          permission.state === SitePermissions.AUTOPLAY_BLOCKED_ALL
+      );
+
+      let name = document.createElement("span");
+      name.className = "custom-page-row-label";
+      name.textContent = label;
+
+      let state = document.createElement("span");
+      state.className = "custom-page-row-value";
+      state.textContent = SitePermissions.getCurrentStateLabel(
+        permission.state,
+        id,
+        permission.scope
+      );
+      item.append(icon, name, state);
+
+      if (
+        ![SitePermissions.SCOPE_POLICY, SitePermissions.SCOPE_GLOBAL].includes(
+          permission.scope
+        )
+      ) {
+        let clear = document.createElement("button");
+        clear.type = "button";
+        clear.className =
+          "custom-page-icon-button custom-page-permission-clear";
+        clear.dataset.permission = permission.id;
+        document.l10n.setAttributes(clear, "custom-ui-page-permission-clear", {
+          permission: label,
+        });
+        item.append(clear);
+      }
+      items.push(item);
+    }
+    this.permissionList.replaceChildren(...items);
+    this.permissions.hidden = !items.length;
+  },
+
+  clearPermission(button) {
+    let browser = gBrowser.selectedBrowser;
+    let next = button.closest("li").nextElementSibling?.querySelector("button");
+    SitePermissions.removeFromPrincipal(
+      browser.contentPrincipal,
+      button.dataset.permission,
+      browser
+    );
+    gPermissionPanel.refreshPermissionIcons();
+    this.updatePermissions();
+    let fallback = this.tracking.hidden ? this.siteInfo : this.tracking;
+    (next?.isConnected ? next : fallback).focus();
+  },
+
+  onClick(event) {
+    let button = event.target.closest("button");
+    if (!button || button.disabled || event.button !== 0) {
       return;
     }
-    this.centerPending = panel;
-    try {
-      let { x, y } = await window.promiseDocumentFlushed(() => {
-        let bounds = panel.getOuterScreenRect();
-        return {
-          x: window.mozInnerScreenX + (window.innerWidth - bounds.width) / 2,
-          y: window.mozInnerScreenY + (window.innerHeight - bounds.height) / 2,
-        };
-      });
-      if (
-        panel !== this.currentPanel ||
-        !["showing", "open"].includes(panel.state)
-      ) {
+    switch (button.id) {
+      case "custom-page-bookmark":
+        this.close({ restoreFocus: false });
+        BookmarkingUI.onStarCommand(event);
+        return;
+      case "custom-page-translate":
+        this.close({ restoreFocus: false });
+        FullPageTranslationsPanel.open(event);
+        return;
+      case "custom-page-extensions-manage":
+        this.close({ restoreFocus: false });
+        gUnifiedExtensions.togglePanel(event);
+        return;
+      case "custom-page-zoom-out":
+        FullZoom.reduce();
+        return;
+      case "custom-page-zoom-reset":
+        FullZoom.reset();
+        return;
+      case "custom-page-zoom-in":
+        FullZoom.enlarge();
+        return;
+      case "custom-page-site-settings":
+        this.multiView.showSubView(this.siteView.id, button);
+        return;
+      case "custom-page-site-info":
+        this.close({ restoreFocus: false });
+        BrowserCommands.pageInfo(null, "securityTab");
+        return;
+      case "custom-page-tracking": {
+        let enable = gProtectionsHandler.hasException;
+        this.close({ restoreFocus: false });
+        if (enable) {
+          gProtectionsHandler.enableForCurrentPage();
+        } else {
+          gProtectionsHandler.disableForCurrentPage();
+        }
         return;
       }
-      panel.moveTo(Math.round(x), Math.round(y));
-      if (!panel.hasAttribute("custom-site-panel-ready")) {
-        panel.setAttribute("custom-site-panel-ready", "true");
-      }
-    } finally {
-      if (this.centerPending === panel) {
-        this.centerPending = null;
-      }
+      case "custom-page-clear-data":
+        this.close({ restoreFocus: false });
+        gIdentityHandler.clearSiteData(event);
+        return;
     }
+    if (button.dataset.widgetId) {
+      this.activateExtension(button.dataset.widgetId);
+    } else if (button.dataset.permission) {
+      this.clearPermission(button);
+    }
+  },
+
+  activateExtension(widgetId) {
+    let node = CustomizableUI.getWidget(widgetId)?.forWindow(window).node;
+    let action = node?.querySelector(".unified-extensions-item-action-button");
+    this.close({ restoreFocus: false });
+    action?.dispatchEvent(
+      new CustomEvent("command", { bubbles: true, cancelable: true })
+    );
   },
 
   handleEvent(event) {
     switch (event.type) {
+      case "ViewShowing":
+        if (event.target === this.mainView) {
+          this.updateMainView();
+        } else if (event.target === this.siteView) {
+          this.updateSiteView(event);
+        }
+        break;
+      case "click":
+        this.onClick(event);
+        break;
+      case "FullZoomChange":
+        this.updateZoom();
+        break;
       case "TabSelect":
         this.close({ restoreFocus: false });
         break;
-      case "resize":
-        this.center();
-        break;
-      case "popuppositioned":
-        if (
-          event.target === this.currentPanel &&
-          !event.target.hasAttribute("custom-site-panel-ready")
-        ) {
-          this.center();
+      case "popupshowing":
+        if (event.target === this.panel) {
+          gBrowser.addEventListener("FullZoomChange", this);
+          this.onOpen?.();
         }
         break;
-      case "popupshown":
-        if (event.target === this.currentPanel) {
-          this.resizeObserver.observe(event.target);
-          this.center();
-          event.target
-            .querySelector("panelview .subviewbutton:not([hidden])")
-            ?.focus();
-        }
-        break;
-      case "popuphidden": {
-        let panel = this.panelForEvent(event);
-        if (!this.panels.has(panel)) {
-          break;
-        }
-        this.resizeObserver.unobserve(panel);
-        panel.removeAttribute("custom-centered-site-panel");
-        panel.removeAttribute("animate");
-        panel.removeAttribute("custom-site-panel-ready");
-        panel.removeAttribute("norestorefocus");
-        for (let control of panel.querySelectorAll(
-          "[data-custom-site-settings]"
-        )) {
-          control.hidden = true;
-        }
-        if (panel === this.currentPanel) {
-          this.currentPanel = null;
+      case "popuphidden":
+        if (event.target === this.panel || event.target === this.multiView) {
+          gBrowser.removeEventListener("FullZoomChange", this);
+          this.panel.removeAttribute("norestorefocus");
           this.onClose?.();
         }
         break;
-      }
     }
   },
 };

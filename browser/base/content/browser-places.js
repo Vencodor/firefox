@@ -301,7 +301,11 @@ var StarUI = {
       isNewBookmark: this._isNewBookmark,
     });
 
-    this.panel.openPopup(BookmarkingUI.anchor, "bottomright topright");
+    let [anchor, position] = window.CustomSiteSettings?.redirectPopup(
+      BookmarkingUI.anchor,
+      "bottomright topright"
+    ) ?? [BookmarkingUI.anchor, "bottomright topright"];
+    this.panel.openPopup(anchor, position);
   },
 
   _createPanelIfNeeded() {

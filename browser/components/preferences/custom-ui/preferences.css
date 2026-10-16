@@ -32,6 +32,8 @@
 }
 
 :root[custom-ui] .main-content {
+  overflow-x: hidden;
+  padding-block-start: var(--space-xlarge);
   padding-inline: var(--space-xxlarge);
   padding-block-end: calc(var(--space-xxlarge) + var(--space-small));
 }
@@ -43,14 +45,47 @@
 }
 
 :root[custom-ui] #search-container {
-  padding-block-end: calc(var(--space-large) + var(--space-xsmall));
-  margin-block-end: var(--space-medium);
+  padding: 0;
+  margin: 0;
+
+  > :not([hidden]) {
+    margin-block-end: var(--space-large);
+  }
 }
 
 :root[custom-ui] #searchInput {
   --input-search-border-radius: var(--border-radius-custom-page);
   --input-min-height: calc(var(--size-item-xlarge) - var(--space-xsmall));
   max-width: none;
+}
+
+/* In the navigation, above the categories: it looks like a category until
+   it takes focus, then like the selected one. */
+:root[custom-ui] #categories > #searchInput {
+  --input-search-border-radius: var(--border-radius-custom-tab);
+  --input-border-radius: var(--border-radius-custom-tab);
+  display: block;
+  width: 100%;
+  margin-block-start: var(--space-medium);
+}
+
+@media not (forced-colors) {
+  :root[custom-ui] #categories > #searchInput {
+    --input-border: var(--border-width) solid transparent;
+    --input-background-color: transparent;
+    --input-text-color: var(--custom-ink);
+    --icon-color: var(--custom-muted);
+    --focus-outline: none;
+
+    &:hover {
+      --input-background-color: var(--custom-hover);
+    }
+
+    &:focus-within {
+      --input-background-color: var(--custom-surface);
+      --icon-color: var(--custom-ink);
+    }
+  }
 }
 
 :root[custom-ui] :is(moz-card, moz-box-group, moz-box-button, moz-box-link, moz-box-item) {

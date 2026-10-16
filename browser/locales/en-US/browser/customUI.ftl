@@ -33,18 +33,63 @@ custom-ui-page-settings =
     .aria-label = 페이지 설정
     .title = 페이지 설정
 
-custom-ui-site-permissions =
-    .label = 권한
+custom-ui-page-panel =
+    .aria-label = 페이지 설정
 
-custom-ui-site-settings-back =
-    .label = 뒤로
+custom-ui-page-extensions =
+    .aria-label = 고정한 확장 프로그램
 
-custom-ui-site-settings-close =
-    .aria-label = 페이지 설정 닫기
-    .tooltiptext = 페이지 설정 닫기
+custom-ui-page-bookmark =
+    .aria-label = 즐겨찾기에 추가
+    .title = 즐겨찾기에 추가
 
-custom-ui-site-settings-more-info =
-    .label = 페이지 정보
+custom-ui-page-bookmark-edit =
+    .aria-label = 즐겨찾기 편집
+    .title = 즐겨찾기 편집
+
+custom-ui-page-translate =
+    .aria-label = 페이지 번역
+    .title = 페이지 번역
+
+custom-ui-page-extensions-manage =
+    .aria-label = 확장 프로그램 관리
+    .title = 확장 프로그램 관리
+
+custom-ui-page-zoom =
+    .aria-label = 확대/축소
+
+custom-ui-page-zoom-out =
+    .aria-label = 축소
+    .title = 축소
+
+custom-ui-page-zoom-in =
+    .aria-label = 확대
+    .title = 확대
+
+# Variables:
+#   $zoom (Number) - The current zoom level of the page in percent.
+custom-ui-page-zoom-reset = { $zoom }%
+    .aria-label = 현재 { $zoom }%, 기본 크기로 되돌리기
+    .title = 기본 크기로 되돌리기
+
+custom-ui-page-site-settings = 사이트 설정
+
+custom-ui-page-site-view =
+    .title = 사이트 설정
+
+custom-ui-page-site-info = 사이트 정보
+custom-ui-page-connection-secure = 보안 연결
+custom-ui-page-connection-not-secure = 안전하지 않음
+custom-ui-page-tracking-protection = 추적 방지
+custom-ui-page-permissions = 권한
+
+# Variables:
+#   $permission (String) - The name of the site permission, such as camera.
+custom-ui-page-permission-clear =
+    .aria-label = { $permission } 권한 초기화
+    .title = 권한 초기화
+
+custom-ui-page-clear-site-data = 쿠키 및 사이트 데이터 삭제
 
 custom-ui-menu-button =
     .aria-label = 브라우저 메뉴

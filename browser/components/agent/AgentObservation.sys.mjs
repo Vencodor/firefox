@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { rankContextBlocks } from "resource:///modules/agent/observation/CandidateRanking.sys.mjs";
 import { filterCandidates } from "resource:///modules/agent/observation/DOMObservation.sys.mjs";
 import { setTimeout, clearTimeout } from "resource://gre/modules/Timer.sys.mjs";
 
@@ -96,9 +97,10 @@ export class AgentObservationSession {
     const config = {
       textLimit: 6000,
       contextLimit: 320,
+      textMode: "ranked",
       ...options,
     };
-    const visit = async (context, depth, clip) => {
+    const visit = async (context, depth, clip, smallIframe = false) => {
       if (generation !== this.generation) {
         throw new Error("Observation changed while collecting");
       }
@@ -122,7 +124,7 @@ export class AgentObservationSession {
           "AgentObservation:Capture",
           {
             id,
-            options: { ...config, clip },
+            options: { ...config, clip, smallIframe },
           },
           Math.max(1, captureDeadline - Date.now())
         );
@@ -165,7 +167,19 @@ export class AgentObservationSession {
             top: frame.clip.top - frame.offset_y,
             bottom: frame.clip.bottom - frame.offset_y,
           };
-          await visit(child, depth + 1, childClip);
+          const topViewport = collected[0]?.snapshot?.viewport;
+          const topArea = topViewport
+            ? Math.max(0, topViewport.width) * Math.max(0, topViewport.height)
+            : 0;
+          const frameArea =
+            Math.max(0, frame.rect.width) * Math.max(0, frame.rect.height);
+          const childSmallIframe = topArea > 0 && frameArea / topArea < 0.15;
+          await visit(
+            child,
+            depth + 1,
+            childClip,
+            smallIframe || childSmallIframe
+          );
           entry.status = "collected";
         } catch (error) {
           if (generation !== this.generation) {
@@ -185,11 +199,35 @@ export class AgentObservationSession {
       }
       const rows = [];
       const handles = new Map();
+      const contextBlocks = [];
+      let nextBlockOrder = 0;
       let text = "";
       let textTruncated = false;
+      const stateSignals = {
+        hasAlert: false,
+        hasDialog: false,
+        isIsolatedMainState: Boolean(
+          collected[0]?.snapshot?.state_signals?.isIsolatedMainState
+        ),
+        primaryHeading: "",
+      };
       for (const { snapshot, record } of collected) {
         text += (text ? "\n" : "") + snapshot.text;
         textTruncated ||= snapshot.text_truncated;
+        if (snapshot.state_signals) {
+          stateSignals.hasAlert ||= Boolean(snapshot.state_signals.hasAlert);
+          stateSignals.hasDialog ||= Boolean(snapshot.state_signals.hasDialog);
+          if (!stateSignals.primaryHeading && snapshot.state_signals.primaryHeading) {
+            stateSignals.primaryHeading = snapshot.state_signals.primaryHeading;
+          }
+        }
+        for (const block of snapshot.context_blocks || []) {
+          contextBlocks.push({
+            ...block,
+            frame_id: record.context.id,
+            order: nextBlockOrder++,
+          });
+        }
         for (const row of snapshot.candidates) {
           const nodeId = `${record.context.id}:${row.node_id}`;
           handles.set(nodeId, {
@@ -217,10 +255,23 @@ export class AgentObservationSession {
           });
         }
       }
-      textTruncated ||= text.length > config.textLimit;
+      let pageText = text.slice(0, config.textLimit);
+      if (!config.legacyMode && config.textMode !== "raw" && contextBlocks.length) {
+        const rankedContext = rankContextBlocks(contextBlocks, {
+          textLimit: config.textLimit,
+          isIsolatedMainState: stateSignals.isIsolatedMainState,
+        });
+        pageText = rankedContext.text;
+        textTruncated ||= rankedContext.text_truncated;
+      } else {
+        textTruncated ||= text.length > config.textLimit;
+      }
       const filtered = filterCandidates(
         { candidates: rows },
-        { maxActions: options.maxActions ?? 250 }
+        {
+          maxActions: options.maxActions ?? 250,
+          legacyMode: Boolean(config.legacyMode),
+        }
       );
       for (const element of filtered.elements) {
         element.handle = handles.get(element.node_id);
@@ -240,8 +291,9 @@ export class AgentObservationSession {
         page: {
           url: snapshot.url,
           title: snapshot.title,
-          text: text.slice(0, config.textLimit),
+          text: pageText,
           text_truncated: textTruncated,
+          state_signals: stateSignals,
         },
         viewport: snapshot.viewport,
         elements: filtered.elements,

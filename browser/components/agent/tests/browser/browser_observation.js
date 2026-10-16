@@ -316,3 +316,148 @@ add_task(async function test_scroll_input_and_navigation_invalidate_handles() {
     }, "navigation");
   });
 });
+
+add_task(
+  async function test_profiles_action_context_and_selective_translation() {
+    await BrowserTestUtils.withNewTab(FIXTURE, async browser => {
+      await SpecialPowers.spawn(browser, [], () => {
+        const doc = content.document;
+        let megaMenuItems = "";
+        for (let i = 0; i < 2600; i++) {
+          megaMenuItems += `<li><a href="https://example.com/m/${i}">Hidden Menu ${i}</a></li>`;
+        }
+        doc.body.innerHTML = `
+          <header role="banner">
+            <nav aria-label="Top navigation">
+              <div style="display: none;"><ul>${megaMenuItems}</ul></div>
+              <a href="https://example.com/signup">Sign Up</a>
+              <a href="https://example.com/login">Log In</a>
+            </nav>
+          </header>
+          <main>
+            <article data-post-id="t3_1">
+              <shreddit-post post-title="IT department of my company banned firefox at work.">
+                <a slot="full-post-link" href="https://example.com/post/1" aria-label="IT department of my company banned firefox at work."></a>
+                <a slot="authorName" href="https://example.com/user/Genceryx">Author: u/Genceryx</a>
+                <time datetime="2026-10-16T01:00:00Z">7 hr. ago</time>
+                <a slot="flair" href="https://example.com/?f=flair_name">Flair: Discussion</a>
+                <a id="post-title-t3_1" slot="title" href="https://example.com/post/1">IT department of my company banned firefox at work.</a>
+                <div slot="text-body">
+                  <p>Only chrome and edge is allowed for security reasons as we are told. Now I am tortured by ads without <a id="inline-link-1" href="https://example.com/ublock">uBlock</a>.</p>
+                </div>
+                <button id="upvote-btn" type="button" aria-label="Upvote">Upvote 542</button>
+              </shreddit-post>
+            </article>
+            <article data-post-id="t3_2">
+              <shreddit-post post-title="How do I share tabs between desktop and Android?">
+                <a id="post-title-t3_2" slot="title" href="https://example.com/post/2">How do I share tabs between desktop and Android?</a>
+                <a slot="authorName" href="https://example.com/user/Alice">Author: u/Alice</a>
+              </shreddit-post>
+            </article>
+            <article data-post-id="t3_3">
+              <shreddit-post post-title="Save session on exit is not restoring pinned tabs">
+                <a id="post-title-t3_3" slot="title" href="https://example.com/post/3">Save session on exit is not restoring pinned tabs</a>
+                <a slot="authorName" href="https://example.com/user/Bob">Author: u/Bob</a>
+              </shreddit-post>
+            </article>
+            <article data-post-id="t3_4">
+              <shreddit-post post-title="Firefox 135 WebGPU performance improvements">
+                <a id="post-title-t3_4" slot="title" href="https://example.com/post/4">Firefox 135 WebGPU performance improvements</a>
+                <a slot="authorName" href="https://example.com/user/Carol">Author: u/Carol</a>
+              </shreddit-post>
+            </article>
+            <article data-post-id="t3_5">
+              <shreddit-post post-title="Vertical tabs drag and drop feedback thread">
+                <a id="post-title-t3_5" slot="title" href="https://example.com/post/5">Vertical tabs drag and drop feedback thread</a>
+                <a slot="authorName" href="https://example.com/user/Dave">Author: u/Dave</a>
+              </shreddit-post>
+            </article>
+          </main>
+          <aside aria-label="Community sidebar">
+            <h2>Community Bookmarks</h2>
+            <div>커뮤니티 가이드라인</div>
+          </aside>
+        `;
+      });
+
+      const session = new AgentObservationSession(browser);
+      try {
+        const result = await session.observe({ textMode: "ranked" });
+        const title5 = getElement(
+          result,
+          "Vertical tabs drag and drop feedback thread"
+        );
+        const meta1 = getElement(result, "Author: u/Genceryx");
+        Assert.ok(title5 && meta1, "Both 5th card title and 1st card meta exist");
+        Assert.greater(
+          title5.ranking.score,
+          meta1.ranking.score,
+          "5th card post title ranks above 1st card author metadata link"
+        );
+        Assert.ok(
+          result.page.text.includes(
+            "IT department of my company banned firefox at work."
+          ) &&
+            result.page.text.includes(
+              "Only chrome and edge is allowed for security reasons"
+            ),
+          "Ranked page.text includes core post titles and body previews"
+        );
+        Assert.ok(
+          !result.page.text.includes("Sign Up") &&
+            !result.page.text.includes("Author: u/Genceryx") &&
+            !result.page.text.includes("Community Bookmarks"),
+          "Ranked page.text excludes top nav, card metadata, and external sidebar"
+        );
+
+        const translationChecks = await SpecialPowers.spawn(
+          browser,
+          [],
+          async () => {
+            const { DOMHeuristics } = ChromeUtils.importESModule(
+              "resource:///modules/agent/observation/DOMHeuristics.sys.mjs"
+            );
+            const h = new DOMHeuristics(content);
+            const doc = content.document;
+            return {
+              title1: h.shouldTranslateNode(doc.querySelector("#post-title-t3_1")),
+              title2Share: h.shouldTranslateNode(
+                doc.querySelector("#post-title-t3_2")
+              ),
+              title3Save: h.shouldTranslateNode(
+                doc.querySelector("#post-title-t3_3")
+              ),
+              bodyInlineLink: h.shouldTranslateNode(
+                doc.querySelector("#inline-link-1")
+              ),
+              metaAuthor: h.shouldTranslateNode(
+                doc.querySelector('[slot="authorName"]')
+              ),
+              upvoteBtn: h.shouldTranslateNode(doc.querySelector("#upvote-btn")),
+              upvoteAria: h.shouldTranslateAttribute(
+                doc.querySelector("#upvote-btn"),
+                "aria-label"
+              ),
+            };
+          }
+        );
+        Assert.ok(
+          translationChecks.title1 &&
+            translationChecks.title2Share &&
+            translationChecks.title3Save &&
+            translationChecks.bodyInlineLink,
+          "Selective translation includes post titles and inline links inside body sentences"
+        );
+        Assert.ok(
+          !translationChecks.metaAuthor &&
+            !translationChecks.upvoteBtn &&
+            !translationChecks.upvoteAria,
+          "Selective translation excludes metadata, buttons, and control aria-labels"
+        );
+      } finally {
+        session.destroy();
+      }
+    });
+  }
+);
+

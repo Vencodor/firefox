@@ -18,6 +18,7 @@ const lazy = /** @type {any} */ ({});
 ChromeUtils.defineESModuleGetters(lazy, {
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",
+  DOMHeuristics: "resource:///modules/agent/observation/DOMHeuristics.sys.mjs",
   TranslationsUtils:
     "chrome://global/content/translations/TranslationsUtils.mjs",
 });
@@ -1063,6 +1064,29 @@ export class TranslationsDocument {
   #attributesBeyondViewportInitialObservation = Promise.withResolvers();
 
   /**
+   * Whether selective core-content translation filtering is enabled.
+   *
+   * @type {boolean}
+   */
+  #selectiveMode = false;
+
+  /**
+   * Cached DOMHeuristics instance for the current subdivision pass.
+   *
+   * @type {any}
+   */
+  #heuristics = null;
+
+  #getHeuristics() {
+    if (!this.#heuristics && this.#sourceDocument?.documentGlobal) {
+      this.#heuristics = new lazy.DOMHeuristics(
+        this.#sourceDocument.documentGlobal
+      );
+    }
+    return this.#heuristics;
+  }
+
+  /**
    * Construct a new TranslationsDocument. It is tied to a specific Document and cannot
    * be re-used. The translation functions are injected since this class shouldn't
    * manage the life cycle of the translations engines.
@@ -1079,6 +1103,7 @@ export class TranslationsDocument {
    * @param {LRUCache} translationsCache - A cache in which to store translated text.
    * @param {boolean} isFindBarOpen - Whether the find bar was open in the current tab upon construction.
    * @param {number | null} [subFrameSchedulerId=null] - An id to distinguish the scheduler logs if this doc corresponds to an <iframe>.
+   * @param {boolean | null} [selectiveMode=null] - Optional override for selective core-content translation mode.
    */
   constructor(
     document,
@@ -1090,7 +1115,8 @@ export class TranslationsDocument {
     reportVisibleChange,
     translationsCache,
     isFindBarOpen,
-    subFrameSchedulerId = null
+    subFrameSchedulerId = null,
+    selectiveMode = null
   ) {
     /** @type {WindowProxy} */
     const documentGlobal = ensureExists(document.documentGlobal);
@@ -1107,6 +1133,13 @@ export class TranslationsDocument {
     this.#targetScriptDirection =
       Services.intl.getScriptDirection(targetLanguage);
     this.#translationsMode = isFindBarOpen ? "content-eager" : "lazy";
+    this.#selectiveMode =
+      selectiveMode !== null
+        ? Boolean(selectiveMode)
+        : Services.prefs.getBoolPref(
+            "browser.translations.selectiveMode",
+            false
+          );
 
     this.#scheduler = new TranslationScheduler(
       port,
@@ -2018,6 +2051,9 @@ export class TranslationsDocument {
           }
         }
 
+        if (this.#selectiveMode) {
+          this.#heuristics = null;
+        }
         for (const node of this.#nodesWithMutatedContent) {
           this.#addShadowRootsToObserver(node);
           this.#subdivideNodeForContentTranslations(node);
@@ -2378,7 +2414,11 @@ export class TranslationsDocument {
     let attributes = null;
 
     for (const attribute of TRANSLATABLE_ATTRIBUTES.keys()) {
-      if (isAttributeTranslatable(node, attribute)) {
+      if (
+        isAttributeTranslatable(node, attribute) &&
+        (!this.#selectiveMode ||
+          this.#getHeuristics()?.shouldTranslateAttribute(element, attribute))
+      ) {
         if (!attributes) {
           attributes = new Set();
         }
@@ -2720,6 +2760,13 @@ export class TranslationsDocument {
       return true;
     }
 
+    if (
+      this.#selectiveMode &&
+      this.#getHeuristics()?.isExcludedFromTranslation(element)
+    ) {
+      return true;
+    }
+
     return false;
   }
 
@@ -2786,11 +2833,25 @@ export class TranslationsDocument {
       return NodeStatus.SUBDIVIDE_FURTHER;
     }
 
+    if (
+      this.#selectiveMode &&
+      this.#getHeuristics()?.containsSelectiveExcludedChild(node)
+    ) {
+      return NodeStatus.SUBDIVIDE_FURTHER;
+    }
+
     if (!node.textContent?.trim().length) {
       // Do not use subtrees that are empty of text. This textContent call is fairly expensive.
       return !node.hasChildNodes()
         ? NodeStatus.NOT_TRANSLATABLE
         : NodeStatus.SUBDIVIDE_FURTHER;
+    }
+
+    if (
+      this.#selectiveMode &&
+      !this.#getHeuristics()?.shouldTranslateNode(node)
+    ) {
+      return NodeStatus.NOT_TRANSLATABLE;
     }
 
     // This node can be treated as entire block to submit for translation.

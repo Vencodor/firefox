@@ -2,106 +2,29 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { rankCandidates } from "./CandidateRanking.sys.mjs";
+import {
+  DOMHeuristics,
+  GROUP_SELECTOR,
+  SELECTOR,
+  analyzeTextMetrics,
+  normalize,
+  roleOf,
+} from "./DOMHeuristics.sys.mjs";
+import { rankCandidates, rankContextBlocks } from "./CandidateRanking.sys.mjs";
 
-const ROLES = new Set([
-  "button",
-  "link",
-  "checkbox",
-  "radio",
-  "switch",
-  "tab",
-  "menuitem",
-  "menuitemradio",
-  "option",
-  "gridcell",
-  "combobox",
-  "textbox",
-  "searchbox",
-  "spinbutton",
-  "slider",
-  "menuitemcheckbox",
-]);
-const SELECTOR = [
-  "a[href]",
-  "button",
-  "input",
-  "textarea",
-  "select",
-  "summary",
-  '[contenteditable="true"]',
-  '[tabindex]:not([tabindex="-1"])',
-  "[onclick]",
-  ...[...ROLES].map(role => `[role="${role}"]`),
-].join(",");
-const GROUP_SELECTOR =
-  'tr,[role="row"],li,[role="listitem"],article,[role="article"],fieldset,section,dialog,nav,aside,form,[role="search"],[role="group"],[role="dialog"],[role="complementary"],[role="region"],[role="banner"],[role="navigation"],ytd-video-renderer,ytm-shorts-lockup-view-model,.fds-web-doc-root,.fds-aib-expandable-container';
+const PROSE_BLOCK_SELECTOR =
+  'p,blockquote,dd,dt,figcaption,pre,h1,h2,h3,h4,h5,h6,[role="heading"],[slot="text-body"],[slot="title"]';
 
-function normalize(value) {
-  return String(value ?? "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function roleOf(row) {
-  if (ROLES.has(row.declared_role)) {
-    return row.declared_role;
-  }
-  if (["button", "summary"].includes(row.tag)) {
-    return "button";
-  }
-  if (row.tag === "a") {
-    return "link";
-  }
-  if (row.tag === "select") {
-    return "combobox";
-  }
-  if (row.tag === "textarea" || row.contenteditable) {
-    return "textbox";
-  }
-  if (row.tag === "input") {
-    if (["checkbox", "radio"].includes(row.type)) {
-      return row.type;
-    }
-    if (["button", "submit", "reset", "image"].includes(row.type)) {
-      return "button";
-    }
-    if (row.type === "search") {
-      return "searchbox";
-    }
-    if (row.type === "number") {
-      return "spinbutton";
-    }
-    if (
-      [
-        "text",
-        "email",
-        "url",
-        "tel",
-        "date",
-        "time",
-        "datetime-local",
-        "month",
-        "week",
-      ].includes(row.type)
-    ) {
-      return "textbox";
-    }
-    if (row.type === "range") {
-      return "slider";
-    }
-    if (row.type === "color") {
-      return "button";
-    }
-  }
-  return row.generic_click ? "button" : null;
-}
+const UNIT_CONTAINER_SELECTOR =
+  'h1,h2,h3,h4,h5,h6,[role="heading"],[role="alert"],[role="status"],p,blockquote,pre,dd,dt,figcaption,td,th,[slot="title"],[slot="text-body"],li,[role="listitem"],article,[role="article"],section,main,[role="main"],nav,[role="navigation"],aside,[role="complementary"],footer,[role="contentinfo"],header,[role="banner"],dialog,[role="dialog"],form,fieldset,div';
 
 export function collectDOMObservation(window, options = {}) {
   const { document, performance } = window;
   const NodeConstructor = window.Node;
   const getComputedStyle = window.getComputedStyle.bind(window);
   const started = performance.now();
+  const legacyMode = Boolean(options.legacyMode);
+  const textMode = legacyMode ? "raw" : options.textMode ?? "ranked";
   const textLimit = Math.max(1, options.textLimit ?? 6000);
   const contextLimit = Math.max(1, options.contextLimit ?? 320);
   const clip = options.clip || {
@@ -110,6 +33,20 @@ export function collectDOMObservation(window, options = {}) {
     right: window.innerWidth,
     bottom: window.innerHeight,
   };
+  const viewportArea = Math.max(1, window.innerWidth * window.innerHeight);
+  const smallIframe = Boolean(options.smallIframe);
+
+  const heuristics = new DOMHeuristics(window, { clip, legacyMode });
+  const parentOf = heuristics.parentOf.bind(heuristics);
+  const closest = heuristics.closest.bind(heuristics);
+  const cssVisible = heuristics.cssVisible.bind(heuristics);
+  const prunable = heuristics.prunable.bind(heuristics);
+  const composedChildren = heuristics.composedChildren.bind(heuristics);
+  const rectOf = heuristics.rectOf.bind(heuristics);
+  const visibleRect = heuristics.visibleRect.bind(heuristics);
+  const landmark = heuristics.landmark.bind(heuristics);
+  const repetitionCard = heuristics.repetitionCard.bind(heuristics);
+
   const roots = [document];
   let domCount = 0;
   for (let index = 0; index < roots.length; index++) {
@@ -120,101 +57,11 @@ export function collectDOMObservation(window, options = {}) {
       }
     }
   }
-  const parentCache = new WeakMap();
-  function parentOf(element) {
-    if (!element) {
-      return null;
-    }
-    if (!parentCache.has(element)) {
-      parentCache.set(
-        element,
-        element.assignedSlot ||
-          element.parentElement ||
-          element.getRootNode().host ||
-          null
-      );
-    }
-    return parentCache.get(element);
-  }
-  const closestCache = new WeakMap();
-  function closest(element, selector) {
-    if (!element) {
-      return null;
-    }
-    if (!closestCache.has(element)) {
-      closestCache.set(element, new Map());
-    }
-    const cache = closestCache.get(element);
-    if (!cache.has(selector)) {
-      cache.set(
-        selector,
-        element.matches(selector)
-          ? element
-          : closest(parentOf(element), selector)
-      );
-    }
-    return cache.get(selector);
-  }
-  const visibilityCache = new WeakMap();
-  function cssVisible(element) {
-    if (!visibilityCache.has(element)) {
-      let visible = element.checkVisibility({
-        checkOpacity: true,
-        checkVisibilityCSS: true,
-      });
-      if (!visible && getComputedStyle(element).display === "contents") {
-        const style = getComputedStyle(element);
-        visible =
-          style.visibility === "visible" &&
-          style.opacity !== "0" &&
-          (!parentOf(element) || cssVisible(parentOf(element)));
-      }
-      visibilityCache.set(element, visible);
-    }
-    return visibilityCache.get(element);
-  }
-  function composedChildren(node) {
-    if (
-      node.nodeType === NodeConstructor.ELEMENT_NODE &&
-      node.tagName === "SLOT"
-    ) {
-      const assigned = node.assignedNodes({ flatten: true });
-      if (assigned.length) {
-        return assigned;
-      }
-    }
-    return node.shadowRoot ? node.shadowRoot.childNodes : node.childNodes;
-  }
+
   const matches = roots.flatMap(root =>
     Array.from(root.querySelectorAll(SELECTOR))
   );
-  const rectCache = new WeakMap();
-  function rectOf(element) {
-    if (!rectCache.has(element)) {
-      const rect = element.getBoundingClientRect();
-      rectCache.set(element, {
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height,
-      });
-    }
-    return rectCache.get(element);
-  }
-  function visibleRect(rect) {
-    const left = Math.max(rect.x, clip.left),
-      top = Math.max(rect.y, clip.top);
-    const right = Math.min(rect.x + rect.width, clip.right);
-    const bottom = Math.min(rect.y + rect.height, clip.bottom);
-    return {
-      left,
-      top,
-      right,
-      bottom,
-      width: right - left,
-      height: bottom - top,
-    };
-  }
+
   function containsComposed(ancestor, element) {
     for (let node = element; node; node = parentOf(node)) {
       if (node === ancestor) {
@@ -223,6 +70,7 @@ export function collectDOMObservation(window, options = {}) {
     }
     return false;
   }
+
   const activeElements = new WeakSet();
   for (let active = document.activeElement; active; ) {
     if (active !== document.body && active !== document.documentElement) {
@@ -234,103 +82,7 @@ export function collectDOMObservation(window, options = {}) {
     }
     active = next;
   }
-  const repetitionSiblings = new Map();
-  const repetitionItemIds = new WeakMap();
-  const repetitionGroupIds = new WeakMap();
-  const repetitionSignatures = new WeakMap();
-  let nextRepetitionItemId = 1;
-  let nextRepetitionGroupId = 1;
-  function repetitionSignature(node) {
-    if (repetitionSignatures.has(node)) {
-      return repetitionSignatures.get(node);
-    }
-    const classes = Array.from(node.classList || []).sort().join(".");
-    const role = node.getAttribute("role") || "";
-    const children = Array.from(node.children || [], child =>
-      child.tagName.toLowerCase()
-    ).join(",");
-    const signature = `${node.tagName.toLowerCase()}|${role}|${classes}|${children}`;
-    repetitionSignatures.set(node, signature);
-    return signature;
-  }
-  function repeatedSiblingGroups(parent) {
-    if (!repetitionSiblings.has(parent)) {
-      const groups = new Map();
-      for (const child of parent.children || []) {
-        const signature = repetitionSignature(child);
-        if (!groups.has(signature)) {
-          groups.set(signature, []);
-        }
-        groups.get(signature).push(child);
-      }
-      repetitionSiblings.set(parent, groups);
-    }
-    return repetitionSiblings.get(parent);
-  }
-  function repetitionCard(element) {
-    for (
-      let node = element, depth = 0;
-      node && depth <= 8;
-      node = parentOf(node), depth++
-    ) {
-      if (node.matches('body,html,main,[role="main"]')) {
-        break;
-      }
-      const boundary = closest(
-        node,
-        'nav,[role="navigation"],dialog,[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],search,[role="search"]'
-      );
-      if (boundary) {
-        break;
-      }
-      const parent = parentOf(node);
-      if (!parent || !parent.children) {
-        continue;
-      }
-      const semanticCard = node.matches(
-        'li,tr,article,[role="article"],[role="listitem"],[role="row"],ytd-video-renderer,ytd-rich-item-renderer,ytd-grid-video-renderer'
-      );
-      const classCard = node.classList?.length > 0;
-      if (!semanticCard && !classCard) {
-        continue;
-      }
-      const signature = repetitionSignature(node);
-      const siblings = repeatedSiblingGroups(parent).get(signature);
-      if (!siblings || siblings.length < 2) {
-        continue;
-      }
-      if (
-        !semanticCard &&
-        (node.children.length < 2 ||
-          !node.querySelector("h1,h2,h3,h4,[role='heading'],img[alt]") ||
-          !node.querySelector(SELECTOR))
-      ) {
-        continue;
-      }
-      if (!repetitionItemIds.has(node)) {
-        repetitionItemIds.set(node, `i${nextRepetitionItemId++}`);
-      }
-      if (!repetitionGroupIds.has(parent)) {
-        repetitionGroupIds.set(parent, new Map());
-      }
-      const groupIds = repetitionGroupIds.get(parent);
-      if (!groupIds.has(signature)) {
-        groupIds.set(signature, `g${nextRepetitionGroupId++}`);
-      }
-      return {
-        group: groupIds.get(signature),
-        item: repetitionItemIds.get(node),
-      };
-    }
-    return null;
-  }
-  function landmark(element, selector, requireVisible = false) {
-    let node = closest(element, selector);
-    while (node && requireVisible && !cssVisible(node)) {
-      node = closest(parentOf(node), selector);
-    }
-    return node;
-  }
+
   function hittable(element, rect, associated = null) {
     const root = element.getRootNode();
     const boxes = Array.from(element.getClientRects(), box => ({
@@ -351,8 +103,8 @@ export function collectDOMObservation(window, options = {}) {
         [0.5, 0.15],
         [0.5, 0.85],
       ]) {
-        const x = r.left + r.width * fx,
-          y = r.top + r.height * fy;
+        const x = r.left + r.width * fx;
+        const y = r.top + r.height * fy;
         const hit = document.elementFromPoint(x, y);
         if (
           !hit ||
@@ -375,6 +127,7 @@ export function collectDOMObservation(window, options = {}) {
     }
     return false;
   }
+
   function nameOf(element, visited = new Set(), labelText = false) {
     if (!element || visited.has(element)) {
       return "";
@@ -443,6 +196,7 @@ export function collectDOMObservation(window, options = {}) {
       element.getAttribute("title") || element.getAttribute("placeholder")
     );
   }
+
   function placeholderOf(element) {
     const declared = normalize(
       element.getAttribute("placeholder") ||
@@ -468,6 +222,7 @@ export function collectDOMObservation(window, options = {}) {
     }
     return "";
   }
+
   const geometry = [];
   const targets = new Map();
   const candidates = matches.map((element, index) => {
@@ -484,8 +239,8 @@ export function collectDOMObservation(window, options = {}) {
         ) || element;
     }
     geometry.push(target);
-    const rect = rectOf(target),
-      intersection = visibleRect(rect);
+    const rect = rectOf(target);
+    const intersection = visibleRect(rect);
     const visible = cssVisible(target);
     const hidden = Boolean(closest(element, "[inert]"));
     const disabled =
@@ -595,6 +350,7 @@ export function collectDOMObservation(window, options = {}) {
       const visibleArea =
         Math.max(0, intersection.width) * Math.max(0, intersection.height);
       const rectArea = rect.width * rect.height;
+      const role = roleOf(row);
       row.ranking_features = {
         navigation: Boolean(landmark(element, "nav,[role='navigation']")),
         dialog: Boolean(
@@ -626,7 +382,9 @@ export function collectDOMObservation(window, options = {}) {
             !element.parentElement.open),
         pagination:
           element.tagName === "A" &&
-          /(?:^|\s)(?:next|prev)(?:\s|$)/i.test(element.getAttribute("rel") || ""),
+          /(?:^|\s)(?:next|prev)(?:\s|$)/i.test(
+            element.getAttribute("rel") || ""
+          ),
         submit:
           Boolean(element.form) &&
           ((element.tagName === "BUTTON" && element.type === "submit") ||
@@ -643,6 +401,17 @@ export function collectDOMObservation(window, options = {}) {
       if (repetition) {
         row.ranking_features.repetition_group = repetition.group;
         row.ranking_features.repetition_item = repetition.item;
+        if (!legacyMode) {
+          const subrole = heuristics.classifySubrole(element, {
+            role,
+            label: row.label,
+            href: row.href || "",
+            cardNode: repetition.cardNode,
+          });
+          if (subrole) {
+            row.ranking_features.card_subrole = subrole;
+          }
+        }
       }
     }
     if (["checkbox", "radio"].includes(type)) {
@@ -664,13 +433,15 @@ export function collectDOMObservation(window, options = {}) {
     targets.set(row.node_id, { element, target });
     return row;
   });
+
   const controlsEnded = performance.now();
   const range = document.createRange();
+
   function renderedText(groups, limit, viewportOnly = false) {
     const parts = [];
-    let length = 0,
-      visited = 0,
-      truncated = false;
+    let length = 0;
+    let visited = 0;
+    let truncated = false;
     function walk(node) {
       if (length > limit || visited++ > 5000) {
         truncated = true;
@@ -712,9 +483,10 @@ export function collectDOMObservation(window, options = {}) {
       }
       if (
         node.nodeType === NodeConstructor.ELEMENT_NODE &&
-        node.matches(
+        (node.matches(
           'script,style,noscript,template,input,textarea,select,[inert],[aria-hidden="true"]'
-        )
+        ) ||
+          prunable(node))
       ) {
         return;
       }
@@ -735,15 +507,266 @@ export function collectDOMObservation(window, options = {}) {
       truncated: truncated || text.length > limit,
     };
   }
+
+  function unitContainerForTextParent(parent) {
+    const prose = closest(parent, PROSE_BLOCK_SELECTOR);
+    if (prose) {
+      const linkInCard = closest(parent, 'a[href],[role="link"]');
+      if (
+        linkInCard &&
+        prose.matches('article,[role="article"],div') &&
+        !prose.matches('p,blockquote,h1,h2,h3,h4,h5,h6,[role="heading"]')
+      ) {
+        return linkInCard;
+      }
+      return prose;
+    }
+    const controlOrLink = closest(
+      parent,
+      'button,[role="button"],a[href],[role="link"],[role="tab"],[role="menuitem"],summary,time,[datetime]'
+    );
+    if (controlOrLink) {
+      return controlOrLink;
+    }
+    return (
+      closest(parent, UNIT_CONTAINER_SELECTOR) ||
+      parent ||
+      document.body ||
+      document.documentElement
+    );
+  }
+
+  function collectContextBlocksAndState(rootNode) {
+    const unitMap = new Map();
+    const unitOrder = [];
+    let visited = 0;
+    let walkTruncated = false;
+    let docMainBlockCount = 0;
+    let docMainCharCount = 0;
+    const seenMainUnits = new WeakSet();
+    const hasMainLandmark = Boolean(
+      document.querySelector('main,[role="main"]')
+    );
+
+    function walkContext(node) {
+      if (visited++ > 8000) {
+        walkTruncated = true;
+        return;
+      }
+      if (node.nodeType === NodeConstructor.TEXT_NODE) {
+        const parent = node.parentElement || node.getRootNode().host;
+        const value = normalize(node.textContent);
+        if (
+          !value ||
+          !parent ||
+          closest(
+            parent,
+            'script,style,noscript,template,input,textarea,select,[inert],[aria-hidden="true"]'
+          ) ||
+          !cssVisible(parent)
+        ) {
+          return;
+        }
+        range.selectNodeContents(node);
+        const rect = range.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+          return;
+        }
+        const unit = unitContainerForTextParent(parent);
+        const inMainDoc = hasMainLandmark
+          ? Boolean(landmark(unit, 'main,[role="main"]'))
+          : !landmark(
+              unit,
+              'nav,[role="navigation"],footer,[role="contentinfo"],aside,[role="complementary"]'
+            ) && !heuristics.isGlobalHeaderBanner(unit);
+
+        if (inMainDoc) {
+          docMainCharCount += value.length;
+          const proseOrHeading =
+            closest(unit, PROSE_BLOCK_SELECTOR) || unit;
+          if (!seenMainUnits.has(proseOrHeading)) {
+            seenMainUnits.add(proseOrHeading);
+            docMainBlockCount++;
+          }
+        }
+
+        const r = visibleRect({
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+        });
+        if (r.width <= 0 || r.height <= 0) {
+          return;
+        }
+        let entry = unitMap.get(unit);
+        if (!entry) {
+          entry = { unit, parts: [], order: unitOrder.length };
+          unitMap.set(unit, entry);
+          unitOrder.push(entry);
+        }
+        if (entry.parts.at(-1) !== value) {
+          entry.parts.push(value);
+        }
+        return;
+      }
+      if (
+        node.nodeType === NodeConstructor.ELEMENT_NODE &&
+        (node.matches(
+          'script,style,noscript,template,input,textarea,select,[inert],[aria-hidden="true"]'
+        ) ||
+          prunable(node))
+      ) {
+        return;
+      }
+      for (const child of composedChildren(node)) {
+        if (visited > 8000) {
+          walkTruncated = true;
+          break;
+        }
+        walkContext(child);
+      }
+    }
+
+    if (rootNode) {
+      walkContext(rootNode);
+    }
+
+    const isIsolatedMainState =
+      !smallIframe &&
+      docMainBlockCount > 0 &&
+      docMainBlockCount <= 5 &&
+      docMainCharCount < 400;
+
+    let hasAlert = false;
+    let hasDialog = false;
+    let primaryHeading = "";
+
+    const blocks = [];
+    for (const entry of unitOrder) {
+      const { unit, parts, order } = entry;
+      const text = normalize(parts.join(" "));
+      if (!text) {
+        continue;
+      }
+      const nativeFooter = landmark(unit, "footer,[role='contentinfo']");
+      const footer = Boolean(
+        nativeFooter &&
+          (nativeFooter.getAttribute("role") === "contentinfo" ||
+            !landmark(
+              parentOf(nativeFooter),
+              'article,section,aside,nav,[role="article"]'
+            ))
+      );
+      const alertNode = landmark(
+        unit,
+        '[role="alert"],[aria-live="assertive"]',
+        true
+      );
+      const statusNode = !alertNode
+        ? landmark(
+            unit,
+            '[role="status"],[aria-live="polite"],output',
+            true
+          )
+        : null;
+      let alertAssertive = false;
+      let statusPolite = false;
+      if (alertNode) {
+        const aRect = rectOf(alertNode);
+        if (aRect.width >= 20 && aRect.height >= 12) {
+          alertAssertive = true;
+          hasAlert = true;
+        }
+      } else if (statusNode) {
+        const sRect = rectOf(statusNode);
+        if (sRect.width >= 20 && sRect.height >= 12) {
+          statusPolite = true;
+        }
+      }
+
+      const blockingDialog =
+        !smallIframe && heuristics.isBlockingDialog(unit, viewportArea);
+      if (blockingDialog) {
+        hasDialog = true;
+      }
+
+      const headingLevel = heuristics.headingLevelOf(unit);
+      if (headingLevel === 1 && !primaryHeading) {
+        primaryHeading = text.slice(0, 160);
+      }
+
+      const rep = repetitionCard(unit);
+      const effectiveRole = roleOf({
+        tag: unit.tagName.toLowerCase(),
+        type: unit.type || "",
+        declared_role: (unit.getAttribute("role") || "").toLowerCase(),
+        contenteditable: unit.isContentEditable,
+        generic_click: unit.hasAttribute("onclick"),
+      });
+      const subrole = heuristics.classifySubrole(unit, {
+        role: effectiveRole,
+        label: text,
+        href: unit.href || "",
+        cardNode: rep?.cardNode || null,
+      });
+
+      const inMain = Boolean(
+        landmark(unit, 'main,[role="main"]') ||
+          (landmark(unit, 'aside,[role="complementary"]') &&
+            !heuristics.isExternalComplementary(unit))
+      );
+      const inCentralBand = !hasMainLandmark && heuristics.inCentralBand(unit);
+      const metrics = analyzeTextMetrics(text);
+      const controlDensity =
+        effectiveRole && effectiveRole !== "link"
+          ? 1
+          : heuristics.controlDensityOf(unit);
+
+      blocks.push({
+        order,
+        tag: unit.tagName.toLowerCase(),
+        text,
+        heading_level: headingLevel,
+        alert_assertive: alertAssertive,
+        status_polite: statusPolite,
+        blocking_dialog: blockingDialog,
+        footer,
+        search: Boolean(landmark(unit, 'search,[role="search"]')),
+        navigation: Boolean(landmark(unit, 'nav,[role="navigation"]')),
+        header_banner: heuristics.isGlobalHeaderBanner(unit),
+        main: inMain,
+        in_central_band: inCentralBand,
+        external_complementary: heuristics.isExternalComplementary(unit),
+        card_subrole: subrole,
+        is_sentence_like: metrics.isSentenceLike,
+        control_density: controlDensity,
+        small_iframe: smallIframe,
+        repetition_group: rep?.group || null,
+        repetition_item: rep?.item || null,
+      });
+    }
+
+    return {
+      blocks,
+      walkTruncated,
+      stateSignals: {
+        hasAlert,
+        hasDialog,
+        isIsolatedMainState,
+        primaryHeading,
+      },
+    };
+  }
+
   const contextCache = new Map();
-  const compactCache = new WeakMap();
   function repeatedCard(node) {
-    if (!compactCache.has(node)) {
+    if (!heuristics.compactCache.has(node)) {
       const count = node.querySelectorAll(SELECTOR).length;
       const signature = element =>
         `${element.tagName}.${Array.from(element.classList).sort().join(".")}`;
       const siblings = node.parentElement?.children || [];
-      compactCache.set(
+      heuristics.compactCache.set(
         node,
         count > 1 &&
           count <= 30 &&
@@ -756,8 +779,9 @@ export function collectDOMObservation(window, options = {}) {
           )
       );
     }
-    return compactCache.get(node);
+    return heuristics.compactCache.get(node);
   }
+
   function groupName(group) {
     const aria = normalize(group.getAttribute("aria-label"));
     if (aria) {
@@ -799,6 +823,7 @@ export function collectDOMObservation(window, options = {}) {
     }
     return "";
   }
+
   function contextOf(element) {
     let group = closest(element, GROUP_SELECTOR);
     if (element.matches('[role="switch"],[role="checkbox"],[role="radio"]')) {
@@ -870,6 +895,7 @@ export function collectDOMObservation(window, options = {}) {
     }
     return contextCache.get(group);
   }
+
   for (let index = 0; index < candidates.length; index++) {
     const row = candidates[index];
     if (
@@ -889,12 +915,28 @@ export function collectDOMObservation(window, options = {}) {
     }
   }
   const contextEnded = performance.now();
-  const rendered = renderedText(
-    [document.body || document.documentElement],
-    textLimit,
-    true
-  );
+
+  const bodyRoot = document.body || document.documentElement;
+  let rendered;
+  let contextData = null;
+  if (textMode === "ranked" && !legacyMode) {
+    contextData = collectContextBlocksAndState(bodyRoot);
+    const rankedCtx = rankContextBlocks(contextData.blocks, {
+      textLimit,
+      isIsolatedMainState: contextData.stateSignals.isIsolatedMainState,
+    });
+    rendered = {
+      text: rankedCtx.text,
+      truncated: contextData.walkTruncated || rankedCtx.truncated,
+    };
+  } else {
+    rendered = renderedText([bodyRoot], textLimit, true);
+    if (!legacyMode) {
+      contextData = collectContextBlocksAndState(bodyRoot);
+    }
+  }
   const textEnded = performance.now();
+
   const frameElements = roots.flatMap(root =>
     Array.from(root.querySelectorAll("iframe,frame"))
   );
@@ -916,6 +958,7 @@ export function collectDOMObservation(window, options = {}) {
         title: frame.title || "",
       };
     });
+
   const snapshot = {
     url: window.location.href,
     title: document.title,
@@ -931,6 +974,18 @@ export function collectDOMObservation(window, options = {}) {
     frames,
     text: rendered.text,
     text_truncated: rendered.truncated,
+    ...(legacyMode
+      ? {}
+      : {
+          text_mode: textMode,
+          context_blocks: contextData?.blocks || [],
+          state_signals: contextData?.stateSignals || {
+            hasAlert: false,
+            hasDialog: false,
+            isIsolatedMainState: false,
+            primaryHeading: "",
+          },
+        }),
     candidates,
     timing: {
       controls_ms: controlsEnded - started,
@@ -950,7 +1005,10 @@ export function collectDOMObservation(window, options = {}) {
   return { snapshot, targets };
 }
 
-export function filterCandidates(snapshot, { maxActions = 250 } = {}) {
+export function filterCandidates(
+  snapshot,
+  { maxActions = 250, legacyMode = false } = {}
+) {
   const limit = Math.max(0, Math.min(250, maxActions));
   const allRows = snapshot.candidates || [];
   let eligibleRows = allRows;
@@ -978,7 +1036,7 @@ export function filterCandidates(snapshot, { maxActions = 250 } = {}) {
     });
     stages.push({ stage: reason, remaining: eligibleRows.length });
   }
-  eligibleRows = rankCandidates(eligibleRows, roleOf);
+  eligibleRows = rankCandidates(eligibleRows, roleOf, { legacyMode });
   const actions = [];
   for (const row of eligibleRows) {
     const role = roleOf(row);

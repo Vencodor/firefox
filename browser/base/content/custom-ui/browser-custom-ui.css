@@ -595,12 +595,29 @@
 
 @media (-moz-pref("sidebar.verticalTabs")) {
   :root[custom-ui] {
+    &:not([sizemode="maximized"], [sizemode="fullscreen"]) {
+      --space-custom-window-top: 13px;
+    }
+
     body {
       display: grid;
       box-sizing: border-box;
-      padding: var(--space-custom-gap, var(--space-medium));
+      padding: var(--space-custom-edge, var(--space-small));
+      padding-block-start: var(--space-custom-window-top, var(--space-small));
       grid-template-columns: max-content max-content max-content max-content minmax(0, 1fr) max-content max-content;
       grid-template-rows: auto minmax(0, 1fr);
+
+      /* The top margin works as the window's title bar: drag to move,
+         double-click to maximize. */
+      &::before {
+        content: "";
+        position: fixed;
+        inset-block-start: 0;
+        inset-inline: 0;
+        z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 3);
+        height: var(--space-custom-window-top, var(--space-small));
+        -moz-window-dragging: drag;
+      }
     }
 
     #navigator-toolbox {
@@ -659,6 +676,10 @@
 
     #browser > :is([hidden="true"], [collapsed="true"]) {
       display: none;
+    }
+
+    :is(#sidebar-container, #sidebar-launcher-splitter) {
+      margin-block-start: calc(var(--space-custom-edge, var(--space-small)) - var(--space-custom-window-top, var(--space-small)));
     }
 
     #sidebar-container {

@@ -711,6 +711,10 @@ export var PanelMultiView = class extends AssociatedToNode {
       // "popuphidden" event even if canCancel was set to false.
       try {
         canCancel = false;
+        [anchor, options] = this.window.CustomSiteSettings?.redirectPopup(
+          anchor,
+          options
+        ) ?? [anchor, options];
         this.#panel.openPopup(anchor, options, ...args);
         if (cancelCallback == this._openPopupCancelCallback) {
           // If still current, let go of the cancel callback since it will

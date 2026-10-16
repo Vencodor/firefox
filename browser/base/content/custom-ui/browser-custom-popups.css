@@ -19,7 +19,8 @@
       #pageActionPanel,
       #full-page-translations-panel,
       #select-translations-panel,
-      #sidebar-tools-overflow
+      #sidebar-tools-overflow,
+      #custom-page-panel
     ) {
     --panel-background-color: var(--custom-surface);
     --panel-text-color: var(--custom-ink, var(--text-color));

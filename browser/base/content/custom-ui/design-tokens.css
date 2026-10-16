@@ -19,10 +19,13 @@
   --size-custom-brand: 18px;
   --size-custom-header: 44px;
   --size-custom-control: 36px;
+  --size-custom-window-control-inline: 46px;
+  --size-custom-window-control-block: 40px;
   --size-custom-card: 340px;
   --size-custom-splitter: 10px;
   --size-custom-tab: 40px;
   --space-custom-gap: 10px;
+  --space-custom-window-top: 9px;
   --space-custom-edge: 6px;
   --space-custom-inset: 8px;
   --space-custom-padding: 12px;
