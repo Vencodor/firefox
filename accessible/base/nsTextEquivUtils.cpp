@@ -5,7 +5,6 @@
 #include "nsTextEquivUtils.h"
 
 #include "AccIterator.h"
-#include "CssAltContent.h"
 #include "LocalAccessible-inl.h"
 #include "Relation.h"
 #include "mozilla/dom/ChildIterator.h"
@@ -219,7 +218,7 @@ bool nsTextEquivUtils::AppendTextEquivFromContent(
 
 nsresult nsTextEquivUtils::AppendTextEquivFromTextContent(nsIContent* aContent,
                                                           nsAString* aString) {
-  if (auto cssAlt = CssAltContent(aContent)) {
+  if (Maybe<nsString> cssAlt = nsCoreUtils::GetCssAltContent(aContent)) {
     AccType type = aContent->GetPrimaryFrame()
                        ? aContent->GetPrimaryFrame()->AccessibleType()
                        : AccType::eNoType;
@@ -227,7 +226,7 @@ nsresult nsTextEquivUtils::AppendTextEquivFromTextContent(nsIContent* aContent,
       // If this is a text leaf, or an empty content, append its alt text here.
       // In the case of image alt contents, we will get to those with the
       // accessible based subtree name calculation.
-      cssAlt.AppendToString(*aString);
+      aString->Append(*cssAlt);
       return NS_OK;
     }
   } else if (aContent->IsText()) {

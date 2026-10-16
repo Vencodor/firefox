@@ -1783,7 +1783,7 @@ TokenStreamSpecific<Unit, AnyCharsAccess>::matchIdentifierStart(
   }
 
   if (MOZ_LIKELY(isAsciiCodePoint(unit))) {
-    if (unicode::IsIdentifierStart(char16_t(unit))) {
+    if (unicode::IsIdentifierStartASCII(char(unit))) {
       *sawEscape = IdentifierEscapes::None;
       return true;
     }
@@ -2043,7 +2043,7 @@ bool TokenStreamSpecific<Unit, AnyCharsAccess>::putIdentInCharBuffer(
 
     char32_t codePoint;
     if (MOZ_LIKELY(isAsciiCodePoint(unit))) {
-      if (unicode::IsIdentifierPart(char16_t(unit)) || unit == '#') {
+      if (unicode::IsIdentifierPartASCII(char(unit)) || unit == '#') {
         if (!this->charBuffer.append(unit)) {
           return false;
         }
@@ -2097,8 +2097,7 @@ template <typename Unit, class AnyCharsAccess>
     if (MOZ_LIKELY(isAsciiCodePoint(unit))) {
       consumeKnownCodeUnit(unit);
 
-      if (MOZ_UNLIKELY(
-              !unicode::IsIdentifierPart(static_cast<char16_t>(unit)))) {
+      if (MOZ_UNLIKELY(!unicode::IsIdentifierPartASCII(char(unit)))) {
         // Handle a Unicode escape -- otherwise it's not part of the
         // identifier.
         char32_t codePoint;
@@ -2407,7 +2406,7 @@ template <typename Unit, class AnyCharsAccess>
   // two tokens, necessitating this unaesthetic lookahead.)
   if (unit != EOF) {
     if (MOZ_LIKELY(isAsciiCodePoint(unit))) {
-      if (unicode::IsIdentifierStart(char16_t(unit))) {
+      if (unicode::IsIdentifierStartASCII(char(unit))) {
         error(JSMSG_IDSTART_AFTER_NUMBER);
         return false;
       }
@@ -2897,7 +2896,7 @@ template <typename Unit, class AnyCharsAccess>
       // after the number.  Somewhat surprisingly, if we don't check
       // here, we'll never check at all.
       if (MOZ_LIKELY(isAsciiCodePoint(unit))) {
-        if (unicode::IsIdentifierStart(char16_t(unit))) {
+        if (unicode::IsIdentifierStartASCII(char(unit))) {
           error(JSMSG_IDSTART_AFTER_NUMBER);
           return badToken();
         }

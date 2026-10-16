@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 6.5.128
- * pdfjsBuild = e1412d3a5
+ * pdfjsVersion = 6.5.152
+ * pdfjsBuild = 0252c1f6c
  */
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
@@ -187,11 +187,21 @@ const VIEWER_VERSION = 21.00720099;
 const FORMS_VERSION = 21.00720099;
 const USERACTIVATION_CALLBACKID = 0;
 const USERACTIVATION_MAXTIME_VALIDITY = 5000;
-function serializeError(error) {
-  const value = `${error.toString()}\n${error.stack}`;
+function serializeError(error, prefix = "") {
+  let message;
+  try {
+    message = String(error);
+  } catch {
+    message = "Unknown error";
+  }
+  let stack;
+  try {
+    stack = error?.stack;
+  } catch {}
+  const value = typeof stack === "string" ? `${message}\n${stack}` : message;
   return {
     command: "error",
-    value
+    value: `${prefix}${value}`
   };
 }
 const makeArr = () => [];
@@ -821,9 +831,7 @@ class Field extends PDFObject {
       try {
         this._globalEval(action);
       } catch (error) {
-        const serializedError = serializeError(error);
-        serializedError.value = `Error when executing "${eventName}" for field "${this._id}"\n${serializedError.value}`;
-        this._send(serializedError);
+        this._document.obj._send(serializeError(error, `Error when executing "${eventName}" for field "${this._id}"\n`));
       }
     }
     return true;
@@ -2478,9 +2486,7 @@ class Doc extends PDFObject {
       try {
         this._globalEval(action);
       } catch (error) {
-        const serializedError = serializeError(error);
-        serializedError.value = `Error when executing "${name}" for document\n${serializedError.value}`;
-        this._send(serializedError);
+        this._send(serializeError(error, `Error when executing "${name}" for document\n`));
       }
     }
   }

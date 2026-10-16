@@ -149,6 +149,12 @@ const size_t MAX_STYLE_STACK_SIZE = 1024;
 /* Memory reporter stuff */
 static Atomic<int64_t> gCanvasAzureMemoryUsed(0);
 
+static PredefinedColorSpace GetColorSpaceFromImageDataSettings(
+    const ImageDataSettings& aSettings, PredefinedColorSpace aColorSpace) {
+  return aSettings.mColorSpace.WasPassed() ? aSettings.mColorSpace.Value()
+                                           : aColorSpace;
+}
+
 // Adds Save() / Restore() calls to the scope.
 class MOZ_RAII AutoSaveRestore {
  public:
@@ -1224,6 +1230,7 @@ CanvasRenderingContext2D::CanvasRenderingContext2D(
     :  // these are the default values from the Canvas spec
       mWidth(0),
       mHeight(0),
+      mColorSpace(PredefinedColorSpace::Srgb),
       mZero(false),
       mOpaqueAttrValue(false),
       mContextAttributesHasAlpha(true),
@@ -1275,9 +1282,10 @@ void CanvasRenderingContext2D::GetContextAttributes(
   aSettings.mAlpha = mContextAttributesHasAlpha;
   aSettings.mWillReadFrequently = mWillReadFrequently;
   aSettings.mForceSoftwareRendering = mForceSoftwareRendering;
+  aSettings.mColorSpace = mColorSpace;
 
-  // We don't support the 'desynchronized' and 'colorSpace' attributes, so
-  // those just keep their default values.
+  // We don't support the 'desynchronized' attribute
+  // so just keep its default value.
 }
 
 void CanvasRenderingContext2D::GetDebugInfo(
@@ -2277,6 +2285,10 @@ CanvasRenderingContext2D::SetContextOptions(JSContext* aCx,
 
   mContextAttributesHasAlpha = attributes.mAlpha;
   UpdateIsOpaque();
+
+  if (StaticPrefs::gfx_canvas_colorspace_enabled()) {
+    mColorSpace = attributes.mColorSpace;
+  }
 
   return NS_OK;
 }
@@ -6722,7 +6734,8 @@ void CanvasRenderingContext2D::DrawWindow(nsGlobalWindowInner& aWindow,
 
 already_AddRefed<ImageData> CanvasRenderingContext2D::GetImageData(
     JSContext* aCx, int32_t aSx, int32_t aSy, int32_t aSw, int32_t aSh,
-    nsIPrincipal& aSubjectPrincipal, ErrorResult& aError) {
+    const ImageDataSettings& aSettings, nsIPrincipal& aSubjectPrincipal,
+    ErrorResult& aError) {
   if (!mCanvasElement && !mDocShell && !mOffscreenCanvas) {
     NS_ERROR("No canvas element and no docshell in GetImageData!!!");
     aError.Throw(NS_ERROR_DOM_SECURITY_ERR);
@@ -6744,6 +6757,11 @@ already_AddRefed<ImageData> CanvasRenderingContext2D::GetImageData(
     aError.Throw(NS_ERROR_DOM_INDEX_SIZE_ERR);
     return nullptr;
   }
+
+  // Pass the colorspace info into the image data
+  // if none is available, choose the one defined for this context
+  PredefinedColorSpace colorSpace =
+      GetColorSpaceFromImageDataSettings(aSettings, mColorSpace);
 
   // Handle negative width and height by flipping the rectangle over in the
   // relevant direction.
@@ -6777,7 +6795,8 @@ already_AddRefed<ImageData> CanvasRenderingContext2D::GetImageData(
     return nullptr;
   }
   MOZ_ASSERT(array);
-  return do_AddRef(new ImageData(GetParentObject(), w, h, array));
+
+  return do_AddRef(new ImageData(GetParentObject(), w, h, colorSpace, array));
 }
 
 static IntRect ClipImageDataTransfer(IntRect& aSrc, const IntPoint& aDestOffset,
@@ -7103,7 +7122,7 @@ void CanvasRenderingContext2D::PutImageData_explicit(
 
 static already_AddRefed<ImageData> CreateImageData(
     JSContext* aCx, CanvasRenderingContext2D* aContext, uint32_t aW,
-    uint32_t aH, ErrorResult& aError) {
+    uint32_t aH, const ImageDataSettings& aSettings, ErrorResult& aError) {
   if (aW == 0) aW = 1;
   if (aH == 0) aH = 1;
 
@@ -7122,11 +7141,16 @@ static already_AddRefed<ImageData> CreateImageData(
     return nullptr;
   }
 
-  return do_AddRef(new ImageData(aContext->GetParentObject(), aW, aH, darray));
+  PredefinedColorSpace colorSpace =
+      GetColorSpaceFromImageDataSettings(aSettings, aContext->GetColorSpace());
+
+  return do_AddRef(
+      new ImageData(aContext->GetParentObject(), aW, aH, colorSpace, darray));
 }
 
 already_AddRefed<ImageData> CanvasRenderingContext2D::CreateImageData(
-    JSContext* aCx, int32_t aSw, int32_t aSh, ErrorResult& aError) {
+    JSContext* aCx, int32_t aSw, int32_t aSh,
+    const ImageDataSettings& aSettings, ErrorResult& aError) {
   if (!aSw || !aSh) {
     aError.ThrowIndexSizeError("Invalid width or height");
     return nullptr;
@@ -7134,13 +7158,19 @@ already_AddRefed<ImageData> CanvasRenderingContext2D::CreateImageData(
 
   uint32_t w = Abs(aSw);
   uint32_t h = Abs(aSh);
-  return dom::CreateImageData(aCx, this, w, h, aError);
+
+  return dom::CreateImageData(aCx, this, w, h, aSettings, aError);
 }
 
 already_AddRefed<ImageData> CanvasRenderingContext2D::CreateImageData(
     JSContext* aCx, ImageData& aImagedata, ErrorResult& aError) {
+  // pass over the colorSpace if enabled
+  ImageDataSettings settings;
+  if (StaticPrefs::gfx_canvas_colorspace_enabled()) {
+    settings.mColorSpace.Construct(aImagedata.ColorSpace());
+  }
   return dom::CreateImageData(aCx, this, aImagedata.Width(),
-                              aImagedata.Height(), aError);
+                              aImagedata.Height(), settings, aError);
 }
 
 void CanvasRenderingContext2D::OnMemoryPressure() {

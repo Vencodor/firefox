@@ -155,3 +155,6 @@ LICENSES['sqlite'].acknowledgement = (
 )
 
 LICENSED_UNDER += ['sqlite']
+
+# We use sqlite's built-in normalization to sanitize SQL statements for reporting.
+DEFINES['SQLITE_ENABLE_NORMALIZE'] = 1

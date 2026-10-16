@@ -4,6 +4,7 @@ tags = "psm condprof"
 firefox-appdir = "browser"
 prefs = [
   "security.pki.certificate_transparency.mode=1",
+  "security.utility_pkcs11_module_process.enabled=true",
 ]
 skip-if = [
   "msix", # Bug 1809477
@@ -65,7 +66,10 @@ run-if = [
 tags = "remote-settings blocklist psm"
 
 ["test_broken_fips.js"]
-prefs = ["security.storage.encryption.sqlite.enabled=false"]
+prefs = [
+  "security.storage.encryption.sqlite.enabled=false",
+  "security.utility_pkcs11_module_process.enabled=false",
+]
 # FIPS has never been a thing on Android, so the workaround doesn't
 # exist on that platform.
 # FIPS still works on Linux, so this test doesn't make any sense there.
@@ -411,5 +415,6 @@ skip-if = [
 ["test_sts_preloadlist_selfdestruct.js"]
 
 ["test_trust_anchors.js"]
+prefs = ["security.utility_pkcs11_module_process.enabled=false"]
 
 ["test_x509.js"]

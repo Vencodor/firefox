@@ -15,14 +15,8 @@
     <attr name="actionPrimaryDisabled" format="reference" />
 
     <!-- Text -->
-    <!-- Text Inverted/On Color -->
-    <attr name="textOnColorPrimary" format="reference" />
     <!-- Action Primary disabled text -->
     <attr name="textActionPrimaryDisabled" format="reference" />
-
-    <!-- Icon -->
-    <!-- Icon inverted (on color) -->
-    <attr name="iconOnColor" format="reference" />
 
     <!-- Material3 extended palettes -->
     <attr name="colorInformation" format="reference" />
@@ -44,17 +38,10 @@
     <attr name="colorSelectedText" format="reference" />
     <attr name="colorIconPrivate" format="reference" />
 
-    <!-- Color palette attributes -->
-    <attr name="accent" format="reference" />
-    <attr name="accentBright" format="reference" />
-    <attr name="accentHighContrast" format="reference" />
-    <attr name="accentUsedOnDarkBackground" format="reference" />
-
     <!-- Misc -->
     <attr name="fenixLogo" format="reference" />
     <attr name="fenixWordmarkText" format="reference" />
     <attr name="fenixWordmarkLogo" format="reference" />
-    <attr name="addOnPrivateBrowsingExteriorCircleBackground" format="reference"/>
     <attr name="awesomeBarIndicatorColor" format="reference|color"/>
     <attr name="awesomeBarIndicatorBookmarkColor" format="reference|color"/>
 
@@ -67,8 +54,6 @@
         <attr name="deleteBrowsingDataItemTitle" format="reference" />
         <attr name="deleteBrowsingDataItemSubtitle" format="reference" />
     </declare-styleable>
-
-    <attr name="selectPromptHeaderTextColor" format="reference"/>
 
     <declare-styleable name="TextPercentageSeekBarPreference">
         <attr format="integer" name="min"/>

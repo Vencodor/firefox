@@ -814,10 +814,9 @@ class _SessionStore {
           if (ss.sessionType == ss.DEFER_SESSION) {
             let [iniState, remainingState] =
               this.#prepDataForDeferredRestore(state);
-            // Should null out state when iniState carries nothing to restore
-            // now, but savedGroups is always an array, so this is always true
-            // and the else never runs. TODO (Bug 2076441).
-            if (iniState.windows.length || iniState.savedGroups) {
+            // iniState carries windows with pinned tabs to open or closed tabs
+            // and groups to carry over, and/or saved groups to preserve.
+            if (iniState.windows.length || iniState.savedGroups.length) {
               state = iniState;
             } else {
               state = null;

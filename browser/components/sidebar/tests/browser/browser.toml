@@ -1,6 +1,7 @@
 [DEFAULT]
 support-files = ["head.js"]
 prefs = [
+  "browser.tabs.firefox-view.importHistory.dismissed=true",
   "sidebar.revamp=true",
 ]
 
@@ -57,6 +58,8 @@ prefs = [
 ["browser_history_sidebar.js"]
 
 ["browser_history_sidebar_glean.js"]
+
+["browser_history_sidebar_import_promo.js"]
 
 ["browser_launcher_dividers.js"]
 tags = "vertical-tabs"

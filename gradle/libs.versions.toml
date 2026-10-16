@@ -34,6 +34,7 @@ drawerlayout = "1.2.0"
 emoji2 = "1.7.0"
 exifinterface = "1.4.2"
 fragment = "1.9.1"
+glance = "1.2.0"
 lifecycle = "2.11.0"
 media = "1.7.1"
 media3 = "1.11.1"
@@ -110,7 +111,7 @@ robolectric = "4.17"
 adjust = "5.8.0"
 androidsvg = "1.4"
 disklrucache = "2.0.2"
-jetbrains-markdown = "0.7.16"
+jetbrains-markdown = "0.7.17"
 jna = "5.19.1"
 json = "20260814"
 jsoup = "1.23.2"
@@ -170,6 +171,9 @@ androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "frag
 androidx-fragment-compose = { module = "androidx.fragment:fragment-compose", version.ref = "fragment" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 androidx-fragment-testing = { module = "androidx.fragment:fragment-testing", version.ref = "fragment" }
+androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
+androidx-glance-appwidget-preview = { module = "androidx.glance:glance-appwidget-preview", version.ref = "glance" }
+androidx-glance-preview = { module = "androidx.glance:glance-preview", version.ref = "glance" }
 androidx-lifecycle-common = { module = "androidx.lifecycle:lifecycle-common", version.ref = "lifecycle" }
 androidx-lifecycle-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata", version.ref = "lifecycle" }

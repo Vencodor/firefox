@@ -1820,6 +1820,11 @@ int Connection::stepStatement(sqlite3* aNativeConnection,
     Telemetry::RecordSlowSQLStatement(
         statementString, mTelemetryFilename,
         static_cast<uint32_t>(duration.ToMilliseconds()));
+
+#ifdef NIGHTLY_BUILD
+    mStorageService->RecordSlowStatement(aStatement, duration,
+                                         mTelemetryFilename);
+#endif  // NIGHTLY_BUILD
   }
 
   (void)::sqlite3_extended_result_codes(aNativeConnection, 0);

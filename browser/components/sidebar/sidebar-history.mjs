@@ -17,6 +17,8 @@ import { SidebarPage } from "./sidebar-page.mjs";
 
 ChromeUtils.defineESModuleGetters(lazy, {
   HistoryController: "resource:///modules/HistoryController.sys.mjs",
+  MigrationUtils:
+    "moz-src:///browser/components/migration/MigrationUtils.sys.mjs",
   Sanitizer: "resource:///modules/Sanitizer.sys.mjs",
   SidebarTreeView:
     "moz-src:///browser/components/sidebar/SidebarTreeView.sys.mjs",
@@ -478,6 +480,35 @@ export class SidebarHistory extends SidebarPage {
     this.dispatchEvent(new CustomEvent("folder-toggle"));
   }
 
+  #importHistoryPromoTemplate() {
+    return html`<moz-promo
+      class="import-history-promo"
+      type="vibrant"
+      imageSrc="chrome://browser/skin/sidebar/kit-history-import.svg"
+      dismissable
+      data-l10n-id="sidebar-history-import-promo"
+      @promo:user-dismissed=${this.#onImportHistoryPromoDismissed}
+    >
+      <moz-button
+        slot="actions"
+        type="primary"
+        data-l10n-id="sidebar-history-import-promo-button"
+        @click=${this.#openMigrationWizard}
+      ></moz-button>
+    </moz-promo>`;
+  }
+
+  #onImportHistoryPromoDismissed(e) {
+    // Let the pref change re-render without the promo rather than having
+    // moz-promo remove itself from a Lit-managed tree.
+    e.preventDefault();
+    this.controller.dismissImportHistory();
+  }
+
+  #openMigrationWizard() {
+    lazy.MigrationUtils.showMigrationWizard(this.topWindow, {});
+  }
+
   #emptyMessageTemplate() {
     const nova = Services.prefs.getBoolPref("browser.nova.enabled", false);
     let descriptionHeader;
@@ -659,6 +690,9 @@ export class SidebarHistory extends SidebarPage {
           role=${ifDefined(this.#hasAccordionCards ? "tree" : undefined)}
           tabindex="-1"
         >
+          ${when(this.controller.shouldShowImportBanner, () =>
+            this.#importHistoryPromoTemplate()
+          )}
           ${this.cardsTemplate}
         </div>
       </div>

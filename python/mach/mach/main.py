@@ -384,40 +384,18 @@ To see more help for a specific command, run:
             import threading
 
             context._telemetry_init_done = threading.Event()
-            telemetry_lock = threading.Lock()
-
-            def _complete_telemetry_init(telemetry, error=None):
-                with telemetry_lock:
-                    if context._telemetry_init_done.is_set():
-                        return
-                    context.telemetry = telemetry
-                    context._telemetry_init_done.set()
-                if error is not None:
-                    print(
-                        f"Warning: Mach telemetry disabled for this command: {error}",
-                        file=sys.stderr,
-                    )
-
-            telemetry_timeout = threading.Timer(
-                5,
-                _complete_telemetry_init,
-                args=(NoopTelemetry(False), "initialization timed out"),
-            )
-            telemetry_timeout.daemon = True
-            telemetry_timeout.start()
+            context._telemetry_init_error = None
 
             def _finish_telemetry_init(future):
                 try:
                     from .telemetry import report_invocation_metrics
 
-                    telemetry = future.result()
-                    report_invocation_metrics(telemetry, handler.name)
-                except Exception as error:
-                    _complete_telemetry_init(NoopTelemetry(False), error)
-                else:
-                    _complete_telemetry_init(telemetry)
+                    context.telemetry = future.result()
+                    report_invocation_metrics(context.telemetry, handler.name)
+                except Exception as e:
+                    context._telemetry_init_error = e
                 finally:
-                    telemetry_timeout.cancel()
+                    context._telemetry_init_done.set()
 
             self._telemetry_future.add_done_callback(
                 lambda future: threading.Thread(
@@ -539,6 +517,12 @@ To see more help for a specific command, run:
         finally:
             if context._telemetry_init_done is not None:
                 context._telemetry_init_done.wait()
+                if context._telemetry_init_error is not None:
+                    print(
+                        "Warning: failed to initialize mach telemetry: "
+                        f"{context._telemetry_init_error!r}",
+                        file=sys.stderr,
+                    )
 
     def log(self, level, action, params, format_str):
         """Helper method to record a structured log event."""

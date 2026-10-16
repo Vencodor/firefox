@@ -761,7 +761,7 @@ nsresult DocAccessible::RemoveEventListeners() {
   return NS_OK;
 }
 
-void DocAccessible::ScrollTimerCallback(nsITimer* aTimer, void* aClosure) {
+void DocAccessible::ScrollTimerCallback(nsITimer* /*aTimer*/, void* aClosure) {
   DocAccessible* docAcc = reinterpret_cast<DocAccessible*>(aClosure);
 
   if (docAcc) {
@@ -868,7 +868,7 @@ std::pair<nsPoint, nsRect> DocAccessible::ComputeScrollData(
 static bool sIsAttrElementChanging = false;
 
 void DocAccessible::AttributeWillChange(dom::Element* aElement,
-                                        int32_t aNameSpaceID,
+                                        int32_t /*aNameSpaceID*/,
                                         nsAtom* aAttribute,
                                         AttrModType aModType) {
   if (sIsAttrElementChanging) {
@@ -1102,7 +1102,7 @@ void DocAccessible::ARIAActiveDescendantChanged(LocalAccessible* aAccessible) {
   }
 }
 
-void DocAccessible::ElementStateChanged(dom::Document* aDocument,
+void DocAccessible::ElementStateChanged(dom::Document* /*aDocument*/,
                                         dom::Element* aElement,
                                         dom::ElementState aStateMask) {
   const bool isEditable =

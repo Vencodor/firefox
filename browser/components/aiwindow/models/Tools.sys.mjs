@@ -14,6 +14,7 @@
  * @import { AITabContext, AITabResult } from "moz-src:///browser/components/aiwindow/models/aitab/AITab.sys.mjs"
  */
 
+import { isSmartPageURL } from "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs";
 import { getSkillPrompt } from "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs";
 import { searchBrowsingHistory as implSearchBrowsingHistory } from "moz-src:///browser/components/aiwindow/models/SearchBrowsingHistory.sys.mjs";
 import {
@@ -1089,6 +1090,13 @@ export class GetPageContent {
   static MAX_CHARACTERS = 10000;
 
   /**
+   * Generous until telemetry shows real transcript lengths. 2^16
+   * because `text_length` is rounded down to a power of two, so its 65536
+   * bucket counts exactly the truncated transcripts.
+   */
+  static MAX_TRANSCRIPT_CHARACTERS = 65536;
+
+  /**
    * getPageContent's results as plain text. A failed read contributes the
    * sentence explaining it, so callers that must tell the two apart want
    * getPageContent itself.
@@ -1119,10 +1127,14 @@ export class GetPageContent {
    * @param {string[]} toolParams.url_list
    * @param {AbortSignal} [toolParams.signal] - Cancels in-flight extractions
    *   (and tears down any headless browser) when it aborts.
+   * @param {number} [toolParams.settleDelayMs] - Extra wait for headless loads.
    * @param {ChatConversation} conversation
    * @returns {Promise<Array<{url: ?string, ok: boolean, content: string}>>}
    */
-  static async getPageContent({ url_list, signal }, conversation) {
+  static async getPageContent(
+    { url_list, signal, settleDelayMs },
+    conversation
+  ) {
     // Sanitize the inputs from the language model:
     if (!Array.isArray(url_list)) {
       return [
@@ -1137,6 +1149,9 @@ export class GetPageContent {
     // SecurityProperties and the URLs. Tab URLs don't do any new page loads. Mention urls
     // have been added by the user so they should be allowed. SERP urls came from a
     // trusted search provider's SERP and are eligible for an anonymous fetch.
+    // AITab URLs are an exception, reading the contents of an open
+    // about:smartpage tab extracts content locally and the content for the
+    // AITab is also stored locally, so there is no risk of data exfiltration.
     // All other URLs are restricted when both private and untrusted data has been seen.
     //
     // │ Flags               │ tab urls │ mention urls │ serp urls          │ any urls │
@@ -1151,7 +1166,7 @@ export class GetPageContent {
 
     const results = await Promise.all(
       url_list.map(async (url, index) => {
-        if (!isAllowedURLProtocol(url)) {
+        if (!isAllowedURLProtocol(url) && !isSmartPageURL(URL.parse(url))) {
           return { url, ok: false, content: "This URL is not allowed: " + url };
         }
         const startTime = ChromeUtils.now();
@@ -1161,7 +1176,8 @@ export class GetPageContent {
               url,
               mentionedUrls,
               conversation,
-              signal
+              signal,
+              settleDelayMs
             );
           ChromeUtils.addProfilerMarker(
             "SmartWindow",
@@ -1279,6 +1295,7 @@ export class GetPageContent {
    * @param {ChatConversation} conversation
    * @param {AbortSignal} [signal] - Cancels the extraction (and tears down any
    *   headless browser) when it aborts.
+   * @param {number} [settleDelayMs] - Extra wait for headless loads.
    *
    * @returns {Promise<{ok: boolean, content: string}>}
    *   ok is false when content is a failure description rather than page text.
@@ -1287,7 +1304,8 @@ export class GetPageContent {
     url,
     mentionedUrls,
     conversation,
-    signal
+    signal,
+    settleDelayMs
   ) {
     if (signal?.aborted) {
       throw new DOMException("Aborted", "AbortError");
@@ -1346,6 +1364,8 @@ export class GetPageContent {
               traceId
             ),
           anonymousFetch: true,
+          settleDelayMs,
+          signal,
         });
       }
       return {
@@ -1367,6 +1387,8 @@ export class GetPageContent {
           signal,
           traceId
         ),
+      settleDelayMs,
+      signal,
     });
   }
 
@@ -1399,6 +1421,7 @@ export class GetPageContent {
       pageExtractor.getText(
         {
           sufficientLength: GetPageContent.MAX_CHARACTERS,
+          sufficientTranscriptLength: GetPageContent.MAX_TRANSCRIPT_CHARACTERS,
           cleanWhitespace: true,
           removeBoilerplate: true,
           sourceUrl,

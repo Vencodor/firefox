@@ -89,6 +89,52 @@ nsNSSCertificateDB::FindCertByDBKey(const nsACString& aDBKey,
   return NS_OK;
 }
 
+NS_IMETHODIMP
+nsNSSCertificateDB::AsyncFindCertByDBKey(const nsACString& aDBKey,
+                                         JSContext* aCx,
+                                         mozilla::dom::Promise** aPromise) {
+  NS_ENSURE_ARG_POINTER(aCx);
+
+  nsIGlobalObject* globalObject = xpc::CurrentNativeGlobal(aCx);
+  if (!globalObject) {
+    return NS_ERROR_UNEXPECTED;
+  }
+  mozilla::ErrorResult result;
+  RefPtr<Promise> promise = Promise::Create(globalObject, result);
+  if (result.Failed()) {
+    return result.StealNSResult();
+  }
+  RefPtr<nsNSSCertificateDB> self(this);
+  auto promiseHolder =
+      MakeRefPtr<nsMainThreadPtrHolder<Promise>>(__func__, promise);
+  nsCOMPtr<nsIRunnable> runnable(NS_NewRunnableFunction(
+      __func__, [self, dbKey = nsCString{aDBKey},
+                 promiseHolder(std::move(promiseHolder))]() {
+        nsCOMPtr<nsIX509Cert> cert(nullptr);
+        nsresult rv = self->FindCertByDBKey(dbKey, getter_AddRefs(cert));
+        NS_DispatchToMainThread(NS_NewRunnableFunction(
+            __func__, [rv, cert(std::move(cert)),
+                       promiseHolder(std::move(promiseHolder))]() {
+              if (NS_SUCCEEDED(rv)) {
+                if (cert) {
+                  promiseHolder->get()->MaybeResolve(std::move(cert));
+                } else {
+                  promiseHolder->get()->MaybeResolve(JS::NullHandleValue);
+                }
+              } else {
+                promiseHolder->get()->MaybeReject(rv);
+              }
+            }));
+      }));
+  nsresult rv =
+      NS_DispatchBackgroundTask(runnable.forget(), NS_DISPATCH_EVENT_MAY_BLOCK);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  promise.forget(aPromise);
+  return NS_OK;
+}
+
 nsresult nsNSSCertificateDB::FindCertByDBKey(const nsACString& aDBKey,
                                              UniqueCERTCertificate& cert) {
   static_assert(sizeof(uint64_t) == 8, "type size sanity check");

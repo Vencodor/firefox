@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 6.5.128
- * pdfjsBuild = e1412d3a5
+ * pdfjsVersion = 6.5.152
+ * pdfjsBuild = 0252c1f6c
  */
 
 ;// ./web/ui_utils.js
@@ -898,7 +898,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "01ffb4ab-d90d-4ca8-8b3b-0b6d879e32ec";
+const INTERNAL_EVT = "2075895e-d8cb-4663-ad4a-10173966f21f";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -8823,7 +8823,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "6.5.128";
+    const viewerVersion = "6.5.152";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -9223,7 +9223,9 @@ class PDFViewer {
     const optionalContentConfigPromise = pdfDocument.getOptionalContentConfig({
       intent: "display"
     });
-    const permissionsPromise = this.#enablePermissions ? pdfDocument.getPermissions() : Promise.resolve();
+    const permissionsPromise = this.#enablePermissions ? pdfDocument.getPermissions().catch(reason => {
+      console.error("getPermissions", reason);
+    }) : Promise.resolve();
     const {
       eventBus,
       pageColors,

@@ -388,7 +388,7 @@ pub extern "C" fn wgpu_server_new(owner: WebGPUParentPtr) -> *mut Global {
 #[no_mangle]
 pub unsafe extern "C" fn wgpu_server_delete(global: *mut Global) {
     log::info!("Terminating WGPU server");
-    let _ = Box::from_raw(global);
+    let _ = unsafe { Box::from_raw(global) };
 }
 
 #[no_mangle]
@@ -565,8 +565,7 @@ fn create_next_numbered_dir(dir: &std::path::Path) -> std::io::Result<std::path:
     }
 }
 
-#[deny(unsafe_op_in_unsafe_fn)]
-unsafe fn adapter_request_device(
+fn adapter_request_device(
     global: &Global,
     self_id: id::AdapterId,
     desc: DeviceDescriptor,
@@ -1038,7 +1037,9 @@ pub unsafe extern "C" fn wgpu_server_buffer_map(
     // Spawn a task on this thread to wait for that map result.
     moz_task::spawn_local("wgpu_server_buffer_map callback", async move {
         let result = map_result_receiver.await.unwrap();
-        (closure.callback)(closure.user_data, BufferMapAsyncStatus::from(result));
+        unsafe {
+            (closure.callback)(closure.user_data, BufferMapAsyncStatus::from(result));
+        }
     })
     .detach();
 
@@ -1313,7 +1314,9 @@ unsafe fn dedicated_image_memory_requirements(
         let mut requirements2 =
             vk::MemoryRequirements2::default().push_next(&mut dedicated_requirements);
         let info = vk::ImageMemoryRequirementsInfo2::default().image(image);
-        loader.get_image_memory_requirements2(&info, &mut requirements2);
+        unsafe {
+            loader.get_image_memory_requirements2(&info, &mut requirements2);
+        }
         requirements2.memory_requirements
     };
 
@@ -1321,7 +1324,9 @@ unsafe fn dedicated_image_memory_requirements(
         && dedicated_requirements.prefers_dedicated_allocation == vk::FALSE
     {
         let msg = c"dmabuf image neither requires nor prefers a dedicated allocation";
-        gfx_critical_note(msg.as_ptr());
+        unsafe {
+            gfx_critical_note(msg.as_ptr());
+        }
     }
 
     requirements
@@ -1743,7 +1748,7 @@ extern "C" {
         txn_id: crate::RemoteTextureTxnId,
     );
     #[cfg(target_os = "windows")]
-    fn wgpu_parent_get_compositor_device_luid(out_luid: *mut crate::FfiLUID);
+    fn wgpu_parent_get_compositor_device_luid(out_luid: *mut crate::FfiLUID) -> bool;
     fn wgpu_parent_post_request_device(parent: WebGPUParentPtr, device_id: id::DeviceId);
     fn wgpu_parent_build_buffer_map_closure(
         parent: WebGPUParentPtr,
@@ -1789,11 +1794,14 @@ pub unsafe fn is_dmabuf_supported(
         .push_next(&mut external_format_info)
         .push_next(&mut modifier_info);
 
-    match instance.get_physical_device_image_format_properties2(
-        physical_device,
-        &format_info,
-        &mut props,
-    ) {
+    let res = unsafe {
+        instance.get_physical_device_image_format_properties2(
+            physical_device,
+            &format_info,
+            &mut props,
+        )
+    };
+    match res {
         Ok(_) => (),
         Err(_) => {
             //debug!(?format, ?modifier, "format not supported for dma import");
@@ -2583,10 +2591,15 @@ pub unsafe extern "C" fn wgpu_server_pack_free_swap_chain_buffer_ids(
     buffer_ids: FfiSlice<'_, id::BufferId>,
 ) {
     *bb = make_byte_buf(&ServerMessage::FreeSwapChainBufferIds(
-        buffer_ids.as_slice().try_into().unwrap(),
+        unsafe { buffer_ids.as_slice() }.try_into().unwrap(),
     ));
 }
 
+// Process WebGPU messages
+//
+// # Safety
+//
+// - `data_buffers` and `shmem_mappings` must be valid.
 #[no_mangle]
 pub unsafe extern "C" fn wgpu_server_messages(
     global: &Global,
@@ -2595,8 +2608,8 @@ pub unsafe extern "C" fn wgpu_server_messages(
     data_buffers: FfiSlice<'_, ByteBuf>,
     shmem_mappings: FfiSlice<'_, FfiSlice<'_, u8>>,
 ) {
-    let serialized_messages = serialized_messages.as_slice();
-    let data_buffers = data_buffers.as_slice();
+    let serialized_messages = unsafe { serialized_messages.as_slice() };
+    let data_buffers = unsafe { data_buffers.as_slice() };
 
     use bincode::Options;
     let options = bincode::DefaultOptions::new()
@@ -2606,7 +2619,9 @@ pub unsafe extern "C" fn wgpu_server_messages(
 
     for _ in 0..nr_of_messages {
         let message: Message = serde::Deserialize::deserialize(&mut deserializer).unwrap();
-        process_message(global, data_buffers, shmem_mappings, message);
+        unsafe {
+            process_message(global, data_buffers, shmem_mappings, message);
+        }
     }
 }
 
@@ -2676,6 +2691,12 @@ fn process_buffer_map(global: &Global, msg: Message, response_byte_buf: &mut Byt
     global.buffer_map_async(buffer_id, offset, Some(size), operation);
 }
 
+// Process one WebGPU message
+//
+// # Safety
+//
+// - `shmem_mappings` must be valid.
+#[allow(unsafe_op_in_unsafe_fn)]
 unsafe fn process_message(
     global: &Global,
     data_buffers: &[ByteBuf],
@@ -2693,23 +2714,21 @@ unsafe fn process_message(
             // webgpu::SharedTexture do not work with wgpu.
             #[cfg(target_os = "windows")]
             {
-                let mut adapter_luid = core::mem::MaybeUninit::<crate::FfiLUID>::uninit();
-                wgpu_parent_get_compositor_device_luid(adapter_luid.as_mut_ptr());
-                let adapter_luid = if adapter_luid.as_ptr().is_null() {
-                    None
-                } else {
-                    Some(adapter_luid.assume_init())
+                let mut adapter_luid = crate::FfiLUID {
+                    low_part: 0,
+                    high_part: 0,
                 };
-
-                if adapter_luid.is_some() && !desc.force_fallback_adapter {
+                if wgpu_parent_get_compositor_device_luid(&mut adapter_luid)
+                    && !desc.force_fallback_adapter
+                {
                     // We can't unwrap here since instance creation could have failed.
                     if let Some(instance) = global.instance().as_hal::<wgc::api::Dx12>() {
                         for adapter in instance.enumerate_adapters(None) {
                             let raw_adapter = adapter.adapter.raw_adapter();
                             let desc = unsafe { raw_adapter.GetDesc() };
                             if let Ok(desc) = desc {
-                                if desc.AdapterLuid.LowPart == adapter_luid.unwrap().low_part
-                                    && desc.AdapterLuid.HighPart == adapter_luid.unwrap().high_part
+                                if desc.AdapterLuid.LowPart == adapter_luid.low_part
+                                    && desc.AdapterLuid.HighPart == adapter_luid.high_part
                                 {
                                     global.create_adapter_from_hal(
                                         wgh::DynExposedAdapter::from(adapter),
@@ -3183,14 +3202,14 @@ pub unsafe extern "C" fn wgpu_server_queue_write_texture(
     data_layout: &crate::FfiTexelCopyBufferLayout,
     size: &wgt::Extent3d,
 ) {
-    let data = data.as_slice();
+    let data = unsafe { data.as_slice() };
     let data_layout = data_layout.into_wgt();
     global.device_push_error_scope(device_id, ErrorFilter::Validation);
     global.queue_write_texture(queue_id, destination, data, &data_layout, size);
     let error = global.device_pop_error_scope(device_id).unwrap();
     if let Some(err) = error {
         let msg = CString::new(format!("write_texture() failed: {:?}", err)).unwrap();
-        gfx_critical_note(msg.as_ptr());
+        unsafe { gfx_critical_note(msg.as_ptr()) };
     }
 }
 
@@ -3271,7 +3290,7 @@ pub unsafe extern "C" fn wgpu_server_queue_submit(
     let device = queue.device();
 
     device.push_error_scope(ErrorFilter::Validation);
-    let submission_index = global.queue_submit(queue_id, command_buffer_ids.as_slice());
+    let submission_index = global.queue_submit(queue_id, unsafe { command_buffer_ids.as_slice() });
     let error = device.pop_error_scope().unwrap();
     let submission_succeeded = error.is_none();
     if let Some(error) = error {
@@ -3282,7 +3301,7 @@ pub unsafe extern "C" fn wgpu_server_queue_submit(
     enqueue_signal_semaphores_destruction(
         &queue,
         device.clone(),
-        signal_semaphores.as_slice(),
+        unsafe { signal_semaphores.as_slice() },
         !submission_succeeded,
     );
     #[cfg(not(target_os = "linux"))]
@@ -3371,6 +3390,7 @@ pub extern "C" fn wgpu_server_buffer_drop(global: &Global, self_id: id::BufferId
 /// Imports a Direct3D texture from a shared handle.
 #[cfg(target_os = "windows")]
 #[no_mangle]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn wgpu_server_device_import_texture_from_shared_handle(
     global: &Global,
     device_id: id::DeviceId,
@@ -3423,6 +3443,7 @@ pub unsafe extern "C" fn wgpu_server_device_import_texture_from_shared_handle(
 /// specified queue for the fence to reach a specific value.
 #[cfg(target_os = "windows")]
 #[no_mangle]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn wgpu_server_device_wait_fence_from_shared_handle(
     global: &Global,
     queue_id: id::QueueId,
@@ -3479,6 +3500,7 @@ mod macos {
 
     /// Imports a Metal texture from the specified plane of an IOSurface.
     #[no_mangle]
+    #[allow(unsafe_op_in_unsafe_fn)]
     pub unsafe extern "C" fn wgpu_server_device_import_texture_from_iosurface(
         global: &Global,
         device_id: id::DeviceId,

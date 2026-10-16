@@ -427,7 +427,7 @@ pub extern "C" fn wgpu_client_new(
 #[no_mangle]
 pub unsafe extern "C" fn wgpu_client_delete(client: *mut Client) {
     log::info!("Terminating WGPU client");
-    let _client = Box::from_raw(client);
+    let _client = unsafe { Box::from_raw(client) };
 }
 
 #[no_mangle]
@@ -1260,7 +1260,7 @@ pub unsafe extern "C" fn wgpu_client_render_bundle_encoder_set_bind_group(
     let command = RenderBundleEncoderCommand::BindingCommand(BindingCommand::SetBindGroup {
         index,
         bind_group,
-        dynamic_offsets: dynamic_offsets.as_slice().to_vec(),
+        dynamic_offsets: unsafe { dynamic_offsets.as_slice() }.to_vec(),
     });
     let message = Message::RenderBundleEncoder(encoder_id, command);
     client.queue_message(&message);
@@ -1546,8 +1546,7 @@ pub unsafe extern "C" fn wgpu_client_command_encoder_begin_render_pass(
 
     let label = wgpu_string(label);
 
-    let color_attachments: Vec<_> = color_attachments
-        .as_slice()
+    let color_attachments: Vec<_> = unsafe { color_attachments.as_slice() }
         .iter()
         .map(|att_opt| att_opt.as_ref().map(|att| att.clone()))
         .collect();
@@ -1582,9 +1581,7 @@ pub unsafe extern "C" fn wgpu_client_create_bind_group_layout(
 
     let id = client.identities.lock().bind_group_layouts.process();
 
-    let entries = desc
-        .entries
-        .as_slice()
+    let entries = unsafe { desc.entries.as_slice() }
         .iter()
         .enumerate()
         .map(|(idx, entry)| {
@@ -1746,7 +1743,7 @@ pub unsafe extern "C" fn wgpu_client_create_pipeline_layout(
 
     let wgpu_desc = PipelineLayoutDescriptor {
         label,
-        bind_group_layouts: Cow::Borrowed(desc.bind_group_layouts.as_slice()),
+        bind_group_layouts: Cow::Borrowed(unsafe { desc.bind_group_layouts.as_slice() }),
         immediate_size: 0,
     };
 
@@ -1766,9 +1763,7 @@ pub unsafe extern "C" fn wgpu_client_create_bind_group(
 
     let id = client.identities.lock().bind_groups.process();
 
-    let entries = desc
-        .entries
-        .as_slice()
+    let entries = unsafe { desc.entries.as_slice() }
         .iter()
         .map(|entry| BindGroupEntry {
             binding: entry.binding,
@@ -2047,7 +2042,10 @@ pub unsafe extern "C" fn wgpu_report_validation_error(
     message: *const core::ffi::c_char,
 ) {
     let action = DeviceAction::Error(GPUError {
-        message: core::ffi::CStr::from_ptr(message).to_str().unwrap().into(),
+        message: unsafe { core::ffi::CStr::from_ptr(message) }
+            .to_str()
+            .unwrap()
+            .into(),
         r#type: wgt::error::ErrorType::Validation,
     });
     let message = Message::Device(device_id, action);
