@@ -596,7 +596,7 @@
 @media (-moz-pref("sidebar.verticalTabs")) {
   :root[custom-ui] {
     &:not([sizemode="maximized"], [sizemode="fullscreen"]) {
-      --space-custom-window-top: 13px;
+      --space-custom-window-top: 16px;
     }
 
     body {

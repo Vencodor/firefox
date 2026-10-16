@@ -14,6 +14,11 @@ ChromeUtils.importESModule(
   { global: "current" }
 );
 
+ChromeUtils.importESModule(
+  "chrome://browser/content/preferences/config/tabs-browsing.mjs",
+  { global: "current" }
+);
+
 let defaultBrowser = window.createDefaultBrowserConfig();
 defaultBrowser.items = defaultBrowser.items.map(item => ({
   ...item,
@@ -29,6 +34,8 @@ startup.items = startup.items
   .filter(item => item.id === "browserRestoreSession")
   .map(item => ({ ...item, items: [] }));
 let downloads = SettingGroupManager.get("downloads");
+let tabs = SettingGroupManager.get("tabs");
+let pageNavigation = SettingGroupManager.get("pageNavigation");
 
 Preferences.addSetting({ id: "monoBrowserDescription" });
 Preferences.addSetting({ id: "monoBrowserStage" });
@@ -39,6 +46,27 @@ SettingGroupManager.registerGroups({
   monoDownloadFolder: {
     ...downloads,
     items: downloads.items.filter(item => item.id === "downloadFolder"),
+  },
+  monoTabGroups: {
+    l10nId: "custom-ui-settings-tab-groups-heading",
+    headingLevel: 2,
+    iconSrc: tabs.iconSrc,
+    items: tabs.items
+      .find(item => item.id === "tabsInteraction")
+      .items.filter(item =>
+        ["tabGroupSuggestions", "tabGroupDragToCreate"].includes(item.id)
+      ),
+  },
+  monoContainers: {
+    l10nId: "tabs-containers-heading",
+    headingLevel: 2,
+    items: tabs.items.find(item => item.id === "browserContainersbox").items,
+  },
+  monoPageNavigation: {
+    ...pageNavigation,
+    items: pageNavigation.items.filter(item =>
+      ["useCursorNavigation", "searchStartTyping"].includes(item.id)
+    ),
   },
   monoAbout: {
     items: [

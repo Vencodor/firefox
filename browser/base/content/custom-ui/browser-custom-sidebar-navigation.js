@@ -76,12 +76,17 @@ var CustomSidebarNavigation = {
         attributeFilter: ["disabled"],
       });
     }
+    this.viewBackground = gURLBar.querySelector(".urlbarView-background");
+    this.viewResults = gURLBar.querySelector(".urlbarView-results");
+    this.viewAnimations = [];
+    this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     this.viewObserver = new ResizeObserver(entries => {
-      this.viewHeight = entries[0].borderBoxSize[0]?.blockSize || 0;
-      this.root.style.setProperty(
-        "--custom-address-view-height",
-        `${Math.ceil(this.viewHeight)}px`
-      );
+      let height = entries[0].borderBoxSize[0]?.blockSize || 0;
+      let previous = this.viewHeight;
+      this.viewHeight = height;
+      if (previous && height && previous !== height) {
+        this.animateViewResize();
+      }
     });
     this.viewObserver.observe(gURLBar.querySelector(".urlbarView"));
     this.progressListener = {
@@ -142,7 +147,11 @@ var CustomSidebarNavigation = {
   },
 
   updateInputTabOrder() {
-    if (this.enabled && !this.open && !this.root.hasAttribute("custom-newtab")) {
+    if (
+      this.enabled &&
+      !this.open &&
+      !this.root.hasAttribute("custom-newtab")
+    ) {
       gURLBar.inputField.setAttribute("tabindex", "-1");
     } else if (this.originalTabIndex === null) {
       gURLBar.inputField.removeAttribute("tabindex");
@@ -231,6 +240,58 @@ var CustomSidebarNavigation = {
       this.domain.focus();
     }
   },
+
+  /**
+   * Glides the bottom edge of the address results from the height they had
+   * before the results changed to their new height. The rows already have
+   * their new layout, so only the background is stretched and, while growing,
+   * the rows are revealed with it.
+   */
+  animateViewResize() {
+    let view = this.viewBackground.parentElement;
+    let visible = this.viewBackground.getBoundingClientRect().height;
+    for (let animation of this.viewAnimations) {
+      animation.cancel();
+    }
+    this.viewAnimations = [];
+    view.removeAttribute("custom-resizing");
+    if (this.reducedMotion.matches) {
+      return;
+    }
+    let delta = visible - this.viewBackground.getBoundingClientRect().height;
+    if (Math.abs(delta) < 1) {
+      return;
+    }
+    view.setAttribute("custom-resizing", "");
+    let options = {
+      duration: this.viewResizeDurationMs,
+      easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+    };
+    this.viewAnimations.push(
+      this.viewBackground.animate(
+        { marginBlockEnd: [`${-delta}px`, "0px"] },
+        options
+      )
+    );
+    if (delta < 0) {
+      this.viewAnimations.push(
+        this.viewResults.animate(
+          { clipPath: [`inset(0 0 ${-delta}px 0)`, "inset(0 0 0 0)"] },
+          options
+        )
+      );
+    }
+    let animations = this.viewAnimations;
+    Promise.allSettled(animations.map(animation => animation.finished)).then(
+      () => {
+        if (animations === this.viewAnimations) {
+          view.removeAttribute("custom-resizing");
+        }
+      }
+    );
+  },
+
+  viewResizeDurationMs: 180,
 
   /**
    * Shows the window controls while the pointer is in the window's top-right

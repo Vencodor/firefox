@@ -24,6 +24,10 @@ var MonoPreferences = {
       "ai",
       "permissionsData",
       "moreFromMozilla",
+      "appearance",
+      "tabsBrowsing",
+      "accessibility",
+      "experimental",
     ]);
     let configs = {};
     for (let [id, config] of Object.entries(panes)) {
@@ -32,7 +36,10 @@ var MonoPreferences = {
         rootId = panes[rootId].parent;
       }
       if (retained.has(rootId)) {
-        configs[id] = { ...config, visible: () => true };
+        configs[id] = {
+          ...config,
+          visible: id === "experimental" ? undefined : () => true,
+        };
       }
     }
 
@@ -49,6 +56,21 @@ var MonoPreferences = {
       ...configs.search,
       l10nId: "custom-ui-settings-search-heading",
       groupIds: ["searchSuggestions"],
+    };
+    configs.appearance = {
+      ...configs.appearance,
+      groupIds: ["browserTheme"],
+    };
+    configs.tabsBrowsing = {
+      ...configs.tabsBrowsing,
+      groupIds: [
+        "monoTabGroups",
+        "monoContainers",
+        "monoPageNavigation",
+        "media",
+        "performance",
+      ],
+      module,
     };
     configs.downloads = {
       ...configs.downloads,

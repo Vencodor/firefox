@@ -11,7 +11,8 @@
   --size-custom-address-modal: 640px;
   --size-custom-address-input: 64px;
   --size-custom-address-results: 400px;
-  --size-custom-address-clearance: 180px;
+  --size-custom-address-offset: 18vh;
+  --custom-address-top: max(var(--space-xxlarge), var(--size-custom-address-offset));
   --size-custom-window-hotspot-inline: 160px;
   --size-custom-window-hotspot-block: 56px;
 
@@ -199,7 +200,7 @@
       grid-area: auto;
       place-self: auto;
       inset-inline: 0;
-      inset-block-start: max(var(--space-xxlarge), calc(50% - (var(--size-custom-address-input) + var(--custom-address-view-height, 0px)) / 2));
+      inset-block-start: var(--custom-address-top);
       z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 3);
       width: min(var(--size-custom-address-modal), calc(100% - 48px));
       height: auto;
@@ -273,7 +274,10 @@
     }
 
     #urlbar .urlbarView {
-      max-height: min(var(--size-custom-address-results), max(0px, calc(100vh - var(--size-custom-address-clearance))));
+      max-height: min(
+        var(--size-custom-address-results),
+        max(0px, calc(100vh - var(--custom-address-top) - var(--size-custom-address-input) - var(--space-xxlarge)))
+      );
       font-size: var(--font-size-custom-title);
     }
 
@@ -281,6 +285,28 @@
       min-height: 0;
       overflow-y: auto;
     }
+
+    #urlbar .urlbarView-results[wrap] > .urlbarView-row[has-url] > .urlbarView-row-inner > .urlbarView-row-body > .urlbarView-row-body-top {
+      display: flex;
+    }
+
+    #urlbar .urlbarView-row-body-top {
+      column-gap: var(--space-medium);
+    }
+
+    #urlbar .urlbarView-row[has-url]:not([has-action]) .urlbarView-title-separator,
+    #urlbar .urlbarView-title[is-url] ~ :is(.urlbarView-title-separator, .urlbarView-action),
+    #urlbar .urlbarView-row[type="search"] :is(.urlbarView-title-separator, .urlbarView-action) {
+      display: none;
+    }
+
+    #urlbar .urlbarView-url {
+      font-size: var(--font-size-custom-small);
+    }
+  }
+
+  #urlbar .urlbarView[custom-resizing] {
+    overflow: visible;
   }
 
   &:not([custom-newtab], [custom-address-open]) #urlbar .urlbarView {

@@ -649,6 +649,13 @@ export function collectDOMObservation(window, options = {}) {
       if (!text) {
         continue;
       }
+      const rect = rectOf(unit);
+      if (rect.width <= 0 || rect.height <= 0) {
+        continue;
+      }
+      const blockNodeId = `b${order + 1}`;
+      targets.set(blockNodeId, { element: unit, target: unit });
+
       const nativeFooter = landmark(unit, "footer,[role='contentinfo']");
       const footer = Boolean(
         nativeFooter &&
@@ -722,11 +729,15 @@ export function collectDOMObservation(window, options = {}) {
         effectiveRole && effectiveRole !== "link"
           ? 1
           : heuristics.controlDensityOf(unit);
+      const translationDecision = heuristics.explainTranslationDecision(unit);
 
       blocks.push({
+        node_id: blockNodeId,
         order,
         tag: unit.tagName.toLowerCase(),
+        role: effectiveRole || (headingLevel > 0 ? "heading" : unit.tagName.toLowerCase()),
         text,
+        rect,
         heading_level: headingLevel,
         alert_assertive: alertAssertive,
         status_polite: statusPolite,
@@ -744,6 +755,10 @@ export function collectDOMObservation(window, options = {}) {
         small_iframe: smallIframe,
         repetition_group: rep?.group || null,
         repetition_item: rep?.item || null,
+        translation: {
+          included: translationDecision.included,
+          reason: translationDecision.reason,
+        },
       });
     }
 

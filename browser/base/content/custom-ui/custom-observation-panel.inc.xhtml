@@ -12,6 +12,11 @@
     <html:button id="custom-observation-toggle" type="button" data-l10n-id="agent-observation-enable"/>
     <html:button id="custom-observation-refresh" type="button" data-l10n-id="agent-observation-refresh" disabled="disabled"/>
   </html:div>
+  <html:div id="custom-observation-modes" class="custom-observation-modes" role="group" data-l10n-id="agent-observation-mode-group">
+    <html:button id="custom-observation-mode-action" type="button" data-mode="action" aria-pressed="true" data-l10n-id="agent-observation-mode-action"/>
+    <html:button id="custom-observation-mode-context" type="button" data-mode="context" aria-pressed="false" data-l10n-id="agent-observation-mode-context"/>
+    <html:button id="custom-observation-mode-translation" type="button" data-mode="translation" aria-pressed="false" data-l10n-id="agent-observation-mode-translation"/>
+  </html:div>
   <html:p id="custom-observation-status" class="custom-observation-status" role="status" aria-live="polite" data-l10n-id="agent-observation-idle"/>
   <html:div id="custom-observation-summary" class="custom-observation-summary" aria-live="polite"/>
   <html:div id="custom-observation-list" class="custom-observation-list" role="list" data-l10n-id="agent-observation-list-label"/>

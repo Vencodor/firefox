@@ -5,7 +5,7 @@
 agent-chat-title = Mono 에이전트
 agent-chat-urlbar-action = Chat
 agent-chat-open =
-    .label = 에이전트와 대화
+    .label = Chat with Agent
 agent-chat-new = 새 대화
 agent-chat-empty-title = 무엇을 도와드릴까요?
 agent-chat-empty-description = 생각을 정리하거나, 글을 다듬거나, 다음 할 일을 계획해 보세요.

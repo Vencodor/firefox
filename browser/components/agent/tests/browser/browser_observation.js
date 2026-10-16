@@ -454,8 +454,82 @@ add_task(
             !translationChecks.upvoteAria,
           "Selective translation excludes metadata, buttons, and control aria-labels"
         );
+
+        Assert.greater(
+          result.context_elements.length,
+          0,
+          "Observation result exposes ranked context_elements for debug inspection"
+        );
+        Assert.greater(
+          result.translation_elements.length,
+          0,
+          "Observation result exposes translation_elements for debug inspection"
+        );
+        Assert.ok(
+          await session.setMode("context"),
+          "Session switches overlay to context mode"
+        );
+        const topContextBlock = result.context_elements[0];
+        Assert.ok(
+          await session.highlight(topContextBlock.handle),
+          "Session can highlight a context block on the page"
+        );
+        Assert.ok(
+          await session.setMode("translation"),
+          "Session switches overlay to translation mode"
+        );
+        const firstIncludedTranslation = result.translation_elements.find(
+          item => item.translation?.included
+        );
+        Assert.ok(
+          firstIncludedTranslation &&
+            (await session.highlight(firstIncludedTranslation.handle)),
+          "Session can highlight a selective translation block on the page"
+        );
+        Assert.ok(
+          await session.setMode("action"),
+          "Session switches overlay back to action mode"
+        );
       } finally {
         session.destroy();
+      }
+
+      if (window.CustomObservationUI) {
+        const ui = window.CustomObservationUI;
+        ui.setPanelOpen(true);
+        try {
+          await ui.start();
+          Assert.equal(ui.mode, "action", "Default debug mode is action");
+          Assert.greater(
+            ui.list.children.length,
+            0,
+            "Action mode renders interactive candidate rows"
+          );
+
+          await ui.setMode("context");
+          Assert.equal(ui.mode, "context", "Debug UI switched to context mode");
+          Assert.equal(
+            ui.list.children.length,
+            ui.result.context_elements.length,
+            "Context mode renders ranked context block rows"
+          );
+
+          await ui.setMode("translation");
+          Assert.equal(
+            ui.mode,
+            "translation",
+            "Debug UI switched to translation mode"
+          );
+          Assert.equal(
+            ui.list.children.length,
+            ui.result.translation_elements.length,
+            "Translation mode renders selective translation block rows"
+          );
+
+          await ui.setMode("action");
+        } finally {
+          ui.setPanelOpen(false);
+        }
       }
     });
   }

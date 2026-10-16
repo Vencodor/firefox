@@ -197,6 +197,7 @@ export class AgentObservationSession {
       ) {
         throw new Error("Observation changed while collecting");
       }
+      this.mode = options.mode || "action";
       const rows = [];
       const handles = new Map();
       const contextBlocks = [];
@@ -222,10 +223,23 @@ export class AgentObservationSession {
           }
         }
         for (const block of snapshot.context_blocks || []) {
+          const blockNodeId = `${record.context.id}:${block.node_id}`;
+          handles.set(blockNodeId, {
+            observationId: id,
+            frameId: record.context.id,
+            documentId: record.documentId,
+            nodeId: block.node_id,
+          });
           contextBlocks.push({
             ...block,
+            node_id: blockNodeId,
             frame_id: record.context.id,
             order: nextBlockOrder++,
+            frame: {
+              id: record.context.id,
+              url: snapshot.url,
+              title: snapshot.title,
+            },
           });
         }
         for (const row of snapshot.candidates) {
@@ -256,16 +270,71 @@ export class AgentObservationSession {
         }
       }
       let pageText = text.slice(0, config.textLimit);
-      if (!config.legacyMode && config.textMode !== "raw" && contextBlocks.length) {
-        const rankedContext = rankContextBlocks(contextBlocks, {
+      let rankedContext = null;
+      if (!config.legacyMode && contextBlocks.length) {
+        rankedContext = rankContextBlocks(contextBlocks, {
           textLimit: config.textLimit,
           isIsolatedMainState: stateSignals.isIsolatedMainState,
         });
-        pageText = rankedContext.text;
-        textTruncated ||= rankedContext.text_truncated;
+        if (config.textMode !== "raw") {
+          pageText = rankedContext.text;
+          textTruncated ||= rankedContext.truncated;
+        } else {
+          textTruncated ||= text.length > config.textLimit;
+        }
       } else {
         textTruncated ||= text.length > config.textLimit;
       }
+
+      const selectedContextSet = new Set(
+        (rankedContext?.selectedBlocks || []).map(block => block.node_id)
+      );
+      const sortedContextBlocks = [...(rankedContext?.allScoredBlocks || [])].sort(
+        (a, b) => b.score - a.score || a.order - b.order
+      );
+      const contextElements = sortedContextBlocks.map((block, index) => ({
+        index: String(index + 1),
+        node_id: block.node_id,
+        name: block.text,
+        label: block.text,
+        role: block.role || block.tag,
+        tag: block.tag,
+        card_subrole: block.card_subrole || null,
+        selected_for_context: selectedContextSet.has(block.node_id),
+        ranking: {
+          score: block.score,
+          reasons: block.reasons,
+        },
+        rect: block.rect,
+        frame: block.frame,
+        handle: handles.get(block.node_id),
+      }));
+
+      const sortedTranslationBlocks = [...contextBlocks].sort((a, b) => {
+        const aInc = a.translation?.included ? 1 : 0;
+        const bInc = b.translation?.included ? 1 : 0;
+        if (aInc !== bInc) {
+          return bInc - aInc;
+        }
+        return a.order - b.order;
+      });
+      const translationElements = sortedTranslationBlocks.map((block, index) => ({
+        index: String(index + 1),
+        node_id: block.node_id,
+        name: block.text,
+        label: block.text,
+        role: block.role || block.tag,
+        tag: block.tag,
+        card_subrole: block.card_subrole || null,
+        translation: {
+          included: Boolean(block.translation?.included),
+          reason: block.translation?.reason || "other",
+        },
+        rect: block.rect,
+        frame: block.frame,
+        handle: handles.get(block.node_id),
+      }));
+
       const filtered = filterCandidates(
         { candidates: rows },
         {
@@ -275,14 +344,6 @@ export class AgentObservationSession {
       );
       for (const element of filtered.elements) {
         element.handle = handles.get(element.node_id);
-        const record = this.frames.find(
-          frame => frame.context.id === element.handle.frameId
-        );
-        record.items.push({
-          nodeId: element.handle.nodeId,
-          index: element.index,
-          rect: element.rect,
-        });
       }
       const snapshot = collected[0].snapshot;
       const result = {
@@ -297,6 +358,8 @@ export class AgentObservationSession {
         },
         viewport: snapshot.viewport,
         elements: filtered.elements,
+        context_elements: contextElements,
+        translation_elements: translationElements,
         targets_by_operation: filtered.targets_by_operation,
         coverage: {
           viewportOnly: true,
@@ -317,6 +380,7 @@ export class AgentObservationSession {
         },
       };
       this.result = result;
+      this.#populateFrameItems(this.mode);
       if (!(await this.#show())) {
         throw new Error("Observation changed before highlighting");
       }
@@ -331,6 +395,56 @@ export class AgentObservationSession {
       }
       throw error;
     }
+  }
+
+  #getItemsForMode(mode = this.mode) {
+    if (!this.result) {
+      return [];
+    }
+    if (mode === "context") {
+      return this.result.context_elements || [];
+    }
+    if (mode === "translation") {
+      return this.result.translation_elements || [];
+    }
+    return this.result.elements || [];
+  }
+
+  #populateFrameItems(mode = this.mode) {
+    for (const frame of this.frames) {
+      frame.items = [];
+    }
+    const items = this.#getItemsForMode(mode);
+    for (const element of items) {
+      if (!element.handle) {
+        continue;
+      }
+      if (mode === "translation" && !element.translation?.included) {
+        continue;
+      }
+      const record = this.frames.find(
+        frame => frame.context.id === element.handle.frameId
+      );
+      if (record) {
+        record.items.push({
+          nodeId: element.handle.nodeId,
+          index: element.index,
+          rect: element.rect,
+        });
+      }
+    }
+  }
+
+  async setMode(mode) {
+    if (!["action", "context", "translation"].includes(mode)) {
+      return false;
+    }
+    this.mode = mode;
+    if (!this.id || !this.result) {
+      return false;
+    }
+    this.#populateFrameItems(mode);
+    return this.#show();
   }
 
   async #show(selectedHandle = null) {
@@ -371,12 +485,40 @@ export class AgentObservationSession {
   }
 
   async highlight(handle) {
-    const element = this.result?.elements.find(item =>
+    const allItems = [
+      ...(this.result?.elements || []),
+      ...(this.result?.context_elements || []),
+      ...(this.result?.translation_elements || []),
+    ];
+    const element = allItems.find(item =>
       ["observationId", "frameId", "documentId", "nodeId"].every(
-        key => item.handle[key] === handle?.[key]
+        key => item.handle?.[key] === handle?.[key]
       )
     );
-    return element ? this.#show(element.handle) : false;
+    if (!element) {
+      return false;
+    }
+    this.#populateFrameItems(this.mode);
+    if (
+      this.mode === "translation" &&
+      !element.translation?.included &&
+      element.handle
+    ) {
+      const record = this.frames.find(
+        frame => frame.context.id === element.handle.frameId
+      );
+      if (
+        record &&
+        !record.items.some(item => item.nodeId === element.handle.nodeId)
+      ) {
+        record.items.push({
+          nodeId: element.handle.nodeId,
+          index: element.index,
+          rect: element.rect,
+        });
+      }
+    }
+    return this.#show(element.handle);
   }
 
   invalidate(reason) {

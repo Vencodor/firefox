@@ -482,7 +482,7 @@ pref("browser.urlbar.mentions.maxResults", 5);
 pref("browser.urlbar.mentions.maxGroupResults", 5);
 
 // the maximum number of results to show in autocomplete when doing richResults
-pref("browser.urlbar.maxRichResults", 10);
+pref("browser.urlbar.maxRichResults", 6);
 
 // The maximum number of historical search results to show.
 pref("browser.urlbar.maxHistoricalSearchSuggestions", 2);
@@ -751,7 +751,7 @@ pref("browser.urlbar.dnsResolveSingleWordsAfterSearch", 0);
 // up with two panels on top of each other. Since for now we can't detect that
 // we leave this choice to the user, hopefully in the future this can be flipped
 // for everyone.
-pref("browser.urlbar.keepPanelOpenDuringImeComposition", false);
+pref("browser.urlbar.keepPanelOpenDuringImeComposition", true);
 
 // Whether Firefox Suggest group labels are shown in the urlbar view.
 pref("browser.urlbar.groupLabels.enabled", true);

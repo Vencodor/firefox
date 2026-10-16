@@ -157,6 +157,9 @@ custom-ui-settings-downloads-heading =
 custom-ui-settings-downloads-navigation = 저장 위치
     .title = 저장 위치
 
+custom-ui-settings-tab-groups-heading =
+    .label = 탭 그룹
+
 custom-ui-settings-about-heading =
     .heading = Mono 소개
 

@@ -862,26 +862,25 @@ export class DOMHeuristics {
   }
 
   /**
-   * Evaluates whether a leaf block or text node should be translated in selective mode.
-   * Always evaluates sentence metrics on the closest block container so inline `<a>`/`<span>`
-   * words inside a sentence are never dropped mid-sentence.
+   * Evaluates whether a leaf block or text node should be translated in selective mode,
+   * returning both the boolean `included` decision and a diagnostic `reason` code.
    */
-  shouldTranslateNode(node) {
+  explainTranslationDecision(node) {
     if (!node) {
-      return false;
+      return { included: false, reason: "excluded_node", subrole: null };
     }
     const element =
       node.nodeType === this.NodeConstructor.TEXT_NODE
         ? this.parentOf(node)
         : node;
     if (!element || this.isExcludedFromTranslation(element)) {
-      return false;
+      return { included: false, reason: "excluded_node", subrole: null };
     }
 
     const block = this.closestBlockContainer(element) || element;
     const blockText = normalize(block.textContent);
     if (!blockText) {
-      return false;
+      return { included: false, reason: "empty_text", subrole: null };
     }
 
     const effectiveRole = roleOf({
@@ -919,21 +918,32 @@ export class DOMHeuristics {
       }
     }
 
-    if (subrole === "meta" || subrole === "action") {
-      return false;
+    if (subrole === "meta") {
+      return { included: false, reason: "card_meta", subrole };
     }
-    if (subrole === "title" || subrole === "body") {
-      return true;
+    if (subrole === "action") {
+      return { included: false, reason: "card_action", subrole };
+    }
+    if (subrole === "title") {
+      return { included: true, reason: "card_title", subrole };
+    }
+    if (subrole === "body") {
+      return { included: true, reason: "card_body", subrole };
     }
 
     const metrics = analyzeTextMetrics(blockText);
     const density = this.controlDensityOf(block);
     if (density > 0.7) {
-      return false;
+      return { included: false, reason: "high_control_density", subrole };
     }
 
     if (this.headingLevelOf(block) > 0) {
-      return !metrics.isShortLabel || blockText.length >= 4;
+      const included = !metrics.isShortLabel || blockText.length >= 4;
+      return {
+        included,
+        reason: included ? "heading" : "short_label",
+        subrole,
+      };
     }
 
     const inMainOrArticle = Boolean(
@@ -950,10 +960,27 @@ export class DOMHeuristics {
       block.matches?.("p,blockquote,dd,figcaption") &&
       !metrics.isShortLabel
     ) {
-      return true;
+      return { included: true, reason: "main_prose", subrole };
     }
 
-    return metrics.isSentenceLike && density <= 0.6;
+    if (metrics.isSentenceLike && density <= 0.6) {
+      return { included: true, reason: "sentence_like", subrole };
+    }
+
+    return {
+      included: false,
+      reason: metrics.isShortLabel ? "short_label" : "non_sentence",
+      subrole,
+    };
+  }
+
+  /**
+   * Evaluates whether a leaf block or text node should be translated in selective mode.
+   * Always evaluates sentence metrics on the closest block container so inline `<a>`/`<span>`
+   * words inside a sentence are never dropped mid-sentence.
+   */
+  shouldTranslateNode(node) {
+    return this.explainTranslationDecision(node).included;
   }
 
   /**

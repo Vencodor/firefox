@@ -87,72 +87,21 @@
     --panel-separator-padding-block: var(--space-small);
     --panel-separator-padding-inline: var(--space-medium);
 
-    #appMenu-fxa-separator::before {
-      --panel-separator-color: var(--color-black);
-      border-image: none;
-      border-color: var(--panel-separator-color);
-    }
-
-    #appMenu-fxa-sign-in-promo {
-      --promo-background-color-vibrant: var(--custom-surface-subtle);
-      --promo-message-text-color-vibrant: var(--custom-ink);
-      --button-text-color-ghost: var(--custom-ink);
-      --button-text-color-ghost-hover: var(--custom-ink);
-      --button-text-color-ghost-active: var(--custom-ink);
-      --button-background-color-ghost-hover: var(--custom-hover);
-      --button-background-color-ghost-active: var(--custom-line);
-    }
-
-    #appMenu-fxa-sign-in-promo-link {
-      align-self: start;
-      width: fit-content;
-      padding: var(--space-small) var(--space-medium);
-      border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-      background: var(--button-background-color);
-      color: var(--button-text-color);
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-
-    #appMenu-fxa-sign-in-promo-link,
-    #appMenu-fxa-status2:not([fxastatus]) > #appMenu-fxa-label2,
-    #appMenu-nova-fxa-label,
-    #appMenu-fxa-signed-out-sign-in-button {
-      --button-border-radius: var(--border-radius-custom-tab);
-      --button-background-color: var(--color-black);
-      --button-background-color-hover: var(--color-black);
-      --button-background-color-active: var(--color-black);
-      --button-text-color: var(--color-white);
-      --button-text-color-hover: var(--color-white);
-      --button-text-color-active: var(--color-white);
-      --button-border-color: var(--color-black);
-      --button-border-color-hover: var(--color-black);
-      --button-border-color-active: var(--color-black);
-      --button-background-color-primary: var(--color-black);
-      --button-background-color-primary-hover: var(--color-black);
-      --button-background-color-primary-active: var(--color-black);
-      --button-text-color-primary: var(--color-white);
-      --button-text-color-primary-hover: var(--color-white);
-      --button-text-color-primary-active: var(--color-white);
-      background-image: none;
-    }
-
-    :is(#appMenu-nova-fxa-label, #appMenu-fxa-signed-out-sign-in-button)::part(button) {
-      background-image: none;
+    :is(
+      #appMenu-fxa-status2,
+      #appMenu-fxa-sign-in-promo,
+      #appMenu-fxa-separator,
+      #appMenu-extensions-themes-button,
+      #appMenu-zoom-controls,
+      #appMenu-help-button2
+    ) {
+      display: none;
     }
 
     .subview-subheader {
       color: var(--custom-muted, var(--text-color-deemphasized));
       font-size: var(--font-size-custom-small, var(--font-size-small));
       font-weight: var(--font-weight-semibold);
-    }
-
-    #appMenu-zoom-controls {
-      border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-      background-color: var(--custom-surface-subtle, var(--background-color-box));
     }
   }
 
@@ -176,5 +125,25 @@
       --menuitem-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
       --menuitem-margin: 0 var(--space-xsmall);
     }
+  }
+}
+
+:root[custom-ui] #contentAreaContextMenu {
+  :is(
+    #context-navigation,
+    #context-sep-navigation,
+    #context-back,
+    #context-forward,
+    #context-reload,
+    #context-stop,
+    #context-bookmarkpage,
+    #context-take-screenshot,
+    #context-inspect,
+    #context-inspect-a11y,
+    #inspect-separator,
+    #context-sendpagetodevice,
+    #context-sep-sendpagetodevice
+  ) {
+    display: none;
   }
 }

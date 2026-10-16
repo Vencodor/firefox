@@ -61,6 +61,7 @@
 
   .custom-observation-header,
   .custom-observation-controls,
+  .custom-observation-modes,
   .custom-observation-summary,
   .custom-observation-row-header {
     display: flex;
@@ -103,6 +104,38 @@
     opacity: var(--button-opacity-disabled);
   }
 
+  .custom-observation-modes {
+    flex: none;
+    gap: var(--space-custom-edge);
+    padding: var(--space-custom-inset) var(--space-custom-padding) 0;
+  }
+
+  .custom-observation-modes button {
+    flex: 1;
+    min-width: 0;
+    min-height: 28px;
+    padding-inline: var(--space-custom-edge);
+    border: var(--border-width) solid var(--custom-line);
+    border-radius: var(--border-radius-custom-tab);
+    background: var(--custom-surface-subtle);
+    color: var(--custom-muted);
+    font-size: var(--font-size-custom-small);
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .custom-observation-modes button:hover {
+    background: var(--custom-hover);
+    color: var(--custom-ink);
+  }
+
+  .custom-observation-modes button[aria-pressed="true"] {
+    border-color: var(--custom-line-strong);
+    background: var(--custom-accent-subtle);
+    color: var(--custom-ink);
+    font-weight: var(--font-weight-semibold);
+  }
+
   .custom-observation-status {
     flex: none;
     margin: 0;
@@ -137,7 +170,13 @@
     background: var(--custom-surface);
   }
 
+  .custom-observation-row[data-excluded="true"] {
+    opacity: 0.72;
+    background: var(--custom-surface-subtle);
+  }
+
   .custom-observation-row[data-selected="true"] {
+    opacity: 1;
     border-color: #c2410c;
     background: rgb(234 88 12 / 12%);
   }
@@ -180,6 +219,12 @@
     color: var(--custom-muted);
     font-size: var(--font-size-custom-small);
     white-space: nowrap;
+  }
+
+  .custom-observation-score[data-included="true"] {
+    border-color: var(--custom-line-strong);
+    background: var(--custom-accent-subtle);
+    color: var(--custom-ink);
   }
 
   .custom-observation-row button {
@@ -331,7 +376,9 @@
 @media (forced-colors: active) {
   :root[custom-ui] {
     .custom-observation-row,
-    .custom-observation-swatch-candidate {
+    .custom-observation-swatch-candidate,
+    .custom-observation-modes button[aria-pressed="true"],
+    .custom-observation-score[data-included="true"] {
       border-color: Highlight;
       background: Canvas;
     }

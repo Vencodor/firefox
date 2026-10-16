@@ -18,10 +18,10 @@
 | `browser-custom-site-settings.js` | 기존 Firefox 사이트 정보·권한 패널을 중앙에 표시하고 페이지 정보로 연결 |
 | `browser-custom-popups.css` | 네이티브 메뉴·하위 보기·브라우저 팝업의 사용자 지정 외형 |
 | `browser-custom-agent.js`, `browser-custom-agent.css`, `custom-agent-hud.inc.xhtml` | 에이전트 상태 표시: 사이드바 탭 행, 오른쪽 아래 오브·말풍선, '다음 클릭' 표시. 에이전트는 `CustomAgentUI.connect()`로 연결하고 상태는 `setState()`로 알린다 |
-| `custom-urlbar-run.sys.mjs` | 주소창 검색 제안의 ‘에이전트와 대화’ 행. 기존 동적 제안 선택 경로에서 채팅 명령을 실행 |
-| `browser-custom-chat.js`, `agent-chat.html`, `agent-chat.js`, `agent-chat.css` | Mono 메뉴의 ‘에이전트와 대화’에서 여는 독립 채팅 탭. 질문 초안, 대화 표시, 스트리밍 응답과 중지 처리 |
+| `custom-urlbar-run.sys.mjs` | 주소창 검색 제안의 ‘Chat’ 행. 기존 동적 제안 선택 경로에서 채팅 명령을 실행 |
+| `browser-custom-chat.js`, `agent-chat.html`, `agent-chat.js`, `agent-chat.css` | Mono 메뉴의 ‘Chat with Agent’에서 여는 독립 채팅 탭. 질문 초안, 대화 표시, 스트리밍 응답과 중지 처리 |
 | `browser-custom-notice.js`, `browser-custom-notice.css`, `custom-notice-sidebar.inc.xhtml` | 새 기능 알림 카드(새 탭 검색 상자 아래, 사이드바 아래쪽). 내용은 `browser.customUI.notice`, 닫은 알림은 `browser.customUI.noticeDismissed`에 기록 |
-| `browser-custom-observation.js`, `browser-custom-observation.css`, `custom-observation-panel.inc.xhtml` | 앱 메뉴의 ‘페이지 관찰’ 항목과 도구 모음 버튼에서 여는 오른쪽 페이지 관찰 패널. 후보 요소를 표시하고 선택 항목을 페이지에서 강조 |
+| `browser-custom-observation.js`, `browser-custom-observation.css`, `custom-observation-panel.inc.xhtml` | 앱 메뉴 More Tools의 ‘Observe Page’ 항목과 도구 모음 버튼에서 여는 오른쪽 페이지 관찰 패널. 후보 요소를 표시하고 선택 항목을 페이지에서 강조 |
 | `CustomSettingsWindow.sys.mjs`, `browser-custom-settings-window.js`, `browser-custom-settings-window.css`, `custom-settings-titlebar.inc.xhtml` | 설정 전용 창의 생성·재사용, Mono 헤더·창 제어 및 일반 창과의 분리 |
 | `../../../components/preferences/custom-ui/` | 설정 페이지·설정 탐색·하위 대화상자의 사용자 지정 외형 |
 
@@ -54,7 +54,7 @@
 사이드바 탐색은 일반 세로 탭 창에서만 적용하고 사용자 지정 도구 모음·전체 화면·설정 전용 창에서는 기존 경로를 따른다.
 주소 편집과 페이지 설정에는 어두운 배경을 넣지 않으며, 공통 그림자와 짧은 애니메이션만 적용한다.
 
-페이지 관찰은 Mono 앱 메뉴에서 ‘페이지 관찰’을 선택해 연다. 지원 페이지에서 ‘관찰 시작’을 누르면 후보 요소 목록이 표시되고, 목록 항목을 눌러 해당 요소를 페이지에서 강조할 수 있다. ‘다시 관찰’은 현재 페이지를 다시 읽으며, 패널을 닫으면 관찰과 강조 표시를 지운다.
+페이지 관찰은 Mono 앱 메뉴의 More Tools에서 ‘Observe Page’를 선택해 연다. 지원 페이지에서 ‘관찰 시작’을 누르면 ‘행동 요소(action)’, ‘페이지 맥락(context)’, ‘선택 번역(translation)’ 세 가지 중요도·정렬 프로파일을 전환하며 후보 요소·맥락 블록·번역 대상 블록과 점수 근거를 관측하고, 목록 항목을 눌러 해당 요소를 페이지에서 강조할 수 있다. ‘다시 관찰’은 현재 페이지를 다시 읽으며, 패널을 닫으면 관찰과 강조 표시를 지운다.
 
 채팅은 기존 `CustomAgentUI.connect(adapter)`에 선택적인 `chat({ conversationId, messages, signal, onDelta })` 메서드를 연결한다. `messages`는 `{ role, content }` 배열이며 현재 대화의 질문과 완료된 답변만 전달한다. `chat()`은 최종 답변 문자열을 반환하는 Promise를 제공하거나, `onDelta(text)`로 추가되는 답변 조각을 전달한 뒤 완료한다. `signal`이 취소되면 어댑터도 요청을 중단해야 한다. UI는 취소·연결 변경·페이지 이탈 뒤의 늦은 응답을 반영하지 않는다. 채팅 전용 어댑터는 웹 작업 Run을 활성화하지 않는다.
 

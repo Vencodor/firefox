@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* global CustomizableUI, delayedStartupPromise, gBrowser, PanelUI */
+/* global CustomizableUI, delayedStartupPromise, gBrowser, PanelMultiView, PanelUI */
 
 var CustomObservationUI = {
   session: null,
@@ -11,17 +11,25 @@ var CustomObservationUI = {
   requestId: 0,
   selectedHandle: null,
   pending: false,
+  mode: "action",
 
   init() {
     this.panel = document.getElementById("custom-observation-panel");
     this.closeButton = document.getElementById("custom-observation-close");
     this.toggleButton = document.getElementById("custom-observation-toggle");
     this.refreshButton = document.getElementById("custom-observation-refresh");
+    this.modesContainer = document.getElementById("custom-observation-modes");
+    this.modeButtons = Array.from(
+      this.modesContainer?.querySelectorAll("button[data-mode]") || []
+    );
     this.status = document.getElementById("custom-observation-status");
     this.summary = document.getElementById("custom-observation-summary");
     this.list = document.getElementById("custom-observation-list");
 
-    let menuBody = PanelUI.mainView.querySelector(".panel-subview-body");
+    let menuBody = PanelMultiView.getViewNode(
+      document,
+      "appmenu-moreTools"
+    ).querySelector(".panel-subview-body");
     if (!document.getElementById("custom-observation-menuitem")) {
       let menuItem = document.createXULElement("toolbarbutton");
       menuItem.id = "custom-observation-menuitem";
@@ -31,12 +39,15 @@ var CustomObservationUI = {
         PanelUI.hide();
         this.togglePanel();
       });
-      menuBody.append(menuItem);
+      menuBody.querySelector("toolbarseparator").before(menuItem);
     }
 
     this.closeButton.addEventListener("click", this);
     this.toggleButton.addEventListener("click", this);
     this.refreshButton.addEventListener("click", this);
+    for (let button of this.modeButtons) {
+      button.addEventListener("click", this);
+    }
     this.panel.addEventListener("keydown", this);
     gBrowser.tabContainer.addEventListener("TabSelect", this);
     gBrowser.tabContainer.addEventListener("TabClose", this);
@@ -77,6 +88,45 @@ var CustomObservationUI = {
     }
     if (!open && wasOpen) {
       this.clearSession().then(() => this.updateAvailability());
+    }
+  },
+
+  async setMode(mode) {
+    if (!["action", "context", "translation"].includes(mode) || this.mode === mode) {
+      return;
+    }
+    this.mode = mode;
+    for (let button of this.modeButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+    }
+    this.selectedHandle = null;
+    if (this.result) {
+      this.render();
+    }
+    if (this.session && this.result && !this.pending) {
+      let requestId = ++this.requestId;
+      let session = this.session;
+      let browser = this.browser;
+      try {
+        let shown = await session.setMode(mode);
+        if (
+          requestId !== this.requestId ||
+          session !== this.session ||
+          browser !== gBrowser.selectedBrowser
+        ) {
+          return;
+        }
+        if (!shown) {
+          this.result = null;
+          this.render();
+          this.setStatus("agent-observation-stale");
+        }
+      } catch (error) {
+        if (requestId === this.requestId) {
+          console.error("Could not switch page observation mode", error);
+          this.setStatus("agent-observation-error");
+        }
+      }
     }
   },
 
@@ -150,7 +200,7 @@ var CustomObservationUI = {
 
   async observe(requestId, session, browser) {
     try {
-      let result = await session.observe();
+      let result = await session.observe({ mode: this.mode });
       if (
         requestId !== this.requestId ||
         session !== this.session ||
@@ -207,6 +257,13 @@ var CustomObservationUI = {
     this.toggleButton.disabled = !available || this.pending;
     this.refreshButton.disabled =
       this.pending || (!this.result && !this.session);
+    for (let button of this.modeButtons || []) {
+      button.disabled = this.pending;
+      button.setAttribute(
+        "aria-pressed",
+        String(button.dataset.mode === this.mode)
+      );
+    }
     this.toggleButton.toggleAttribute("data-active", !!this.session);
     document.l10n.setAttributes(
       this.toggleButton,
@@ -225,6 +282,19 @@ var CustomObservationUI = {
     }
   },
 
+  getActiveElements() {
+    if (!this.result) {
+      return [];
+    }
+    if (this.mode === "context") {
+      return this.result.context_elements ?? [];
+    }
+    if (this.mode === "translation") {
+      return this.result.translation_elements ?? [];
+    }
+    return this.result.elements ?? [];
+  },
+
   render() {
     let result = this.result;
     this.list.replaceChildren();
@@ -233,9 +303,10 @@ var CustomObservationUI = {
       return;
     }
 
+    let elements = this.getActiveElements();
     let coverage = result.coverage ?? {};
     let stats = [
-      ["agent-observation-count", { count: result.elements?.length ?? 0 }],
+      ["agent-observation-count", { count: elements.length }],
       [
         "agent-observation-duration",
         { duration: result.timing?.total_ms ?? 0 },
@@ -254,18 +325,56 @@ var CustomObservationUI = {
       this.summary.append(item);
     }
 
-    let elements = result.elements ?? [];
-    if (elements.some(element => Number.isFinite(element.ranking?.score))) {
-      let rankingSummary = document.createElement("span");
+    if (this.mode === "action") {
+      if (elements.some(element => Number.isFinite(element.ranking?.score))) {
+        let rankingSummary = document.createElement("span");
+        document.l10n.setAttributes(
+          rankingSummary,
+          "agent-observation-ranking-summary"
+        );
+        this.summary.append(rankingSummary);
+      }
+    } else if (this.mode === "context") {
+      let selectedCount = elements.filter(
+        element => element.selected_for_context
+      ).length;
+      let contextSummary = document.createElement("span");
       document.l10n.setAttributes(
-        rankingSummary,
-        "agent-observation-ranking-summary"
+        contextSummary,
+        "agent-observation-context-summary",
+        { selected: selectedCount }
       );
-      this.summary.append(rankingSummary);
+      this.summary.append(contextSummary);
+
+      let signals = result.page?.state_signals ?? {};
+      for (let [flag, l10nId] of [
+        [signals.hasAlert, "agent-observation-state-alert"],
+        [signals.hasDialog, "agent-observation-state-dialog"],
+        [signals.isIsolatedMainState, "agent-observation-state-isolated"],
+      ]) {
+        if (flag) {
+          let badge = document.createElement("span");
+          badge.className = "custom-observation-warning";
+          document.l10n.setAttributes(badge, l10nId);
+          this.summary.append(badge);
+        }
+      }
+    } else if (this.mode === "translation") {
+      let includedCount = elements.filter(
+        element => element.translation?.included
+      ).length;
+      let excludedCount = elements.length - includedCount;
+      let transSummary = document.createElement("span");
+      document.l10n.setAttributes(
+        transSummary,
+        "agent-observation-translation-summary",
+        { included: includedCount, excluded: excludedCount }
+      );
+      this.summary.append(transSummary);
     }
 
     let warnings = [];
-    if (coverage.actionsOmitted) {
+    if (this.mode === "action" && coverage.actionsOmitted) {
       warnings.push([
         "agent-observation-actions-omitted",
         {
@@ -321,21 +430,46 @@ var CustomObservationUI = {
     let row = document.createElement("article");
     row.className = "custom-observation-row";
     row.setAttribute("role", "listitem");
+    if (
+      (this.mode === "translation" && !element.translation?.included) ||
+      (this.mode === "context" && !element.selected_for_context)
+    ) {
+      row.setAttribute("data-excluded", "true");
+    }
 
     let header = document.createElement("div");
     header.className = "custom-observation-row-header";
     let select = document.createElement("button");
     select.type = "button";
     select.className = "custom-observation-select";
-    select.textContent = `${element.index}. ${element.name || element.label || ""}`;
+    let displayText = element.name || element.label || "";
+    if (displayText.length > 120) {
+      displayText = displayText.slice(0, 117) + "…";
+    }
+    select.textContent = `${element.index}. ${displayText}`;
     select.setAttribute("aria-pressed", "false");
     select.addEventListener("click", () => this.selectElement(element, select));
 
     let ranking = element.ranking;
     let scoreBadge = null;
-    if (Number.isFinite(ranking?.score)) {
+    if (this.mode === "translation" && element.translation) {
       scoreBadge = document.createElement("span");
       scoreBadge.className = "custom-observation-score";
+      if (element.translation.included) {
+        scoreBadge.setAttribute("data-included", "true");
+      }
+      document.l10n.setAttributes(
+        scoreBadge,
+        element.translation.included
+          ? "agent-observation-translation-included"
+          : "agent-observation-translation-excluded"
+      );
+    } else if (Number.isFinite(ranking?.score)) {
+      scoreBadge = document.createElement("span");
+      scoreBadge.className = "custom-observation-score";
+      if (this.mode === "context" && element.selected_for_context) {
+        scoreBadge.setAttribute("data-included", "true");
+      }
       document.l10n.setAttributes(scoreBadge, "agent-observation-score", {
         score: ranking.score,
       });
@@ -366,7 +500,45 @@ var CustomObservationUI = {
     row.append(header, details);
 
     let context = element.context;
-    if (scoreBadge && Array.isArray(ranking.reasons)) {
+    if (this.mode === "translation" && element.translation) {
+      let transDetails = document.createElement("section");
+      transDetails.className = "custom-observation-ranking-details";
+      let transHeading = document.createElement("h3");
+      document.l10n.setAttributes(
+        transHeading,
+        "agent-observation-translation-details"
+      );
+      transDetails.append(transHeading);
+      let line = document.createElement("p");
+      let label = document.createElement("span");
+      let transReasonId =
+        {
+          card_title: "agent-observation-trans-reason-card-title",
+          card_body: "agent-observation-trans-reason-card-body",
+          heading: "agent-observation-trans-reason-heading",
+          main_prose: "agent-observation-trans-reason-main-prose",
+          sentence_like: "agent-observation-trans-reason-sentence-like",
+          excluded_node: "agent-observation-trans-reason-excluded-node",
+          card_meta: "agent-observation-trans-reason-card-meta",
+          card_action: "agent-observation-trans-reason-card-action",
+          high_control_density:
+            "agent-observation-trans-reason-high-control-density",
+          short_label: "agent-observation-trans-reason-short-label",
+          non_sentence: "agent-observation-trans-reason-non-sentence",
+        }[element.translation.reason] ?? "agent-observation-reason-other";
+      document.l10n.setAttributes(label, transReasonId);
+      let statusSpan = document.createElement("span");
+      statusSpan.className = "custom-observation-score-delta";
+      document.l10n.setAttributes(
+        statusSpan,
+        element.translation.included
+          ? "agent-observation-translation-included"
+          : "agent-observation-translation-excluded"
+      );
+      line.append(label, statusSpan);
+      transDetails.append(line);
+      details.append(transDetails);
+    } else if (scoreBadge && Array.isArray(ranking?.reasons)) {
       let rankingDetails = document.createElement("section");
       rankingDetails.className = "custom-observation-ranking-details";
       let rankingHeading = document.createElement("h3");
@@ -378,31 +550,53 @@ var CustomObservationUI = {
       for (let reason of ranking.reasons) {
         let line = document.createElement("p");
         let label = document.createElement("span");
-        let reasonId = {
-          base: "agent-observation-reason-base",
-          search: "agent-observation-reason-search",
-          editable: "agent-observation-reason-editable",
-          adjustable: "agent-observation-reason-adjustable",
-          button: "agent-observation-reason-button",
-          submit: "agent-observation-reason-submit",
-          dialog: "agent-observation-reason-dialog",
-          navigation: "agent-observation-reason-navigation",
-          menu: "agent-observation-reason-menu",
-          main: "agent-observation-reason-main",
-          complementary: "agent-observation-reason-complementary",
-          invalid: "agent-observation-reason-invalid",
-          focused: "agent-observation-reason-focused",
-          pagination: "agent-observation-reason-pagination",
-          disclosure: "agent-observation-reason-disclosure",
-          current: "agent-observation-reason-current",
-          readonly: "agent-observation-reason-readonly",
-          reset: "agent-observation-reason-reset",
-          unlabeled: "agent-observation-reason-unlabeled",
-          clipped: "agent-observation-reason-clipped",
-          duplicate_target: "agent-observation-reason-duplicate-target",
-          footer_link: "agent-observation-reason-footer-link",
-          repeated: "agent-observation-reason-repeated",
-        }[reason?.code] ?? "agent-observation-reason-other";
+        let reasonId =
+          {
+            base: "agent-observation-reason-base",
+            search: "agent-observation-reason-search",
+            editable: "agent-observation-reason-editable",
+            adjustable: "agent-observation-reason-adjustable",
+            button: "agent-observation-reason-button",
+            submit: "agent-observation-reason-submit",
+            dialog: "agent-observation-reason-dialog",
+            navigation: "agent-observation-reason-navigation",
+            menu: "agent-observation-reason-menu",
+            main: "agent-observation-reason-main",
+            complementary: "agent-observation-reason-complementary",
+            invalid: "agent-observation-reason-invalid",
+            focused: "agent-observation-reason-focused",
+            pagination: "agent-observation-reason-pagination",
+            disclosure: "agent-observation-reason-disclosure",
+            current: "agent-observation-reason-current",
+            readonly: "agent-observation-reason-readonly",
+            reset: "agent-observation-reason-reset",
+            unlabeled: "agent-observation-reason-unlabeled",
+            clipped: "agent-observation-reason-clipped",
+            duplicate_target: "agent-observation-reason-duplicate-target",
+            footer_link: "agent-observation-reason-footer-link",
+            repeated: "agent-observation-reason-repeated",
+            card_title: "agent-observation-reason-card-title",
+            card_meta: "agent-observation-reason-card-meta",
+            alert_assertive: "agent-observation-reason-alert-assertive",
+            status_polite: "agent-observation-reason-status-polite",
+            blocking_dialog: "agent-observation-reason-blocking-dialog",
+            footer: "agent-observation-reason-footer",
+            navigation_or_header:
+              "agent-observation-reason-navigation-or-header",
+            main_or_central: "agent-observation-reason-main-or-central",
+            external_complementary:
+              "agent-observation-reason-external-complementary",
+            heading_1: "agent-observation-reason-heading-1",
+            heading_2_or_card_title:
+              "agent-observation-reason-heading-2-or-card-title",
+            heading_3_plus: "agent-observation-reason-heading-3-plus",
+            isolated_main_state:
+              "agent-observation-reason-isolated-main-state",
+            body_or_sentence: "agent-observation-reason-body-or-sentence",
+            card_action_or_dense_controls:
+              "agent-observation-reason-card-action-or-dense-controls",
+            small_iframe: "agent-observation-reason-small-iframe",
+          }[reason?.code] ?? "agent-observation-reason-other";
         document.l10n.setAttributes(label, reasonId);
         let delta = document.createElement("span");
         delta.className = "custom-observation-score-delta";
@@ -419,6 +613,11 @@ var CustomObservationUI = {
 
     let detailEntries = [
       ["agent-observation-role", element.role],
+      ["agent-observation-tag", element.tag],
+      [
+        "agent-observation-subrole",
+        element.card_subrole || element.ranking_features?.card_subrole,
+      ],
       ["agent-observation-operations", element.operations?.join(", ")],
       ["agent-observation-context-heading", context?.heading],
       ["agent-observation-context-scope", context?.scope],
@@ -434,6 +633,20 @@ var CustomObservationUI = {
       document.l10n.setAttributes(label, labelId);
       let text = document.createElement("span");
       text.textContent = value;
+      line.append(label, text);
+      details.append(line);
+    }
+    if (this.mode === "context") {
+      let line = document.createElement("p");
+      let label = document.createElement("strong");
+      document.l10n.setAttributes(label, "agent-observation-context-selected");
+      let text = document.createElement("span");
+      document.l10n.setAttributes(
+        text,
+        element.selected_for_context
+          ? "agent-observation-context-selected-yes"
+          : "agent-observation-context-selected-no"
+      );
       line.append(label, text);
       details.append(line);
     }
@@ -492,6 +705,8 @@ var CustomObservationUI = {
           }
         } else if (event.currentTarget === this.refreshButton) {
           this.refresh();
+        } else if (event.currentTarget?.dataset?.mode) {
+          this.setMode(event.currentTarget.dataset.mode);
         }
         break;
       case "keydown":
@@ -535,7 +750,7 @@ if (
       let button = doc.createXULElement("toolbarbutton");
       button.id = this.id;
       button.className = "toolbarbutton-1 chromeclass-toolbar-additional";
-      button.setAttribute("label", "페이지 관찰");
+      button.setAttribute("label", "Observe Page");
       button.setAttribute("data-l10n-id", "agent-observation-toolbar");
       button.addEventListener("command", event => {
         event.target.documentGlobal.CustomObservationUI.togglePanel();
