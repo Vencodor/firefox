@@ -96,3 +96,8 @@ GENERATED_FILES["license.html"].inputs = [
 ]
 
 JAR_MANIFESTS += ["jar.mn"]
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
+    FINAL_TARGET_FILES.chrome.icons.default += [
+        "content/custom-ui/resources/mono/app-icon/mono-app.ico",
+    ]

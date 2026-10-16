@@ -1,27 +1,30 @@
 # Mono 브랜드 리소스
 
-브라우저 이름은 **Mono**입니다. 사용자 제공 `mono-brand.zip`에서 가져온
-원본 리소스이며, 파일명·SVG 메타데이터·애니메이션을 변경하지 않았습니다.
+브라우저 이름은 **Mono**입니다. 정적 로고는 Mono 전용으로 새로 그린 SVG이고,
+애니메이션은 사용자 제공 원본을 변경하지 않고 보관합니다.
 
 ## 구성
 
-- `logo/`: 정적 SVG 로고 8개.
-- `animation/`: SVG 애니메이션 7개와 원본 미리보기 페이지.
+- `logo/`: 정적 SVG 로고 3개. 세리프 소문자 `m`과 커서 머리로 된 심볼입니다.
+- `app-icon/`: Windows 창·작업 표시줄용 `mono-app.ico`와 원본 `mono-app.svg`.
+- `animation/`: 사용자 제공 `mono-brand.zip`의 SVG 애니메이션 7개와 원본 미리보기 페이지.
+  이전 세로 막대 심볼 기준이며, 새 로고용 애니메이션으로 교체할 예정입니다.
 - [애니메이션 미리보기](animation/preview.html): 로컬 브라우저에서 열 수 있습니다.
 
 ## 정적 로고
 
-| 파일 | 구분 |
-| --- | --- |
-| `logo/logo-mark-glass.svg` | 유리 질감 심볼, 메인페이지 |
-| `logo/logo-mark.svg` | 기존 기본 심볼 (제거 예정) |
-| `logo/logo-mark-small.svg` | 작은 크기용 심볼 |
-| `logo/logo-outline.svg` | 외곽선 심볼 |
-| `logo/logo-outline-on-dark.svg` | 어두운 배경용 외곽선 심볼 |
-| `logo/logo-outline-small.svg` | 작은 크기용 외곽선 심볼 |
-| `logo/logo-outline-small-on-dark.svg` | 어두운 배경의 작은 크기용 외곽선 심볼 |
-| `logo/mono-lockup-vertical.svg` | 세로 조합 로고 |
-| `logo/mono-lockup-vertical-on-dark.svg` | 어두운 배경용 세로 조합 로고 |
+브라우저 UI와 Windows 아이콘 모두 배경 없는 심볼을 사용합니다.
+
+| 파일 | 구분 | 사용처 |
+| --- | --- | --- |
+| `logo/mono-glyph.svg` | 심볼 (32px 이상) | 새 탭 중앙, 에이전트 채팅 빈 화면 |
+| `logo/mono-glyph-small.svg` | 심볼 (32px 미만) | 사이드바, 설정 창 제목줄, 에이전트 채팅 제목·파비콘·작성자, 주소창 제안 |
+| `logo/mono-glyph-context.svg` | 단색 심볼 (`context-fill`) | 설정 탐색 제목, 에이전트 HUD |
+| `app-icon/mono-app.svg` | Windows 아이콘 원본 (크게 배치, 고정 색상) | `mono-app.ico` 제작용. 패키지에 포함하지 않음 |
+| `app-icon/mono-app.ico` | Windows 아이콘 | Windows 브라우저 창·작업 표시줄 |
+
+심볼 SVG는 내부의 `prefers-color-scheme`으로 밝은·어두운 테마 색을 바꿉니다.
+선택 기준과 색상은 저장소 루트의 `Style.md` 3장을 따릅니다.
 
 ## 애니메이션
 
@@ -40,19 +43,19 @@
 
 ## 브라우저에서 참조
 
-SVG 15개는 `browser/base/jar.mn`에 등록되어 빌드에 포함됩니다.
+SVG 10개는 `browser/base/jar.mn`에, `app-icon/mono-app.ico`는 `browser/base/moz.build`에
+등록되어 빌드에 포함됩니다.
 리소스 주소의 공통 경로는 다음과 같습니다.
 
 ```text
 chrome://browser/content/custom-ui/resources/mono/
 ```
 
-예를 들어 기본 심볼은
-`chrome://browser/content/custom-ui/resources/mono/logo/logo-mark.svg`로
+예를 들어 심볼은
+`chrome://browser/content/custom-ui/resources/mono/logo/mono-glyph.svg`로
 참조합니다. `README.md`와 `animation/preview.html`은 소스 확인용이며
 브라우저 패키지에는 포함하지 않습니다.
 
-사이드바는 `logo/logo-mark-small.svg`, 메인페이지는 `logo/logo-mark-glass.svg`를
-사용합니다. `logo/logo-mark.svg`는 제거 예정입니다. 운영체제 앱 아이콘·설치 프로그램 브랜딩과 애니메이션 연결은
-별도 적용 작업입니다. 애니메이션을 연결할 때는 동작 줄이기 설정에서
-정적 로고를 대신 표시하도록 처리합니다.
+실행 파일·바로 가기·설치 프로그램 아이콘 교체(`browser/branding/`)와 애니메이션
+연결은 별도 작업입니다. 애니메이션을 연결할 때는 동작 줄이기 설정에서 정적 로고를
+대신 표시하도록 처리합니다.

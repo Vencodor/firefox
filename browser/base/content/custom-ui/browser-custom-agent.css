@@ -129,6 +129,8 @@
     height: var(--icon-size-large);
     margin: auto;
     background-image: var(--custom-logo-on-ink);
+    -moz-context-properties: fill;
+    fill: var(--custom-accent-ink, var(--icon-color));
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;

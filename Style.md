@@ -69,6 +69,21 @@ Mono 브라우저의 현재 디자인 기준이다. 사용자 결정과 실제 �
 
 ## 3. 로고와 브랜드 자산
 
+### 형태
+
+Mono 로고의 기본 단위는 **세리프 소문자 `m`과 커서 머리**로 된 심볼이다.
+
+- `m`: 아래쪽 세리프가 없다. 굵은 기둥과, 아치가 기둥에 붙는 부분의 얇은 헤어라인으로 획 대비를 준다.
+- 커서 머리: 첫 기둥 위에 작은 화살표 커서를 둔다. 왼쪽 변은 기둥 왼쪽 선에 맞추고, 기둥과는 좁은 틈으로 떨어뜨린다. 웹을 직접 조작하는 에이전트라는 의미다. 이 머리를 일반 사선 세리프로 바꾸지 않는다.
+- 그라데이션: 오른쪽 아래(어두움)에서 왼쪽 위(밝음) 방향.
+- 글자 워드마크는 없다. 대문자 `M`이나 산세리프 `m`으로 바꾸지 않는다.
+
+### 사용 원칙
+
+- **모든 곳에서 배경 없는 심볼(`m`+커서)을 사용한다.** 브라우저 UI와 Windows 창·작업 표시줄 아이콘 모두 같다. 사각형 배경을 깐 앱 아이콘은 작은 크기에서 형태가 뭉개져 사용하지 않는다.
+- Windows 아이콘은 프레임을 거의 채우도록 UI 심볼보다 약 10% 크게 그린다.
+- 에이전트의 프로필(답변 작성자 표시 등)도 같은 심볼을 사용한다. 별도 에이전트 전용 로고를 만들지 않는다.
+
 ### 경로
 
 로컬 저장소 루트는 `C:/mozilla-source/firefox`다. 아래 소스 경로는 이 루트를 기준으로 한다.
@@ -76,51 +91,49 @@ Mono 브라우저의 현재 디자인 기준이다. 사용자 결정과 실제 �
 ```text
 소스 폴더: browser/base/content/custom-ui/resources/mono/
 정적 로고: browser/base/content/custom-ui/resources/mono/logo/
-패키지 경로: chrome://browser/content/custom-ui/resources/mono/
+앱 아이콘: browser/base/content/custom-ui/resources/mono/app-icon/
+패키지 경로: chrome://browser/content/custom-ui/resources/mono/logo/
 ```
 
-| 파일 (`logo/` 아래) | 용도 |
-| --- | --- |
-| `logo-mark-glass.svg` | 유리 질감 심볼, 새 탭 중앙 (아래 그림자 없음) |
-| `logo-mark.svg` | 기존 기본 심볼. 새 탭에서 교체되었으며 제거 예정 |
-| `logo-mark-small.svg` | 작은 심볼, 사이드바·설정 탐색 |
-| `logo-outline.svg` | 밝은 표면용 외곽선 심볼 |
-| `logo-outline-on-dark.svg` | 어두운 표면용 외곽선 심볼 |
-| `logo-outline-small.svg` | 밝은 표면의 작은 외곽선 심볼 |
-| `logo-outline-small-on-dark.svg` | 어두운 표면의 작은 외곽선 심볼 |
-| `mono-lockup-vertical.svg` | 밝은 표면용 세로 조합 로고 |
-| `mono-lockup-vertical-on-dark.svg` | 어두운 표면용 세로 조합 로고 |
+### 파일별 사용처
 
-실제 참조 주소 예:
+| 파일 | 형태 | 사용 크기 | 현재 사용처 |
+| --- | --- | --- | --- |
+| `logo/mono-glyph.svg` | 심볼, 그라데이션 | 32px 이상 | 새 탭 중앙 로고(56px), 에이전트 채팅 빈 화면 로고(56px) |
+| `logo/mono-glyph-small.svg` | 심볼의 작은 크기 보정본. 헤어라인·기둥·틈을 굵게 함 | 32px 미만 | 사이드바 좌상단(18px), 설정 창 제목줄, 설정의 정보 항목, 에이전트 채팅 제목·파비콘·답변 작성자, 주소창 Mono 실행 제안(`--custom-logo-on-surface`) |
+| `logo/mono-glyph-context.svg` | 심볼, 단색(`context-fill`) | 32px 미만 | 사용하는 쪽이 `fill`로 색을 정하는 자리: 설정 탐색 제목, 에이전트 HUD 원형 표시(`--custom-logo-on-ink`) |
+| `app-icon/mono-app.svg` | Windows 아이콘 원본. 배경 없는 심볼, 고정 색상, 크게 배치 | 운영체제 아이콘 | `mono-app.ico` 제작용. 패키지에 포함하지 않는다. |
+| `app-icon/mono-app.ico` | Windows 아이콘. 16·20·24·32·40·48·64·256px 포함, 32px 이하는 보정 심볼로 렌더링 | 운영체제 아이콘 | Windows 브라우저 창·작업 표시줄 아이콘. `browser.xhtml`의 `icon="mono-app"` |
 
-```text
-chrome://browser/content/custom-ui/resources/mono/logo/logo-mark-small.svg
-chrome://browser/content/custom-ui/resources/mono/logo/logo-mark.svg
-chrome://browser/content/custom-ui/resources/mono/logo/logo-outline-small-on-dark.svg
-```
+선택 기준:
 
-현재 사이드바 심볼은 **18×18px**, 새 탭 중앙 심볼은 **56×56px**다. 작은 창에서는 새 탭 로고 크기를 줄일 수 있다.
-두 기본 심볼은 밝은·어두운 테마에서 같은 SVG를 사용한다. 설정 탐색의 심볼은 `--page-nav-heading-logo-size`로 크기를 정한다.
-
-외곽선 심볼은 창의 테마 이름이 아니라 **실제로 놓이는 표면의 밝기**에 맞춰 선택한다.
-현재 `--custom-logo-on-surface`와 `--custom-logo-on-ink`에 배경별 작은 외곽선 심볼이 정의되어 있다.
+- 표시 크기가 32px 미만이면 `-small` 또는 `-context` 파일을 사용한다.
+- 놓이는 표면과 상관없이 그라데이션 심볼이 맞으면 `mono-glyph` 계열을 쓴다. SVG 안의 `prefers-color-scheme`이 문서의 밝은·어두운 테마에 맞춰 색을 바꾼다.
+- 표면이 테마와 반대 밝기이거나(예: 진한 원형 배경 위), 주변 단색 아이콘과 색을 맞춰야 하면 `mono-glyph-context.svg`에 `-moz-context-properties: fill`과 `fill`을 지정한다.
 
 ### 로고 고유 색상
 
 | 부분 | 색상 코드 |
 | --- | --- |
-| 심볼 내부 그라데이션 | `#AEBFD6` → `#1D2740` |
-| 기본 외곽선 | `#2B3240` |
-| 어두운 배경용 외곽선 | `#E8EDF3` |
-| 기본 세로 조합의 `MONO` 글자 | `#1F2633` |
-| 어두운 배경용 조합의 `MONO` 글자 | `#F1F4F8` |
+| Windows 아이콘 (밝은·어두운 작업 표시줄 공용) | `#B4BCCA` → `#4E5669` |
+| 밝은 테마의 심볼 | `#8790A2` → `#363D4F` |
+| 어두운 테마의 심볼 | `#DDE1E8` → `#8790A2` |
+| 단색 심볼 | 사용하는 쪽의 `fill` (예: `--custom-ink`, `--custom-surface`) |
 
-로고는 사용자 제공 원본을 사용한다. 메뉴에서 Firefox 그라데이션을 제거하는 작업을 로고 원본의 색상 변경으로 확대하지 않는다.
-파일명·SVG 메타데이터·비율을 보존하고, 화면 크기에 맞는 작은 심볼과 배경별 변형을 선택한다.
+현재 색상은 slate 한 종류다. 브라우저 스타일 기능을 도입할 때 색상별 로고를 추가한다. 그 전에는 색상 변형 파일을 미리 만들지 않는다.
+메뉴에서 Firefox 그라데이션을 제거하는 작업을 로고 색상 변경으로 확대하지 않는다.
 
-정적 로고 9개와 애니메이션 SVG 7개는 `browser/base/jar.mn`에 등록되어 있다.
+### 운영체제 아이콘의 적용 범위
+
+- 창·작업 표시줄 아이콘은 `chrome/icons/default/mono-app.ico`를 사용한다. `browser/base/moz.build`가 Windows 빌드에 이 파일을 넣는다.
+- `firefox.exe` 파일 자체의 아이콘, 바탕 화면·시작 메뉴 바로 가기, 설치 프로그램 아이콘은 브랜딩 폴더(`browser/branding/`)의 `.ico`가 실행 파일에 컴파일된 것이다. Artifact Build는 미리 빌드된 실행 파일을 쓰므로 이 아이콘들은 아직 Firefox 그대로이며, 바꾸려면 브랜딩 교체와 전체 빌드가 필요하다.
+- `.ico`를 다시 만들 때는 `app-icon/mono-app.svg`를 기준으로 하되, 32px 이하는 작은 크기 보정 심볼로 렌더링한다.
+
+### 등록
+
+정적 로고 3개와 애니메이션 SVG 7개는 `browser/base/jar.mn`에 등록되어 있다.
 상세 자산 목록은 [Mono 브랜드 리소스](browser/base/content/custom-ui/resources/mono/README.md)를 참고한다.
-애니메이션 파일의 존재와 실제 에이전트 기능 연결은 구분한다. 동작 줄이기 설정에서는 정적 표현을 제공한다.
+`animation/`의 파일은 이전 세로 막대 심볼 기준이며 새 로고용 애니메이션으로 교체할 예정이다. 애니메이션 파일의 존재와 실제 에이전트 기능 연결은 구분한다. 동작 줄이기 설정에서는 정적 표현을 제공한다.
 
 ## 4. 모서리·크기·간격
 
@@ -163,8 +176,7 @@ chrome://browser/content/custom-ui/resources/mono/logo/logo-outline-small-on-dar
 | 카드 제목 | 14px (`--font-size-custom-title`) |
 
 현재 위 글꼴 파일을 UI에 번들로 배포하는 `@font-face` 등록은 없다. 설치된 글꼴이 없으면 시스템 폴백을 사용한다.
-글자가 포함된 원본 자산은 세로 조합 로고이며 별도 가로 워드마크는 없다. 사이드바 이름은 원본의 산세리프 계열을 따르되 작은 헤더에 맞춰 얇은 텍스트로 표시한다.
-세로 조합 SVG의 글꼴 지정은 원본 자산의 일부로 보존한다.
+로고 파일에는 글자 워드마크가 없다. 사이드바의 Mono 이름은 산세리프 계열의 얇은 텍스트로 표시한다.
 
 ## 6. 그림자와 움직임
 

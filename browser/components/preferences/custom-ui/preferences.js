@@ -60,7 +60,7 @@ var MonoPreferences = {
       ...configs.moreFromMozilla,
       l10nId: "custom-ui-settings-about-heading",
       iconSrc:
-        "chrome://browser/content/custom-ui/resources/mono/logo/logo-mark-small.svg",
+        "chrome://browser/content/custom-ui/resources/mono/logo/mono-glyph-small.svg",
       groupIds: ["monoAbout"],
       module,
     };
