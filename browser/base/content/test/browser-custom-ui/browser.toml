@@ -9,8 +9,14 @@ prefs = [
   "sidebar.animation.enabled=false",
 ]
 
+["browser_custom_agent_chat.js"]
+
 ["browser_custom_agent_ui.js"]
+
+["browser_custom_newtab_search.js"]
 
 ["browser_custom_notice.js"]
 
 ["browser_custom_ui.js"]
+
+["browser_custom_window_controls.js"]

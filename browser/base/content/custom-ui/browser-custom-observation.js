@@ -254,6 +254,16 @@ var CustomObservationUI = {
       this.summary.append(item);
     }
 
+    let elements = result.elements ?? [];
+    if (elements.some(element => Number.isFinite(element.ranking?.score))) {
+      let rankingSummary = document.createElement("span");
+      document.l10n.setAttributes(
+        rankingSummary,
+        "agent-observation-ranking-summary"
+      );
+      this.summary.append(rankingSummary);
+    }
+
     let warnings = [];
     if (coverage.actionsOmitted) {
       warnings.push([
@@ -301,7 +311,7 @@ var CustomObservationUI = {
     }
     this.summary.append(legend);
 
-    for (let element of result.elements ?? []) {
+    for (let element of elements) {
       this.list.append(this.createElementRow(element));
     }
     this.refreshButton.disabled = false;
@@ -321,6 +331,16 @@ var CustomObservationUI = {
     select.setAttribute("aria-pressed", "false");
     select.addEventListener("click", () => this.selectElement(element, select));
 
+    let ranking = element.ranking;
+    let scoreBadge = null;
+    if (Number.isFinite(ranking?.score)) {
+      scoreBadge = document.createElement("span");
+      scoreBadge.className = "custom-observation-score";
+      document.l10n.setAttributes(scoreBadge, "agent-observation-score", {
+        score: ranking.score,
+      });
+    }
+
     let detailsButton = document.createElement("button");
     detailsButton.type = "button";
     detailsButton.className = "custom-observation-details-toggle";
@@ -338,10 +358,65 @@ var CustomObservationUI = {
       detailsButton.setAttribute("aria-expanded", String(!details.hidden));
       detailsButton.textContent = details.hidden ? "⌄" : "⌃";
     });
-    header.append(select, detailsButton);
+    header.append(select);
+    if (scoreBadge) {
+      header.append(scoreBadge);
+    }
+    header.append(detailsButton);
     row.append(header, details);
 
     let context = element.context;
+    if (scoreBadge && Array.isArray(ranking.reasons)) {
+      let rankingDetails = document.createElement("section");
+      rankingDetails.className = "custom-observation-ranking-details";
+      let rankingHeading = document.createElement("h3");
+      document.l10n.setAttributes(
+        rankingHeading,
+        "agent-observation-ranking-details"
+      );
+      rankingDetails.append(rankingHeading);
+      for (let reason of ranking.reasons) {
+        let line = document.createElement("p");
+        let label = document.createElement("span");
+        let reasonId = {
+          base: "agent-observation-reason-base",
+          search: "agent-observation-reason-search",
+          editable: "agent-observation-reason-editable",
+          adjustable: "agent-observation-reason-adjustable",
+          button: "agent-observation-reason-button",
+          submit: "agent-observation-reason-submit",
+          dialog: "agent-observation-reason-dialog",
+          navigation: "agent-observation-reason-navigation",
+          menu: "agent-observation-reason-menu",
+          main: "agent-observation-reason-main",
+          complementary: "agent-observation-reason-complementary",
+          invalid: "agent-observation-reason-invalid",
+          focused: "agent-observation-reason-focused",
+          pagination: "agent-observation-reason-pagination",
+          disclosure: "agent-observation-reason-disclosure",
+          current: "agent-observation-reason-current",
+          readonly: "agent-observation-reason-readonly",
+          reset: "agent-observation-reason-reset",
+          unlabeled: "agent-observation-reason-unlabeled",
+          clipped: "agent-observation-reason-clipped",
+          duplicate_target: "agent-observation-reason-duplicate-target",
+          footer_link: "agent-observation-reason-footer-link",
+          repeated: "agent-observation-reason-repeated",
+        }[reason?.code] ?? "agent-observation-reason-other";
+        document.l10n.setAttributes(label, reasonId);
+        let delta = document.createElement("span");
+        delta.className = "custom-observation-score-delta";
+        if (Number.isFinite(reason?.delta)) {
+          document.l10n.setAttributes(delta, "agent-observation-score", {
+            score: `${reason.delta >= 0 ? "+" : ""}${reason.delta}`,
+          });
+        }
+        line.append(label, delta);
+        rankingDetails.append(line);
+      }
+      details.append(rankingDetails);
+    }
+
     let detailEntries = [
       ["agent-observation-role", element.role],
       ["agent-observation-operations", element.operations?.join(", ")],

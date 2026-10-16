@@ -27,6 +27,23 @@ var CustomSidebarNavigation = {
       button.addEventListener("auxclick", this);
     }
     this.backdrop.addEventListener("mousedown", this);
+    this.windowControls = document.getElementById("custom-window-controls");
+    this.windowControlsListener = event => this.onWindowControlsEvent(event);
+    for (let element of [
+      this.windowControls,
+      document.getElementById("custom-window-controls-hotspot"),
+    ]) {
+      element.addEventListener("mouseenter", this.windowControlsListener);
+      element.addEventListener("mouseleave", this.windowControlsListener);
+    }
+    this.windowControls.addEventListener(
+      "focusin",
+      this.windowControlsListener
+    );
+    this.windowControls.addEventListener(
+      "focusout",
+      this.windowControlsListener
+    );
     gURLBar.addEventListener("focusin", this);
     gURLBar.addEventListener("focusout", this);
     window.addEventListener("keydown", this, true);
@@ -196,6 +213,7 @@ var CustomSidebarNavigation = {
     if (select) {
       gURLBar.select();
     }
+    gURLBar.setUnifiedSearchButtonAvailability(true);
   },
 
   closeAddress({ restoreFocus = true } = {}) {
@@ -213,6 +231,49 @@ var CustomSidebarNavigation = {
       this.domain.focus();
     }
   },
+
+  /**
+   * Shows the window controls while the pointer is in the window's top-right
+   * margin or over the controls, or while a control has focus. Showing waits
+   * briefly so passing over the margin doesn't flash them, and hiding waits so
+   * the pointer can move from the margin onto the controls.
+   *
+   * @param {Event} event
+   */
+  onWindowControlsEvent(event) {
+    switch (event.type) {
+      case "mouseenter":
+        this.windowControlsHovered = true;
+        break;
+      case "mouseleave":
+        this.windowControlsHovered = false;
+        break;
+      case "focusin":
+        this.windowControlsFocused = true;
+        break;
+      case "focusout":
+        this.windowControlsFocused = this.windowControls.contains(
+          event.relatedTarget
+        );
+        break;
+    }
+    clearTimeout(this.windowControlsTimer);
+    let reveal = this.windowControlsHovered || this.windowControlsFocused;
+    if (reveal === this.windowControls.hasAttribute("revealed")) {
+      return;
+    }
+    if (this.windowControlsFocused) {
+      this.windowControls.setAttribute("revealed", "");
+      return;
+    }
+    this.windowControlsTimer = setTimeout(
+      () => this.windowControls.toggleAttribute("revealed", reveal),
+      reveal ? this.windowControlsRevealDelayMs : this.windowControlsHideDelayMs
+    );
+  },
+
+  windowControlsRevealDelayMs: 80,
+  windowControlsHideDelayMs: 300,
 
   handleEvent(event) {
     switch (event.type) {
@@ -298,6 +359,7 @@ var CustomSidebarNavigation = {
         this.rootObserver.disconnect();
         this.commandObserver.disconnect();
         this.viewObserver.disconnect();
+        clearTimeout(this.windowControlsTimer);
         Services.prefs.removeObserver("sidebar.verticalTabs", this);
         gBrowser.removeTabsProgressListener(this.progressListener);
         gBrowser.tabContainer.removeEventListener("TabSelect", this);

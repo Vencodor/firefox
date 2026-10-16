@@ -12,7 +12,7 @@ ChromeUtils.defineLazyGetter(this, "UrlbarTestUtils", () => {
 });
 
 const QUERY = "도쿄 왕복 항공권 최저가";
-const RUN_ROW_TYPE = "mono-run";
+const CHAT_ROW_TYPE = "mono-run";
 
 function createAgent() {
   let calls = [];
@@ -27,10 +27,10 @@ function createAgent() {
   };
 }
 
-function findRunRowIndex() {
+function findChatRowIndex() {
   let rows = UrlbarTestUtils.getResultsContainer(window).children;
   return Array.from(rows).findIndex(
-    row => row.getAttribute("dynamicType") == RUN_ROW_TYPE
+    row => row.getAttribute("dynamicType") == CHAT_ROW_TYPE
   );
 }
 
@@ -55,105 +55,15 @@ add_setup(async function () {
   });
 });
 
-add_task(async function test_newtab_run_button() {
-  let ui = window.CustomAgentUI;
-  await BrowserTestUtils.withNewTab("about:newtab", async () => {
-    let root = document.documentElement;
-    await TestUtils.waitForCondition(
-      () => root.hasAttribute("custom-newtab"),
-      "An empty new tab shows the search screen"
-    );
-    let button = document.getElementById("custom-newtab-run");
-    ok(
-      BrowserTestUtils.isVisible(button),
-      "The Run button is in the search box"
-    );
-    ok(button.disabled, "Run is disabled while no agent is connected");
-    is(
-      button.getAttribute("data-l10n-id"),
-      "custom-ui-run-unavailable",
-      "The disabled button explains that an agent is needed"
-    );
-
-    let box = document
-      .querySelector(".custom-newtab-content")
-      .getBoundingClientRect();
-    let rect = button.getBoundingClientRect();
-    Assert.lessOrEqual(
-      Math.abs(box.height - 156),
-      1,
-      "The search box is 156px tall"
-    );
-    Assert.lessOrEqual(
-      Math.abs(rect.height - 34),
-      1,
-      "The Run button is 34px tall"
-    );
-    Assert.lessOrEqual(
-      Math.abs(box.right - rect.right - 22),
-      1,
-      "The Run button is 22px from the right edge of the search box"
-    );
-    Assert.lessOrEqual(
-      Math.abs(box.bottom - rect.bottom - 10),
-      1,
-      "The Run button is 10px from the bottom edge of the search box"
-    );
-
-    let agent = createAgent();
-    ui.connect(agent);
-    is(
-      button.getAttribute("data-l10n-id"),
-      "custom-ui-run",
-      "The button is labeled for use once an agent is connected"
-    );
-    ok(button.disabled, "Run stays disabled until something is typed");
-
-    await openSuggestions();
-    ok(!button.disabled, "Run is enabled once there is a query");
-    await TestUtils.waitForCondition(
-      () => button.hasAttribute("urlbar-open"),
-      "The button follows the suggestion list state"
-    );
-    ok(
-      BrowserTestUtils.isHidden(button),
-      "The suggestion list replaces the Run button"
-    );
-
-    await UrlbarTestUtils.promisePopupClose(window);
-    await TestUtils.waitForCondition(
-      () => !button.hasAttribute("urlbar-open"),
-      "The button returns when the suggestion list closes"
-    );
-    ok(BrowserTestUtils.isVisible(button), "Run is back after the list closes");
-    let { x, y, width, height } = button.getBoundingClientRect();
-    ok(
-      button.contains(document.elementFromPoint(x + width / 2, y + height / 2)),
-      "The Run button receives pointer events over the search box"
-    );
-
-    button.click();
-    let tab = gBrowser.selectedTab;
-    is(agent.calls.length, 1, "Run starts the agent once");
-    is(agent.calls[0].query, QUERY, "The agent gets the typed query");
-    is(agent.calls[0].tab, tab, "An empty new tab is reused");
-    ok(!root.hasAttribute("custom-newtab"), "The tab leaves the search screen");
-    is(ui.getState(tab)?.status, "working", "The tab shows the working state");
-    ui.clearState(tab);
-  });
-  ui.disconnect();
-});
-
-add_task(async function test_urlbar_run_row() {
-  let ui = window.CustomAgentUI;
+add_task(async function test_urlbar_chat_row() {
   await BrowserTestUtils.withNewTab("about:newtab", async () => {
     await openSuggestions();
-    let index = findRunRowIndex();
-    is(index, 1, "The Run row sits right below the typed query");
+    let index = findChatRowIndex();
+    is(index, 1, "The chat row sits right below the typed query");
     let row = UrlbarTestUtils.getRowAt(window, index);
     ok(
-      !row.hasAttribute("row-selectable"),
-      "Run cannot be picked without an agent"
+      row.hasAttribute("row-selectable"),
+      "A chat draft can be opened without a connected agent"
     );
     is(
       row.querySelector(".urlbarView-dynamic-mono-run-title").textContent,
@@ -162,41 +72,11 @@ add_task(async function test_urlbar_run_row() {
     );
     is(
       row.querySelector(".urlbarView-dynamic-mono-run-pill").textContent,
-      await document.l10n.formatValue("custom-ui-run-row-unavailable"),
-      "The pill explains that an agent is needed"
+      await document.l10n.formatValue("agent-chat-urlbar-action"),
+      "The pill offers a chat rather than a web task"
     );
     await UrlbarTestUtils.promisePopupClose(window);
-
-    let agent = createAgent();
-    ui.connect(agent);
-    await openSuggestions();
-    index = findRunRowIndex();
-    is(index, 1, "The Run row is still below the typed query");
-    row = UrlbarTestUtils.getRowAt(window, index);
-    ok(row.hasAttribute("row-selectable"), "Run can be picked with an agent");
-    is(
-      row.querySelector(".urlbarView-dynamic-mono-run-pill").textContent,
-      "Run",
-      "The pill reads Run"
-    );
-
-    EventUtils.synthesizeKey("KEY_ArrowDown");
-    is(
-      UrlbarTestUtils.getSelectedRowIndex(window),
-      index,
-      "Arrow Down reaches the Run row"
-    );
-    let engaged = UrlbarTestUtils.promiseProviderEngagement(window);
-    EventUtils.synthesizeKey("KEY_Enter");
-    await engaged;
-
-    let tab = gBrowser.selectedTab;
-    is(agent.calls.length, 1, "Picking the Run row starts the agent once");
-    is(agent.calls[0].query, QUERY, "The agent gets the typed query");
-    is(ui.getState(tab)?.status, "working", "The tab shows the working state");
-    ui.clearState(tab);
   });
-  ui.disconnect();
 });
 
 add_task(async function test_agent_tab_states() {

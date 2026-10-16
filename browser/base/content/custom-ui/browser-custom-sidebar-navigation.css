@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-:root:not([custom-sidebar-navigation]) :is(#custom-sidebar-navigation, #custom-sidebar-address, #custom-window-controls),
+:root:not([custom-sidebar-navigation]) :is(#custom-sidebar-navigation, #custom-sidebar-address, #custom-window-controls, #custom-window-controls-hotspot),
 #custom-address-backdrop[hidden] {
   display: none;
 }
@@ -12,6 +12,8 @@
   --size-custom-address-input: 64px;
   --size-custom-address-results: 400px;
   --size-custom-address-clearance: 180px;
+  --size-custom-window-hotspot-inline: 128px;
+  --size-custom-window-hotspot-block: 56px;
 
   #custom-sidebar-header {
     gap: var(--space-small);
@@ -59,8 +61,12 @@
     }
   }
 
-  :is(#custom-back-button, #custom-forward-button):disabled {
-    visibility: hidden;
+  #custom-sidebar-navigation > button:disabled {
+    opacity: 0.35;
+  }
+
+  &:not([custom-newtab]) #custom-brand-name {
+    display: none;
   }
 
   #custom-back-button {
@@ -90,7 +96,7 @@
     min-width: 0;
     min-height: var(--size-custom-tab);
     margin-inline: var(--space-custom-edge);
-    margin-block-end: var(--space-custom-section);
+    margin-block-end: var(--space-small);
     padding-inline-end: var(--space-small);
     border: var(--border-width) solid transparent;
     border-radius: var(--border-radius-custom-tab);
@@ -319,7 +325,6 @@
       display: grid;
       place-items: center;
       width: var(--size-custom-control);
-      opacity: 0;
 
       > svg {
         width: var(--icon-size-small);
@@ -331,13 +336,40 @@
       }
     }
 
-    &:is(:hover, :focus-within) {
+    /* Hidden controls stay focusable but let the page under them take the
+       pointer. */
+    &:not([revealed]) {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    &[revealed] {
       background: var(--custom-surface);
       box-shadow: var(--box-shadow-custom-tab);
+    }
+  }
 
-      > button {
-        opacity: 1;
-      }
+  /* The window margin around the controls' corner, outside the page. Only the
+     top and end strips take the pointer. */
+  #custom-window-controls-hotspot {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 4);
+    width: var(--size-custom-window-hotspot-inline);
+    height: var(--size-custom-window-hotspot-block);
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% 100%,
+      calc(100% - var(--space-custom-gap)) 100%,
+      calc(100% - var(--space-custom-gap)) var(--space-custom-gap),
+      0 var(--space-custom-gap)
+    );
+    -moz-window-dragging: no-drag;
+
+    &:dir(rtl) {
+      clip-path: polygon(0 0, 100% 0, 100% var(--space-custom-gap), var(--space-custom-gap) var(--space-custom-gap), var(--space-custom-gap) 100%, 0 100%);
     }
   }
 

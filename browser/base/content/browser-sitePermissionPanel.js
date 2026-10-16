@@ -246,7 +246,7 @@ var gPermissionPanel = {
    *
    * @param {Event} event - Event which caused the popup to show.
    */
-  openPopup(event) {
+  openPopup(event, anchor = this._popupAnchor) {
     // If we are in DOM fullscreen, exit it before showing the permission popup
     // (see bug 1557041)
     if (document.fullscreen) {
@@ -284,7 +284,7 @@ var gPermissionPanel = {
     }
 
     // Now open the popup, anchored off the primary chrome element
-    PanelMultiView.openPopup(this._permissionPopup, this._popupAnchor, {
+    PanelMultiView.openPopup(this._permissionPopup, anchor, {
       position: this._popupPosition,
       triggerEvent: event,
     }).catch(console.error);

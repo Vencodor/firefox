@@ -4,6 +4,7 @@
 
 EXTRA_JS_MODULES.agent += ["AgentObservation.sys.mjs"]
 EXTRA_JS_MODULES.agent.observation += [
+    "observation/CandidateRanking.sys.mjs",
     "observation/DOMObservation.sys.mjs",
     "observation/ObservationOverlay.sys.mjs",
 ]

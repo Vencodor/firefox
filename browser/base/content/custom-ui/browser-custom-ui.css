@@ -127,9 +127,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-size: var(--font-size-custom-label, var(--font-size-small));
-    font-weight: var(--font-weight-semibold);
+    font-family: "Pretendard", "Inter", "Segoe UI Variable", "Segoe UI", sans-serif;
+    font-size: var(--font-size-custom-title, var(--font-size-small));
+    font-weight: 300;
+    letter-spacing: 0.035em;
   }
 
   #custom-ai-close {
@@ -707,17 +708,13 @@
 
     &[custom-newtab]:not([customizing], [inDOMFullscreen], [inFullscreen], [chromehidden]) {
       --size-custom-search-width: min(600px, calc(100% - 64px));
-      --size-custom-search-height: 156px;
-      --size-custom-search-input: 76px;
-      --size-custom-search-actions: 52px;
+      --size-custom-search-height: 96px;
+      --size-custom-search-input: 96px;
       --size-custom-search-icon: 28px;
-      --size-custom-run: 34px;
-      --size-custom-run-icon: 14px;
-      --space-custom-search-inset: 24px;
-      --space-custom-search-divider: 22px;
-      --space-custom-search-divider-open: 14px;
-      --space-custom-run-inline: 22px;
-      --space-custom-run-block: 10px;
+      --size-custom-search-suggestion: 40px;
+      --space-custom-search-inset: 12px;
+      --space-custom-search-tools: 10px;
+      --border-radius-custom-search: 20px;
       --font-size-custom-search: 16px;
       --box-shadow-custom-search: 0 2px 8px light-dark(rgb(0 0 0 / 4%), rgb(0 0 0 / 16%)), 0 16px 40px -12px light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 32%));
       --custom-search-background: light-dark(#f8f9fb, #202329);
@@ -796,12 +793,21 @@
         padding: 0;
       }
 
+      #custom-sidebar-navigation {
+        display: none;
+      }
+
       #urlbar {
         --urlbar-height: var(--size-custom-search-height);
-        --urlbar-input-container-padding: 20px;
-        --urlbar-border-radius: var(--border-radius-custom-page);
-        --urlbar-background-border-radius: var(--border-radius-custom-page);
-        --urlbar-background-border-top-radius-open: var(--border-radius-custom-page);
+        --urlbar-background-overhang-open: 0px;
+        --urlbarview-margin-inline: var(--space-xsmall);
+        --urlbarview-margin-block: var(--space-xsmall);
+        --urlbarview-joint-background-outset-inline: var(--urlbarview-margin-inline);
+        --urlbarview-joint-background-outset-block: calc(var(--urlbarview-margin-block) + var(--space-small));
+        --urlbar-input-container-padding: var(--space-custom-search-inset);
+        --urlbar-border-radius: var(--border-radius-custom-search);
+        --urlbar-background-border-radius: var(--border-radius-custom-search);
+        --urlbar-background-border-top-radius-open: var(--border-radius-custom-search);
         --urlbar-background-box-shadow-open: var(--box-shadow-custom-search);
         --urlbar-background-border-focused: var(--urlbar-background-border);
         --urlbar-background-outline-focused: none;
@@ -810,11 +816,11 @@
         --urlbar-basic-component-size: 28px;
         --urlbar-input-growth-open-inline: 0px;
         --urlbar-input-growth-open-block: 0px;
-        --urlbarview-border-radius: var(--border-radius-custom-page);
+        --urlbarview-border-radius: var(--border-radius-custom-search);
         --urlbarview-row-border-radius: calc(var(--border-radius-custom-tab) + var(--urlbarview-row-gutter));
-        --urlbarview-row-min-height: var(--size-custom-suggestion);
+        --urlbarview-row-min-height: var(--size-custom-search-suggestion);
         --urlbarview-row-padding-inline: var(--space-custom-suggestion-inline);
-        --urlbarview-row-padding-block: var(--space-custom-edge);
+        --urlbarview-row-padding-block: var(--space-xsmall);
         --urlbarview-background-color-hover: var(--custom-hover);
         --urlbarview-background-color-selected: var(--custom-line);
         --urlbarview-text-color-hover: var(--custom-ink);
@@ -824,7 +830,7 @@
         --urlbarview-separator-color: var(--custom-line);
         --urlbarview-small-font-size: var(--font-size-custom-small, var(--font-size-small));
         --toolbar-field-border-color: var(--custom-line);
-        --toolbar-field-border-color-focus: var(--custom-muted);
+        --toolbar-field-border-color-focus: var(--custom-line);
         --focus-outline-color: var(--custom-muted, var(--text-color-deemphasized));
         --link-color: var(--custom-muted, var(--text-color-deemphasized));
         font-size: var(--font-size-custom-search, var(--font-size-large));
@@ -842,105 +848,75 @@
         border-radius: var(--urlbarview-row-border-radius, var(--border-radius-medium));
       }
 
+      #urlbar .urlbarView-row[label] {
+        margin-block-start: 0;
+
+        &::before {
+          content: none;
+        }
+      }
+
+      #urlbar .urlbarView-row[type="search"] :is(.urlbarView-title-separator, .urlbarView-action) {
+        display: none;
+      }
+
       #urlbar:not([popover-open]) .urlbar-background {
         clip-path: none;
         box-shadow: var(--box-shadow-custom-search, var(--box-shadow-level-2));
       }
 
+      /* The composer's input row is the top 52px; its tool row sits below. */
       #urlbar .urlbar-input-container {
         position: relative;
         align-items: flex-start;
-        padding-block: var(--space-custom-search-inset, var(--space-large));
-      }
-
-      #urlbar .urlbar-input-container::after {
-        content: "";
-        position: absolute;
-        inset-block-start: calc(
-          var(--size-custom-search-height, var(--size-item-xlarge)) - var(--size-custom-search-actions, var(--size-item-xlarge)) - var(--border-width)
-        );
-        inset-inline: var(--space-custom-search-divider, var(--space-large));
-        height: 0;
-        border-block-start: var(--border-width) solid var(--custom-line, var(--border-color));
-        pointer-events: none;
+        padding-block: var(--space-custom-search-inset, var(--space-medium)) 0;
+        padding-inline: var(--space-custom-search-inset, var(--space-medium));
       }
 
       #urlbar[open] .urlbar-input-container::after {
-        inset-block: auto 0;
-        inset-inline: var(--space-custom-search-divider-open, var(--space-medium));
+        content: "";
+        position: absolute;
+        inset-block-end: 0;
+        inset-inline: var(--space-custom-search-inset, var(--space-medium));
+        border-block-end: var(--border-width) solid var(--custom-line, var(--border-color));
+        pointer-events: none;
       }
 
-      #urlbar .urlbar-input-container::before {
-        content: "";
-        flex: none;
-        width: var(--icon-size-medium);
-        height: var(--size-custom-search-icon, var(--icon-size-large));
-        margin-inline-end: var(--space-custom-gap, var(--space-medium));
-        background: url("chrome://global/skin/icons/search-glass.svg") center / 18px no-repeat;
-        -moz-context-properties: fill;
-        fill: currentColor;
+      /* The composer's tool row: the existing engine button sits at its start
+         and the go button at its end. */
+      #urlbar-container #urlbar .searchmode-switcher {
+        display: flex;
+        position: absolute;
+        inset-inline-start: var(--space-custom-search-inset, var(--space-small));
+        inset-block-end: var(--space-custom-search-tools, var(--space-small));
+        margin: 0;
       }
 
       #urlbar .urlbar-input-box {
         height: var(--size-custom-search-icon, var(--icon-size-large));
       }
 
+      /* Always shown; it stays inert until there is something to search. */
       #urlbar .urlbar-go-button {
-        display: none;
-      }
-
-      #custom-newtab-run {
+        display: block;
         position: absolute;
-        inset-inline-end: var(--space-custom-run-inline, var(--space-xlarge));
-        inset-block-end: var(--space-custom-run-block, var(--space-small));
-        display: flex;
-        align-items: center;
-        gap: var(--space-small);
-        box-sizing: border-box;
-        height: var(--size-custom-run, var(--size-item-large));
+        inset-inline-end: var(--space-custom-search-tools, var(--space-small));
+        inset-block-end: var(--space-custom-search-tools, var(--space-small));
         margin: 0;
-        padding-block: 0;
-        padding-inline: var(--space-custom-padding, var(--space-medium));
-        border: 0;
-        border-radius: var(--border-radius-medium);
-        background-color: var(--custom-hover, var(--background-color-list-item-hover));
-        color: var(--custom-ink, var(--text-color-list-item-hover));
-        font: inherit;
-        font-size: var(--font-size-custom-small, var(--font-size-small));
-        font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
-        pointer-events: auto;
-
-        &:enabled:hover {
-          background-color: var(--custom-line, var(--background-color-list-item-hover));
-          color: var(--custom-ink, var(--text-color-list-item-hover));
-        }
-
-        &:disabled {
-          color: var(--custom-muted, var(--text-color-disabled));
-        }
-
-        &:focus-visible {
-          outline: var(--focus-outline);
-          outline-offset: var(--focus-outline-offset);
-        }
-
-        &[urlbar-open] {
-          display: none;
-        }
+        padding: var(--space-small);
+        border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+        background-color: var(--custom-ink, var(--button-background-color-primary));
+        color: var(--custom-accent-ink, var(--button-text-color-primary));
       }
 
-      .custom-newtab-run-icon {
-        flex: none;
-        width: var(--size-custom-run-icon, var(--icon-size-xsmall));
-        height: var(--size-custom-run-icon, var(--icon-size-xsmall));
-        background-image: var(--custom-logo-on-surface);
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: contain;
+      #urlbar[usertyping] .urlbar-go-button:hover {
+        background-color: var(--custom-accent, var(--button-background-color-primary-hover));
       }
 
-      #custom-newtab-run:disabled .custom-newtab-run-icon {
-        opacity: var(--button-opacity-disabled);
+      #urlbar:not([usertyping]) .urlbar-go-button {
+        background-color: var(--custom-hover, var(--button-background-color));
+        color: var(--custom-muted, var(--text-color-deemphasized));
+        pointer-events: none;
       }
 
       &[sidebar-positionend] {
@@ -977,14 +953,6 @@
 
         #urlbar .urlbar-background {
           box-shadow: none;
-        }
-
-        #custom-newtab-run {
-          border: var(--border-width) solid var(--button-border-color);
-        }
-
-        .custom-newtab-run-icon {
-          display: none;
         }
       }
     }

@@ -158,13 +158,6 @@ custom-ui-stop =
     .aria-label = 중지 — 에이전트 연결 필요
     .title = 중지 — 에이전트 연결 필요
 
-custom-ui-run =
-    .title = 입력한 내용을 에이전트가 실행합니다
-
-custom-ui-run-unavailable =
-    .title = Run — 에이전트 연결 필요
-    .aria-label = Run — 에이전트 연결 필요
-
 custom-ui-run-row-unavailable = 에이전트 연결 필요
 
 custom-ui-agent-orb =

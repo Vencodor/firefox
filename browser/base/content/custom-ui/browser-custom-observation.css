@@ -165,8 +165,21 @@
   }
 
   .custom-observation-row-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-custom-edge);
     min-width: 0;
     padding: var(--space-custom-edge);
+  }
+
+  .custom-observation-score {
+    flex: none;
+    padding: 2px var(--space-custom-edge);
+    border: var(--border-width) solid var(--custom-line);
+    border-radius: var(--border-radius-custom-tab);
+    color: var(--custom-muted);
+    font-size: var(--font-size-custom-small);
+    white-space: nowrap;
   }
 
   .custom-observation-row button {
@@ -267,6 +280,31 @@
 
   .custom-observation-details strong {
     color: var(--custom-ink);
+  }
+
+  .custom-observation-ranking-details {
+    margin-block-end: var(--space-custom-inset);
+    padding-block-end: var(--space-custom-inset);
+    border-block-end: var(--border-width) solid var(--custom-line);
+  }
+
+  .custom-observation-ranking-details h3 {
+    margin: var(--space-custom-inset) 0 0;
+    color: var(--custom-ink);
+    font-size: var(--font-size-custom-small);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .custom-observation-ranking-details p {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-custom-inset);
+    margin-block-start: var(--space-custom-edge);
+  }
+
+  .custom-observation-score-delta {
+    flex: none;
+    font-variant-numeric: tabular-nums;
   }
 
   :is(#custom-observation-panel, #custom-observation-panel button):focus-visible {

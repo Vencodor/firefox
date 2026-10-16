@@ -389,24 +389,34 @@ def initialize(topsrcdir, args=()):
             "psutil_stats": psutil_stats,
         }
 
-    from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import Future
+    from threading import Thread
 
+    def start_telemetry_task(function):
+        future = Future()
+
+        def run():
+            try:
+                result = function()
+            except BaseException as error:
+                future.set_exception(error)
+            else:
+                future.set_result(result)
+
+        # Optional telemetry must not keep Mach alive if SDK initialization hangs.
+        Thread(target=run, daemon=True, name="mach-telemetry").start()
+        return future
+
+    driver._telemetry_future = start_telemetry_task(_create_telemetry)
     if sys.platform == "win32":
-        telemetry_executor = ThreadPoolExecutor(max_workers=2)
-        driver._telemetry_future = telemetry_executor.submit(_create_telemetry)
-        driver._system_metrics_future = telemetry_executor.submit(
-            _precollect_system_metrics
-        )
+        driver._system_metrics_future = start_telemetry_task(_precollect_system_metrics)
     else:
-        telemetry_executor = ThreadPoolExecutor(max_workers=1)
-        driver._telemetry_future = telemetry_executor.submit(_create_telemetry)
 
         class _LazyResult:
-            def result(self):
+            def result(self, timeout=None):
                 return _precollect_system_metrics()
 
         driver._system_metrics_future = _LazyResult()
-    telemetry_executor.shutdown(wait=False)
 
     aliases = driver.settings.alias
 
@@ -520,6 +530,11 @@ def _finalize_telemetry_glean(
     import time
 
     from mach.telemetry import MACH_METRICS_PATH
+    from mach.telemetry_interface import NoopTelemetry
+
+    if isinstance(telemetry, NoopTelemetry):
+        telemetry.submit(is_bootstrap)
+        return
 
     moz_automation = any(e in os.environ for e in ("MOZ_AUTOMATION", "TASK_ID"))
 
@@ -532,7 +547,7 @@ def _finalize_telemetry_glean(
     mach_metrics.mach.moz_automation.set(moz_automation)
 
     try:
-        collected_metrics = system_metrics_future.result()
+        collected_metrics = system_metrics_future.result(timeout=5)
     except Exception as e:
         print(
             f"Warning: failed to collect system telemetry metrics: {e}",

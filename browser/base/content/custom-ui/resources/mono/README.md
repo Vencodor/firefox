@@ -13,7 +13,8 @@
 
 | 파일 | 구분 |
 | --- | --- |
-| `logo/logo-mark.svg` | 기본 심볼 |
+| `logo/logo-mark-glass.svg` | 유리 질감 심볼, 메인페이지 |
+| `logo/logo-mark.svg` | 기존 기본 심볼 (제거 예정) |
 | `logo/logo-mark-small.svg` | 작은 크기용 심볼 |
 | `logo/logo-outline.svg` | 외곽선 심볼 |
 | `logo/logo-outline-on-dark.svg` | 어두운 배경용 외곽선 심볼 |
@@ -51,7 +52,7 @@ chrome://browser/content/custom-ui/resources/mono/
 참조합니다. `README.md`와 `animation/preview.html`은 소스 확인용이며
 브라우저 패키지에는 포함하지 않습니다.
 
-사이드바는 `logo/logo-mark-small.svg`, 메인페이지는 `logo/logo-mark.svg`를
-사용합니다. 운영체제 앱 아이콘·설치 프로그램 브랜딩과 애니메이션 연결은
+사이드바는 `logo/logo-mark-small.svg`, 메인페이지는 `logo/logo-mark-glass.svg`를
+사용합니다. `logo/logo-mark.svg`는 제거 예정입니다. 운영체제 앱 아이콘·설치 프로그램 브랜딩과 애니메이션 연결은
 별도 적용 작업입니다. 애니메이션을 연결할 때는 동작 줄이기 설정에서
 정적 로고를 대신 표시하도록 처리합니다.

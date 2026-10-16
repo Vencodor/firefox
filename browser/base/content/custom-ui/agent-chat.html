@@ -1,0 +1,169 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!doctype html>
+<html custom-ui="true">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src chrome:; object-src 'none'; script-src chrome:; img-src chrome:; base-uri 'none'; form-action 'none';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title data-l10n-id="agent-chat-title"></title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="chrome://browser/content/custom-ui/resources/mono/logo/logo-mark-small.svg"
+    />
+    <link
+      rel="stylesheet"
+      href="chrome://browser/content/custom-ui/design-tokens.css"
+    />
+    <link
+      rel="stylesheet"
+      href="chrome://browser/content/custom-ui/agent-chat.css"
+    />
+    <link rel="localization" href="browser/agentChat.ftl" />
+    <script
+      src="chrome://browser/content/custom-ui/agent-chat.js"
+      defer
+    ></script>
+  </head>
+  <body>
+    <header class="chat-header">
+      <div class="chat-heading">
+        <img
+          src="chrome://browser/content/custom-ui/resources/mono/logo/logo-mark-small.svg"
+          width="24"
+          height="24"
+          alt=""
+          draggable="false"
+        />
+        <h1 id="chat-title" data-l10n-id="agent-chat-title"></h1>
+      </div>
+      <button id="chat-new" class="chat-new-button" type="button">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d="M8 3v10M3 8h10" />
+        </svg>
+        <span data-l10n-id="agent-chat-new"></span>
+      </button>
+    </header>
+
+    <main class="chat-conversation">
+      <section id="chat-empty" aria-labelledby="chat-empty-title">
+        <div class="chat-empty-content">
+          <img
+            class="chat-empty-logo"
+            src="chrome://browser/content/custom-ui/resources/mono/logo/logo-mark.svg"
+            width="56"
+            height="56"
+            alt=""
+            draggable="false"
+          />
+          <h2 id="chat-empty-title" data-l10n-id="agent-chat-empty-title"></h2>
+          <p
+            class="chat-empty-description"
+            data-l10n-id="agent-chat-empty-description"
+          ></p>
+          <div class="chat-suggestions">
+            <button
+              class="chat-suggestion"
+              type="button"
+              data-prompt="떠오른 아이디어를 함께 정리하고 싶어요."
+              data-l10n-id="agent-chat-suggestion-ideas"
+            ></button>
+            <button
+              class="chat-suggestion"
+              type="button"
+              data-prompt="제가 쓴 글을 더 자연스럽게 다듬고 싶어요."
+              data-l10n-id="agent-chat-suggestion-writing"
+            ></button>
+            <button
+              class="chat-suggestion"
+              type="button"
+              data-prompt="해야 할 일을 실행 가능한 계획으로 정리하고 싶어요."
+              data-l10n-id="agent-chat-suggestion-planning"
+            ></button>
+          </div>
+        </div>
+      </section>
+      <div
+        id="chat-messages"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        data-l10n-id="agent-chat-messages"
+        tabindex="0"
+        hidden
+      ></div>
+    </main>
+
+    <footer class="chat-composer">
+      <form id="chat-form">
+        <textarea
+          id="chat-input"
+          rows="3"
+          maxlength="32000"
+          spellcheck="true"
+          data-l10n-id="agent-chat-input"
+          aria-describedby="chat-status chat-input-hint"
+        ></textarea>
+        <div class="chat-composer-actions">
+          <span
+            id="chat-input-hint"
+            data-l10n-id="agent-chat-input-hint"
+          ></span>
+          <button
+            id="chat-stop"
+            class="chat-submit-button"
+            type="button"
+            data-l10n-id="agent-chat-stop"
+            hidden
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <rect x="4" y="4" width="10" height="10" rx="2" />
+            </svg>
+          </button>
+          <button
+            id="chat-send"
+            class="chat-submit-button"
+            type="submit"
+            data-l10n-id="agent-chat-send"
+            disabled
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path d="M10 15.5v-11M5.5 9 10 4.5 14.5 9" />
+            </svg>
+          </button>
+        </div>
+      </form>
+      <p
+        id="chat-status"
+        role="status"
+        aria-live="polite"
+        data-l10n-id="agent-chat-disconnected"
+      ></p>
+    </footer>
+  </body>
+</html>

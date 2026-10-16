@@ -5,6 +5,15 @@
 var CustomBrowserUI = {
   pref: "browser.customUI.enabled",
 
+  // The new tab search only offers the typed search, the agent chat row and
+  // a few search engine suggestions.
+  newTabProviders: [
+    "UrlbarProviderHeuristicFallback",
+    "UrlbarProviderMonoRun",
+    "UrlbarProviderSearchSuggestions",
+  ],
+  newTabMaxSuggestions: 4,
+
   tabStripEvents: [
     "TabOpen",
     "TabClose",
@@ -43,6 +52,10 @@ var CustomBrowserUI = {
       },
     };
     gBrowser.addTabsProgressListener(this.progressListener);
+    this.urlbarListener = {
+      onQueryStarted: queryContext => this.limitNewTabQuery(queryContext),
+    };
+    gURLBar.controller.addListener(this.urlbarListener);
     window.addEventListener("unload", this, { once: true });
     this.updateEnabled();
     if (
@@ -83,7 +96,7 @@ var CustomBrowserUI = {
       !browser.browsingContext.opener &&
       (uri === "chrome://browser/content/blanktab.html" ||
         (uri === "about:blank" && browser.contentPrincipal?.isNullPrincipal));
-    document.documentElement.toggleAttribute(
+    let isNewTab = document.documentElement.toggleAttribute(
       "custom-newtab",
       this.enabled &&
         Services.prefs.getBoolPref("sidebar.verticalTabs", false) &&
@@ -91,6 +104,37 @@ var CustomBrowserUI = {
         !window.CustomAgentUI?.hasState(gBrowser.selectedTab) &&
         (isEmptyNewTab || isEmptyStart)
     );
+    // A tab opened from a page focuses the address field while the page is
+    // still shown, which queues opening the centered address editor; the new
+    // tab search replaces it after that queued work.
+    if (isNewTab) {
+      queueMicrotask(() => {
+        if (
+          document.documentElement.hasAttribute("custom-newtab") &&
+          window.CustomSidebarNavigation?.open
+        ) {
+          window.CustomSidebarNavigation.closeAddress({ restoreFocus: false });
+        }
+      });
+    }
+  },
+
+  limitNewTabQuery(queryContext) {
+    if (
+      queryContext.sapName != "urlbar" ||
+      !document.documentElement.hasAttribute("custom-newtab")
+    ) {
+      return;
+    }
+    if (!queryContext.trimmedSearchString) {
+      queryContext.providers = [];
+      return;
+    }
+    queryContext.providers = this.newTabProviders;
+    queryContext.maxResults =
+      1 +
+      (window.CustomAgentChatUI?.enabled ? 1 : 0) +
+      this.newTabMaxSuggestions;
   },
 
   updateNewTabButtons() {
@@ -238,6 +282,7 @@ var CustomBrowserUI = {
           gBrowser.tabContainer.removeEventListener(type, this);
         }
         gBrowser.removeTabsProgressListener(this.progressListener);
+        gURLBar.controller.removeListener(this.urlbarListener);
         PanelUI.panel.removeEventListener("popupshown", this);
         PanelUI.panel.removeEventListener("popuphidden", this);
         break;

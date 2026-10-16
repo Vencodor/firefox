@@ -16,7 +16,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 ChromeUtils.defineLazyGetter(lazy, "l10n", () => {
-  return new Localization(["browser/customUI.ftl"], true);
+  return new Localization(["browser/agentChat.ftl"], true);
 });
 
 const DYNAMIC_RESULT_TYPE = "mono-run";
@@ -43,8 +43,7 @@ function viewTemplate(selectable) {
 }
 
 /**
- * Offers the typed text to the agent as the second suggestion. Without a
- * connected agent the row is shown but cannot be selected.
+ * Offers the typed text to a new agent chat as the second suggestion.
  */
 export class UrlbarProviderMonoRun extends UrlbarProvider {
   get type() {
@@ -56,7 +55,7 @@ export class UrlbarProviderMonoRun extends UrlbarProvider {
       queryContext.sapName == "urlbar" &&
       !!queryContext.trimmedSearchString &&
       !queryContext.restrictInSearchMode() &&
-      !!controller?.browserWindow?.CustomAgentUI?.enabled &&
+      !!controller?.browserWindow?.CustomAgentChatUI?.enabled &&
       !lazy.UrlbarProviderHeuristicFallback.matchUnknownUrl(queryContext)
     );
   }
@@ -71,7 +70,7 @@ export class UrlbarProviderMonoRun extends UrlbarProvider {
         payload: {
           dynamicType: DYNAMIC_RESULT_TYPE,
           query: queryContext.trimmedSearchString,
-          available: !!controller.browserWindow.CustomAgentUI.canRun,
+          available: !!controller.browserWindow.CustomAgentChatUI.enabled,
         },
       })
     );
@@ -87,9 +86,7 @@ export class UrlbarProviderMonoRun extends UrlbarProvider {
       content: { attributes: { "data-unavailable": !available } },
       title: { textContent: query },
       pill: {
-        textContent: available
-          ? "Run"
-          : lazy.l10n.formatValueSync("custom-ui-run-row-unavailable"),
+        textContent: lazy.l10n.formatValueSync("agent-chat-urlbar-action"),
       },
     };
   }
@@ -97,7 +94,7 @@ export class UrlbarProviderMonoRun extends UrlbarProvider {
   onEngagement(queryContext, controller, details) {
     let { query, available } = details.result.payload;
     if (available) {
-      controller.browserWindow?.CustomAgentUI?.run(query);
+      controller.browserWindow?.CustomAgentChatUI?.startChat(query);
     }
   }
 }

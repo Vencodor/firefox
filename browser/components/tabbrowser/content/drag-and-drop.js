@@ -305,13 +305,35 @@
       }
 
       let overPinnedDropIndicator = this._customVerticalMode
-        ? this._isWithinCustomPinnedDropTarget(event, draggedTab)
+        ? this._isWithinCustomPinnedDropTarget(event, draggedTab, {
+            flushLayout: true,
+          })
         : this._pinnedDropIndicator.hasAttribute("visible") &&
           this._pinnedDropIndicator.hasAttribute("interactive");
       this._resetTabsAfterDrop(draggedTab);
 
       this._tabDropIndicator.hidden = true;
       event.stopPropagation();
+      if (
+        this._customVerticalMode &&
+        dropEffect == "move" &&
+        isTab(draggedTab) &&
+        draggedTab.container == this._tabbrowserTabs &&
+        !draggedTab.pinned &&
+        overPinnedDropIndicator
+      ) {
+        for (let tab of movingTabs) {
+          if (isTab(tab)) {
+            gBrowser.pinTab(tab, {
+              metricsContext: dropMetricsContext,
+            });
+          }
+        }
+        this.finishAnimateTabMove();
+        this._tabbrowserTabs._notifyBackgroundTab(movingTabs.at(-1));
+        delete draggedTab._dragData;
+        return;
+      }
       if (draggedTab && dropEffect == "copy") {
         let duplicatedDraggedTab;
         let duplicatedTabs = [];
@@ -953,15 +975,26 @@
       );
     }
 
-    _isWithinCustomPinnedDropTarget(event, draggedTab) {
+    _isWithinCustomPinnedDropTarget(
+      event,
+      draggedTab,
+      { flushLayout = false } = {}
+    ) {
+      let targetElement = gBrowser.pinnedTabCount
+        ? this._tabbrowserTabs.pinnedTabsContainer
+        : this._pinnedDropIndicator;
+      if (event.composedPath().includes(targetElement)) {
+        return true;
+      }
       let bounds = element =>
-        window.windowUtils.getBoundsWithoutFlushing(element);
+        flushLayout
+          ? element.getBoundingClientRect()
+          : window.windowUtils.getBoundsWithoutFlushing(element);
       let tabstrip = bounds(this._tabbrowserTabs);
-      let target = bounds(
-        gBrowser.pinnedTabCount
-          ? this._tabbrowserTabs.pinnedTabsContainer
-          : this._pinnedDropIndicator
-      );
+      let target = bounds(targetElement);
+      if (gBrowser.pinnedTabCount && !target.height) {
+        return false;
+      }
       if (
         !target.height &&
         !(event.screenY < draggedTab?._dragData?.screenY)
@@ -970,8 +1003,8 @@
       }
       let bottom = target.height ? target.bottom + 12 : tabstrip.top + 40;
       return (
-        event.clientX >= tabstrip.left &&
-        event.clientX <= tabstrip.right &&
+        event.clientX >= (target.width ? target.left : tabstrip.left) &&
+        event.clientX <= (target.width ? target.right : tabstrip.right) &&
         event.clientY >= tabstrip.top &&
         event.clientY <= bottom
       );

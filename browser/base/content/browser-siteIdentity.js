@@ -1291,7 +1291,7 @@ var gIdentityHandler = {
     this._openPopup(event);
   },
 
-  _openPopup(event) {
+  _openPopup(event, anchor = this._identityIconBox) {
     // Make the popup available.
     this._initializePopup();
 
@@ -1322,7 +1322,7 @@ var gIdentityHandler = {
     }
 
     // Now open the popup, anchored off the primary chrome element
-    PanelMultiView.openPopup(this._identityPopup, this._identityIconBox, {
+    PanelMultiView.openPopup(this._identityPopup, anchor, {
       position: "bottomleft topleft",
       triggerEvent: event,
     }).catch(console.error);

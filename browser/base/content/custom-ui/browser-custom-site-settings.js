@@ -28,6 +28,7 @@ var CustomSiteSettings = {
     gBrowser.removeTabsProgressListener(this.progressListener);
     for (let panel of this.panels) {
       panel.removeEventListener("popupshown", this);
+      panel.removeEventListener("popuppositioned", this);
       panel.removeEventListener("popuphidden", this);
     }
   },
@@ -46,24 +47,32 @@ var CustomSiteSettings = {
     gIdentityHandler._initializePopup();
     let panel = document.getElementById("identity-popup");
     this.prepare(panel);
-    gIdentityHandler._openPopup(event);
+    gIdentityHandler._openPopup(
+      event,
+      document.getElementById("custom-page-settings-button")
+    );
   },
 
   openPermissions(event) {
     gPermissionPanel._initializePopup();
     let panel = document.getElementById("permission-popup");
     this.prepare(panel);
-    gPermissionPanel.openPopup(event);
+    gPermissionPanel.openPopup(
+      event,
+      document.getElementById("custom-page-settings-button")
+    );
   },
 
   prepare(panel) {
     if (!this.panels.has(panel)) {
       this.panels.add(panel);
       panel.addEventListener("popupshown", this);
+      panel.addEventListener("popuppositioned", this);
       panel.addEventListener("popuphidden", this);
       this.addControls(panel);
     }
     panel.setAttribute("custom-centered-site-panel", "true");
+    panel.setAttribute("animate", "false");
     panel.removeAttribute("custom-site-panel-ready");
     for (let control of panel.querySelectorAll("[data-custom-site-settings]")) {
       control.hidden = false;
@@ -169,7 +178,11 @@ var CustomSiteSettings = {
 
   async center() {
     let panel = this.currentPanel;
-    if (!panel || panel.state !== "open" || this.centerPending === panel) {
+    if (
+      !panel ||
+      !["showing", "open"].includes(panel.state) ||
+      this.centerPending === panel
+    ) {
       return;
     }
     this.centerPending = panel;
@@ -181,13 +194,15 @@ var CustomSiteSettings = {
           y: window.mozInnerScreenY + (window.innerHeight - bounds.height) / 2,
         };
       });
-      if (panel !== this.currentPanel || panel.state !== "open") {
+      if (
+        panel !== this.currentPanel ||
+        !["showing", "open"].includes(panel.state)
+      ) {
         return;
       }
       panel.moveTo(Math.round(x), Math.round(y));
       if (!panel.hasAttribute("custom-site-panel-ready")) {
         panel.setAttribute("custom-site-panel-ready", "true");
-        panel.querySelector("panelview .subviewbutton:not([hidden])")?.focus();
       }
     } finally {
       if (this.centerPending === panel) {
@@ -204,10 +219,21 @@ var CustomSiteSettings = {
       case "resize":
         this.center();
         break;
+      case "popuppositioned":
+        if (
+          event.target === this.currentPanel &&
+          !event.target.hasAttribute("custom-site-panel-ready")
+        ) {
+          this.center();
+        }
+        break;
       case "popupshown":
         if (event.target === this.currentPanel) {
           this.resizeObserver.observe(event.target);
           this.center();
+          event.target
+            .querySelector("panelview .subviewbutton:not([hidden])")
+            ?.focus();
         }
         break;
       case "popuphidden": {
@@ -217,6 +243,7 @@ var CustomSiteSettings = {
         }
         this.resizeObserver.unobserve(panel);
         panel.removeAttribute("custom-centered-site-panel");
+        panel.removeAttribute("animate");
         panel.removeAttribute("custom-site-panel-ready");
         panel.removeAttribute("norestorefocus");
         for (let control of panel.querySelectorAll(

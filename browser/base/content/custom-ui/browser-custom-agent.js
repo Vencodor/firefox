@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* global CustomBrowserUI, delayedStartupPromise, gBrowser, gURLBar */
+
 const CUSTOM_AGENT_SVG_NS = "http://www.w3.org/2000/svg";
 const CUSTOM_AGENT_LABEL_CLEARANCE = 34;
 
@@ -9,7 +11,9 @@ const CUSTOM_AGENT_LABEL_CLEARANCE = 34;
  * Shows what an agent is doing in a tab: sidebar tab rows, the bottom-right
  * orb and its bubble, and the Run entry points. The agent is not part of this
  * file. It connects with `connect({ run, stop, resume, approve, takeOver })`
- * and reports progress with `setState(tab, state)`.
+ * and reports progress with `setState(tab, state)`. Optional chat support uses
+ * `chat({ conversationId, messages, signal, onDelta })`, returning a final
+ * string or streaming text through onDelta. Chat does not start a web task.
  *
  * State fields: status ("working", "confirm", "paused", "done"), title,
  * summary, step, totalSteps, elapsedMs, confirm { title, detail, handoff }
@@ -41,7 +45,7 @@ var CustomAgentUI = {
   },
 
   get canRun() {
-    return !!this.agent;
+    return typeof this.agent?.run === "function";
   },
 
   init() {
@@ -51,7 +55,6 @@ var CustomAgentUI = {
     this.bubbleTitle = document.getElementById("custom-agent-bubble-title");
     this.bubbleDetail = document.getElementById("custom-agent-bubble-detail");
     this.announcer = document.getElementById("custom-agent-announce");
-    this.runButton = document.getElementById("custom-newtab-run");
     this.marker = document.getElementById("custom-agent-marker");
     this.markerTarget = this.marker.querySelector(
       ".custom-agent-marker-target"
@@ -71,8 +74,6 @@ var CustomAgentUI = {
       this.hud.addEventListener(type, this);
     }
     this.hud.addEventListener("keydown", this);
-    this.runButton.addEventListener("click", this);
-    gURLBar.inputField.addEventListener("input", this);
     gBrowser.tabContainer.addEventListener("TabSelect", this);
     gBrowser.tabContainer.addEventListener("TabClose", this);
     this.progressListener = {
@@ -91,14 +92,8 @@ var CustomAgentUI = {
     } catch (e) {
       console.error(e);
     }
-    this.urlbarObserver = new MutationObserver(() => this.syncUrlbarOpen());
-    this.urlbarObserver.observe(gURLBar, {
-      attributes: true,
-      attributeFilter: ["open"],
-    });
 
     this.updateMock();
-    this.updateRunButton();
     this.render();
   },
 
@@ -117,12 +112,12 @@ var CustomAgentUI = {
 
   connect(agent) {
     this.agent = agent;
-    this.updateRunButton();
+    window.dispatchEvent(new CustomEvent("CustomAgentConnectionChanged"));
   },
 
   disconnect() {
     this.agent = null;
-    this.updateRunButton();
+    window.dispatchEvent(new CustomEvent("CustomAgentConnectionChanged"));
   },
 
   hasState(tab) {
@@ -219,7 +214,7 @@ var CustomAgentUI = {
 
   run(query) {
     query = query?.trim();
-    if (!query || !this.agent) {
+    if (!query || !this.canRun) {
       return null;
     }
     let tab = gBrowser.selectedTab;
@@ -307,21 +302,6 @@ var CustomAgentUI = {
     ) {
       this.clearState(tab);
     }
-  },
-
-  syncUrlbarOpen() {
-    this.runButton.toggleAttribute("urlbar-open", gURLBar.hasAttribute("open"));
-  },
-
-  updateRunButton() {
-    if (!this.runButton) {
-      return;
-    }
-    this.runButton.disabled = !this.agent || !gURLBar.value.trim();
-    document.l10n.setAttributes(
-      this.runButton,
-      this.agent ? "custom-ui-run" : "custom-ui-run-unavailable"
-    );
   },
 
   element(tag, className) {
@@ -702,16 +682,12 @@ var CustomAgentUI = {
           this.closeBubble();
         }
         break;
-      case "input":
-        this.updateRunButton();
-        break;
       case "TabSelect": {
         let state = this.states.get(event.target);
         if (state?.status === "done" && !state.seen) {
           state.seen = true;
           this.decorate(event.target);
         }
-        this.updateRunButton();
         this.render();
         break;
       }
@@ -723,7 +699,6 @@ var CustomAgentUI = {
         gBrowser.tabContainer.removeEventListener("TabSelect", this);
         gBrowser.tabContainer.removeEventListener("TabClose", this);
         gBrowser.removeTabsProgressListener(this.progressListener);
-        this.urlbarObserver.disconnect();
         clearTimeout(this.bubbleTimer);
         clearInterval(this.tickTimer);
         break;
@@ -734,8 +709,6 @@ var CustomAgentUI = {
     let { currentTarget: target } = event;
     if (target === this.orb) {
       CustomBrowserUI.setPanelOpen(true);
-    } else if (target === this.runButton) {
-      this.run(gURLBar.value);
     } else {
       for (let [type, button] of Object.entries(this.buttons)) {
         if (target === button) {

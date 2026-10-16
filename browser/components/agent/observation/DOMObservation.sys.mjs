@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { rankCandidates } from "./CandidateRanking.sys.mjs";
+
 const ROLES = new Set([
   "button",
   "link",
@@ -220,6 +222,114 @@ export function collectDOMObservation(window, options = {}) {
       }
     }
     return false;
+  }
+  const activeElements = new WeakSet();
+  for (let active = document.activeElement; active; ) {
+    if (active !== document.body && active !== document.documentElement) {
+      activeElements.add(active);
+    }
+    const next = active.shadowRoot?.activeElement;
+    if (!next || next === active) {
+      break;
+    }
+    active = next;
+  }
+  const repetitionSiblings = new Map();
+  const repetitionItemIds = new WeakMap();
+  const repetitionGroupIds = new WeakMap();
+  const repetitionSignatures = new WeakMap();
+  let nextRepetitionItemId = 1;
+  let nextRepetitionGroupId = 1;
+  function repetitionSignature(node) {
+    if (repetitionSignatures.has(node)) {
+      return repetitionSignatures.get(node);
+    }
+    const classes = Array.from(node.classList || []).sort().join(".");
+    const role = node.getAttribute("role") || "";
+    const children = Array.from(node.children || [], child =>
+      child.tagName.toLowerCase()
+    ).join(",");
+    const signature = `${node.tagName.toLowerCase()}|${role}|${classes}|${children}`;
+    repetitionSignatures.set(node, signature);
+    return signature;
+  }
+  function repeatedSiblingGroups(parent) {
+    if (!repetitionSiblings.has(parent)) {
+      const groups = new Map();
+      for (const child of parent.children || []) {
+        const signature = repetitionSignature(child);
+        if (!groups.has(signature)) {
+          groups.set(signature, []);
+        }
+        groups.get(signature).push(child);
+      }
+      repetitionSiblings.set(parent, groups);
+    }
+    return repetitionSiblings.get(parent);
+  }
+  function repetitionCard(element) {
+    for (
+      let node = element, depth = 0;
+      node && depth <= 8;
+      node = parentOf(node), depth++
+    ) {
+      if (node.matches('body,html,main,[role="main"]')) {
+        break;
+      }
+      const boundary = closest(
+        node,
+        'nav,[role="navigation"],dialog,[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],search,[role="search"]'
+      );
+      if (boundary) {
+        break;
+      }
+      const parent = parentOf(node);
+      if (!parent || !parent.children) {
+        continue;
+      }
+      const semanticCard = node.matches(
+        'li,tr,article,[role="article"],[role="listitem"],[role="row"],ytd-video-renderer,ytd-rich-item-renderer,ytd-grid-video-renderer'
+      );
+      const classCard = node.classList?.length > 0;
+      if (!semanticCard && !classCard) {
+        continue;
+      }
+      const signature = repetitionSignature(node);
+      const siblings = repeatedSiblingGroups(parent).get(signature);
+      if (!siblings || siblings.length < 2) {
+        continue;
+      }
+      if (
+        !semanticCard &&
+        (node.children.length < 2 ||
+          !node.querySelector("h1,h2,h3,h4,[role='heading'],img[alt]") ||
+          !node.querySelector(SELECTOR))
+      ) {
+        continue;
+      }
+      if (!repetitionItemIds.has(node)) {
+        repetitionItemIds.set(node, `i${nextRepetitionItemId++}`);
+      }
+      if (!repetitionGroupIds.has(parent)) {
+        repetitionGroupIds.set(parent, new Map());
+      }
+      const groupIds = repetitionGroupIds.get(parent);
+      if (!groupIds.has(signature)) {
+        groupIds.set(signature, `g${nextRepetitionGroupId++}`);
+      }
+      return {
+        group: groupIds.get(signature),
+        item: repetitionItemIds.get(node),
+      };
+    }
+    return null;
+  }
+  function landmark(element, selector, requireVisible = false) {
+    let node = closest(element, selector);
+    while (node && requireVisible && !cssVisible(node)) {
+      node = closest(parentOf(node), selector);
+    }
+    return node;
   }
   function hittable(element, rect, associated = null) {
     const root = element.getRootNode();
@@ -470,6 +580,69 @@ export function collectDOMObservation(window, options = {}) {
       const stateValue = element.getAttribute(`aria-${state}`);
       if (stateValue !== null) {
         row[state] = stateValue;
+      }
+    }
+    if (usable) {
+      const nativeFooter = landmark(element, "footer,[role='contentinfo']");
+      const footer =
+        nativeFooter &&
+        (nativeFooter.getAttribute("role") === "contentinfo" ||
+          !landmark(
+            parentOf(nativeFooter),
+            'article,section,aside,nav,[role="article"]'
+          ));
+      const repetition = repetitionCard(element);
+      const visibleArea =
+        Math.max(0, intersection.width) * Math.max(0, intersection.height);
+      const rectArea = rect.width * rect.height;
+      row.ranking_features = {
+        navigation: Boolean(landmark(element, "nav,[role='navigation']")),
+        dialog: Boolean(
+          landmark(
+            element,
+            'dialog[open],[role="dialog"],[role="alertdialog"]',
+            true
+          )
+        ),
+        menu: Boolean(landmark(element, '[role="menu"],[role="listbox"]', true)),
+        search: Boolean(landmark(element, 'search,[role="search"]')),
+        main: Boolean(landmark(element, "main,[role='main']")),
+        complementary: Boolean(
+          landmark(element, "aside,[role='complementary']")
+        ),
+        footer: Boolean(footer),
+        invalid:
+          element.matches(":user-invalid") ||
+          element.getAttribute("aria-invalid") === "true",
+        focused: activeElements.has(element),
+        disclosure:
+          (["true", "menu", "listbox", "tree", "grid", "dialog"].includes(
+            element.getAttribute("aria-haspopup")
+          ) &&
+            element.getAttribute("aria-expanded") !== "true") ||
+          element.getAttribute("aria-expanded") === "false" ||
+          (element.tagName === "SUMMARY" &&
+            element.parentElement?.tagName === "DETAILS" &&
+            !element.parentElement.open),
+        pagination:
+          element.tagName === "A" &&
+          /(?:^|\s)(?:next|prev)(?:\s|$)/i.test(element.getAttribute("rel") || ""),
+        submit:
+          Boolean(element.form) &&
+          ((element.tagName === "BUTTON" && element.type === "submit") ||
+            (element.tagName === "INPUT" && ["submit", "image"].includes(type))),
+        reset:
+          Boolean(element.form) &&
+          ((element.tagName === "BUTTON" && element.type === "reset") ||
+            (element.tagName === "INPUT" && type === "reset")),
+        visible_fraction:
+          rectArea > 0
+            ? Math.min(1, Math.max(0, visibleArea / rectArea))
+            : 0,
+      };
+      if (repetition) {
+        row.ranking_features.repetition_group = repetition.group;
+        row.ranking_features.repetition_item = repetition.item;
       }
     }
     if (["checkbox", "radio"].includes(type)) {
@@ -805,6 +978,7 @@ export function filterCandidates(snapshot, { maxActions = 250 } = {}) {
     });
     stages.push({ stage: reason, remaining: eligibleRows.length });
   }
+  eligibleRows = rankCandidates(eligibleRows, roleOf);
   const actions = [];
   for (const row of eligibleRows) {
     const role = roleOf(row);
@@ -814,6 +988,7 @@ export function filterCandidates(snapshot, { maxActions = 250 } = {}) {
       name: row.label || role,
       label: row.label || role,
       value: row.value,
+      ranking: row.ranking,
       ...(row.context ? { context: row.context } : {}),
       rect: row.rect,
       ...Object.fromEntries(
@@ -901,6 +1076,7 @@ export function filterCandidates(snapshot, { maxActions = 250 } = {}) {
         name: action.name,
         role: action.role,
         value: action.value,
+        ranking: action.ranking,
         operations: [],
         rect: action.rect,
         ...Object.fromEntries(
