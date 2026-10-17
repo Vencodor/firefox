@@ -8,10 +8,11 @@
 // build Firefox. Gecko-only checks (match patterns) are skipped.
 //
 //   node mono/skills/fold-site/scripts/check.mjs <rule.json> <capture.json>
-//   node mono/skills/fold-site/scripts/check.mjs --capture <page.html> <url>
+//   node mono/skills/fold-site/scripts/check.mjs --capture <page.html> <url> [rule.json]
 //
 // The second form runs Capture Fold on a local HTML file, as if it were
-// loaded from <url>, and prints the capture.
+// loaded from <url>, and prints the capture. With a rule, the capture also
+// has what the rule reads and the page measured with it folded.
 
 /* global process */
 /* eslint-disable no-console */
@@ -110,41 +111,76 @@ async function check(rulePath, capturePath) {
     console.log(`warning: ${warning}`);
   }
   for (let section of result.model?.sections ?? []) {
-    console.log(`\n[${section.heading ?? section.id}]`);
+    let state = section.collapsible
+      ? ` (collapsible, ${section.collapsed ? "collapsed" : "open"})`
+      : "";
+    console.log(`\n[${section.heading ?? section.id}]${state}`);
     for (let item of section.items) {
-      let marks = [item.kind, item.current && "current", item.badge]
+      let marks = [
+        item.kind,
+        item.current && "current",
+        item.badge,
+        item.checked != undefined && (item.checked ? "on" : "off"),
+        item.icon && Object.keys(item.icon)[0] + " icon",
+      ]
         .filter(Boolean)
         .join(", ");
       console.log(`  ${item.label}  (${marks})`);
+      for (let action of item.actions ?? []) {
+        let actionState = [
+          action.pressed != undefined && (action.pressed ? "on" : "off"),
+          action.popup && "opens a menu",
+          action.icon && Object.keys(action.icon)[0] + " icon",
+        ]
+          .filter(Boolean)
+          .join(", ");
+        console.log(
+          `    - action: ${action.label}${actionState ? `  (${actionState})` : ""}`
+        );
+      }
     }
   }
   console.log(result.problems.length ? "\nFAILED" : "\nOK");
   process.exitCode = result.problems.length ? 1 : 0;
 }
 
-async function capture(htmlPath, pageURL) {
+async function capture(htmlPath, pageURL, rulePath) {
   let html = fs.readFileSync(htmlPath, "utf8");
+  let rule = rulePath ? JSON.parse(fs.readFileSync(rulePath, "utf8")) : null;
   let result = await withPage(html, pageURL, page =>
     page.evaluate(
       async args => {
         // eslint-disable-next-line no-unsanitized/method
         let module = await import(`${args.base}/FoldCapture.sys.mjs`);
-        return { ...module.capturePage(window, null), url: args.pageURL };
+        // eslint-disable-next-line no-unsanitized/method
+        let rules = await import(`${args.base}/FoldRules.sys.mjs`);
+        // eslint-disable-next-line no-unsanitized/method
+        let engine = await import(`${args.base}/FoldTranscriber.sys.mjs`);
+        let compiled = args.rule && rules.compileRule(args.rule);
+        let captured = module.capturePage(window, compiled);
+        if (compiled) {
+          let style = document.createElement("style");
+          style.textContent = engine.hidingStyle(compiled);
+          document.head.append(style);
+          captured.rule.folded = module.measureFold(window, compiled);
+          style.remove();
+        }
+        return { ...captured, url: args.pageURL };
       },
-      { base: ORIGIN, pageURL }
+      { base: ORIGIN, pageURL, rule }
     )
   );
   console.log(JSON.stringify(result, null, 2));
 }
 
 let args = process.argv.slice(2);
-if (args[0] == "--capture" && args.length == 3) {
-  await capture(args[1], args[2]);
+if (args[0] == "--capture" && (args.length == 3 || args.length == 4)) {
+  await capture(args[1], args[2], args[3]);
 } else if (args.length == 2) {
   await check(args[0], args[1]);
 } else {
   console.log(
-    "usage: check.mjs <rule.json> <capture.json>\n       check.mjs --capture <page.html> <url>"
+    "usage: check.mjs <rule.json> <capture.json>\n       check.mjs --capture <page.html> <url> [rule.json]"
   );
   process.exitCode = 2;
 }

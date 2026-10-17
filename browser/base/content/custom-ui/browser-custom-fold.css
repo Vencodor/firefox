@@ -138,9 +138,10 @@
       position: relative;
     }
 
-    /* Matches the tab close button: shown at the row end while the row is
-       hovered or focused, or always while it's on. */
-    .custom-fold-secondary {
+    /* A row's action matches the tab close button: shown at the row end
+       while the row is hovered or focused, or always while it's on. Without
+       an icon of its own it's a star when it toggles and "more" otherwise. */
+    .custom-fold-action {
       display: none;
       position: absolute;
       inset-inline-end: calc(var(--space-custom-padding) - var(--tab-content-button-padding) / 2);
@@ -152,22 +153,36 @@
       padding: 0;
       border: 0;
       border-radius: calc(var(--border-radius-custom-tab) - 3px);
-      background: var(--button-background-color-ghost) url("chrome://browser/content/custom-ui/resources/fold/star.svg") center / 12px no-repeat;
+      background: var(--button-background-color-ghost) url("chrome://browser/content/custom-ui/resources/fold/more.svg") center / 12px no-repeat;
       color: var(--button-text-color-ghost);
       -moz-context-properties: fill;
       fill: currentColor;
       appearance: none;
       translate: 0 -50%;
 
-      &:hover {
-        background-color: var(--button-background-color-ghost-hover);
-        color: var(--button-text-color-ghost-hover);
+      &[aria-pressed] {
+        background-image: url("chrome://browser/content/custom-ui/resources/fold/star.svg");
       }
 
       &[aria-pressed="true"] {
-        display: block;
+        display: grid;
         background-image: url("chrome://browser/content/custom-ui/resources/fold/star-filled.svg");
         color: var(--custom-ink);
+      }
+
+      &.custom-fold-action-icon {
+        place-items: center;
+        background-image: none;
+
+        > .custom-archive-icon {
+          width: 12px;
+          height: 12px;
+        }
+      }
+
+      &:hover {
+        background-color: var(--button-background-color-ghost-hover);
+        color: var(--button-text-color-ghost-hover);
       }
 
       &:focus-visible {
@@ -176,12 +191,94 @@
       }
     }
 
-    .custom-fold-item:is(:hover, :focus-within) > .custom-fold-secondary {
-      display: block;
+    .custom-fold-item:is(:hover, :focus-within) > .custom-fold-action {
+      display: grid;
     }
 
-    .custom-fold-has-secondary:is(:hover, :focus-within, .custom-fold-pressed) > .custom-fold-row {
+    .custom-fold-has-action:is(:hover, :focus-within, .custom-fold-pressed) > .custom-fold-row {
       padding-inline-end: calc(var(--space-custom-padding) + var(--tab-content-button-size));
+    }
+
+    /* Icons from the site or the rule take the Mono text color. */
+    .custom-fold-svg {
+      flex: none;
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+      background-color: currentColor;
+      mask-position: center;
+      mask-repeat: no-repeat;
+      mask-size: contain;
+    }
+
+    /* A toggle item reads like the page settings switches. */
+    .custom-fold-check {
+      position: relative;
+      flex: none;
+      box-sizing: border-box;
+      width: calc(var(--icon-size-small) * 1.75);
+      height: var(--icon-size-small);
+      margin-inline-start: auto;
+      border-radius: var(--border-radius-circle);
+      background-color: var(--custom-line-strong);
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset-block-start: var(--space-xxsmall);
+        inset-inline-start: var(--space-xxsmall);
+        width: calc(var(--icon-size-small) - var(--space-xsmall));
+        height: calc(var(--icon-size-small) - var(--space-xsmall));
+        border-radius: var(--border-radius-circle);
+        background-color: var(--custom-surface);
+      }
+
+      [aria-checked="true"] > & {
+        background-color: var(--custom-accent);
+
+        &::after {
+          inset-inline-start: auto;
+          inset-inline-end: var(--space-xxsmall);
+        }
+      }
+    }
+
+    /* A field item is the archive's search field in a row. */
+    .custom-fold-field-row {
+      padding-inline-end: 0;
+
+      &:focus-within {
+        background-color: var(--custom-hover);
+      }
+    }
+
+    .custom-fold-search-icon {
+      background: url("chrome://global/skin/icons/search-glass.svg") center / contain no-repeat;
+      -moz-context-properties: fill;
+      fill: currentColor;
+    }
+
+    .custom-fold-field {
+      appearance: none;
+      align-self: stretch;
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding: 0 var(--space-custom-padding) 0 0;
+      border: 0;
+      background: transparent;
+      color: var(--custom-ink);
+      font: inherit;
+      font-size: var(--font-size-custom-label);
+      outline: none;
+
+      &::placeholder {
+        color: var(--custom-muted);
+        opacity: 1;
+      }
+
+      &::-moz-search-clear-button {
+        display: none;
+      }
     }
 
     .custom-fold-toggle {
@@ -222,7 +319,7 @@
     }
 
     #sidebar-container:not([sidebar-launcher-expanded]) {
-      :is(.custom-fold-badge, .custom-fold-secondary) {
+      :is(.custom-fold-badge, .custom-fold-action, .custom-fold-check, .custom-fold-field-row) {
         display: none;
       }
     }

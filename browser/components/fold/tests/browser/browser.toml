@@ -1,0 +1,12 @@
+[DEFAULT]
+support-files = [
+  "file_fold_site.html",
+  "fold_test_rule.json",
+]
+prefs = [
+  "browser.customUI.enabled=true",
+  "browser.customUI.fold.enabled=true",
+  "sidebar.verticalTabs=true",
+]
+
+["browser_fold.js"]

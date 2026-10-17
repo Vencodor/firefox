@@ -11,7 +11,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
   formatCapture: "resource:///modules/fold/FoldCapture.sys.mjs",
   isFoldAvailable: "resource:///modules/fold/FoldRules.sys.mjs",
   isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
+  isSafeIcon: "resource:///modules/fold/FoldRules.sys.mjs",
   setFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
+  setRulesForTests: "resource:///modules/fold/FoldRules.sys.mjs",
   shareRules: "resource:///modules/fold/FoldRules.sys.mjs",
 });
 
@@ -20,7 +22,10 @@ const CAPTURE_ACTOR = "FoldCapture";
 const MAX_SECTIONS = 50;
 const MAX_ITEMS = 500;
 const MAX_TEXT = 200;
+const MAX_VALUE = 500;
 const MAX_URL = 4096;
+const MAX_ACTIONS = 8;
+const MAX_MENU_ITEMS = 40;
 
 let registered = false;
 let captureRegistered = false;
@@ -41,32 +46,92 @@ function text(value, limit = MAX_TEXT) {
   return typeof value == "string" && value ? value.slice(0, limit) : undefined;
 }
 
+function flag(value) {
+  return typeof value == "boolean" ? value : undefined;
+}
+
+function cleanIcon(icon) {
+  if (!icon || typeof icon != "object") {
+    return undefined;
+  }
+  return {
+    name: text(icon.name),
+    image: text(icon.image, MAX_URL),
+    svg: lazy.isSafeIcon(icon.svg) ? icon.svg : undefined,
+    letter: text(icon.letter, 1),
+  };
+}
+
+function cleanAction(action) {
+  let label = text(action?.label);
+  if (!label) {
+    return null;
+  }
+  return {
+    id: text(action.id) ?? "",
+    label,
+    icon: cleanIcon(action.icon),
+    pressed: flag(action.pressed),
+    popup: action.popup === true || undefined,
+  };
+}
+
 function cleanItem(item) {
   let label = text(item?.label);
   if (!label) {
     return null;
   }
-  let icon = item.icon ?? {};
   let clean = {
     id: text(item.id) ?? "",
     kind: lazy.ITEM_KINDS.includes(item.kind) ? item.kind : "nav",
     label,
     href: text(item.href, MAX_URL),
-    icon: {
-      name: text(icon.name),
-      image: text(icon.image, MAX_URL),
-      letter: text(icon.letter, 1),
-    },
+    icon: cleanIcon(item.icon),
     badge: text(item.badge),
     current: item.current === true,
   };
-  if (item.secondary) {
-    clean.secondary = {
-      label: text(item.secondary.label) ?? "",
-      pressed: item.secondary.pressed === true,
-    };
+  if (Array.isArray(item.actions)) {
+    let actions = item.actions
+      .slice(0, MAX_ACTIONS)
+      .map(cleanAction)
+      .filter(Boolean);
+    if (actions.length) {
+      clean.actions = actions;
+    }
+  }
+  if (clean.kind == "field") {
+    clean.value =
+      typeof item.value == "string" ? item.value.slice(0, MAX_VALUE) : "";
+    clean.placeholder = text(item.placeholder);
+    clean.inputType = item.inputType == "text" ? "text" : "search";
+  } else if (clean.kind == "toggle") {
+    clean.checked = item.checked === true;
   }
   return clean;
+}
+
+/**
+ * @param {*} menu A menu the page read with readMenu.
+ * @returns {?object[]} Its items as { id, label, checked?, disabled? }.
+ */
+function cleanMenu(menu) {
+  if (!Array.isArray(menu?.items)) {
+    return null;
+  }
+  return menu.items
+    .slice(0, MAX_MENU_ITEMS)
+    .map(item => {
+      let label = text(item?.label);
+      return label
+        ? {
+            id: text(item.id) ?? "",
+            label,
+            checked: flag(item.checked),
+            disabled: item.disabled === true || undefined,
+          }
+        : null;
+    })
+    .filter(Boolean);
 }
 
 /**
@@ -199,14 +264,14 @@ export const Fold = {
   },
 
   /**
-   * Clicks the page element behind an item.
+   * Clicks the page element behind an item, an action, a section title or an
+   * item of a site menu opened with openPopup.
    *
    * @param {Element} browser
-   * @param {string} id The item id.
-   * @param {string} [part] "secondary" for the item's toggle.
+   * @param {string} id
    */
-  run(browser, id, part) {
-    this.send(browser, "Fold:Run", { id, part });
+  run(browser, id) {
+    this.send(browser, "Fold:Run", { id });
   },
 
   /**
@@ -245,6 +310,72 @@ export const Fold = {
       console.error("Fold: capturing the page failed", e);
       return null;
     }
+  },
+
+  /**
+   * Has the page fold or unfold its sidebar as Fold is set for its site. The
+   * page does this itself as it loads; this covers pages that started before
+   * the actor was registered or missed it.
+   *
+   * @param {Element} browser
+   * @param {boolean} enabled
+   */
+  sync(browser, enabled) {
+    this.send(browser, "Fold:Sync", { enabled });
+  },
+
+  /**
+   * Types into the page's text field behind a field item.
+   *
+   * @param {Element} browser
+   * @param {string} id The item id.
+   * @param {string} value
+   * @param {object} [options]
+   * @param {boolean} [options.submit] Whether to submit it like Enter does.
+   */
+  input(browser, id, value, { submit = false } = {}) {
+    this.send(browser, "Fold:Input", { id, value, submit });
+  },
+
+  /**
+   * Opens the site's menu behind a row action and reads it.
+   *
+   * @param {Element} browser
+   * @param {string} id The action id.
+   * @returns {Promise<?object[]>} The menu items, or null if none opened.
+   */
+  async openPopup(browser, id) {
+    let actor = getActor(browser);
+    if (!actor) {
+      return null;
+    }
+    try {
+      return cleanMenu(await actor.sendQuery("Fold:OpenPopup", { id }));
+    } catch (e) {
+      if (e.name != "AbortError") {
+        console.error("Fold: opening the site's menu failed", e);
+      }
+      return null;
+    }
+  },
+
+  closePopup(browser) {
+    this.send(browser, "Fold:ClosePopup");
+  },
+
+  /**
+   * Replaces the site rules in tests, or goes back to rules/ with null, and
+   * registers the actor again for them.
+   *
+   * @param {?object[]} rules Rules as written.
+   */
+  setRulesForTests(rules) {
+    if (registered) {
+      ChromeUtils.unregisterWindowActor(ACTOR);
+      registered = false;
+    }
+    lazy.setRulesForTests(rules);
+    this.ensureRegistered();
   },
 
   send(browser, name, data) {

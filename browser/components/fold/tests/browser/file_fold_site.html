@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Fold test site</title>
+<style>
+  body {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    min-height: 100vh;
+    margin: 0;
+  }
+  #open-nav {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+  }
+  #sidebar {
+    grid-column: 1;
+  }
+  main {
+    grid-column: 2;
+  }
+  [role="menu"] {
+    position: absolute;
+  }
+</style>
+</head>
+<body>
+<button id="open-nav" aria-label="Open navigation">=</button>
+<aside id="sidebar">
+  <nav aria-label="Site">
+    <div class="search">
+      <input type="search" placeholder="Search chats" aria-label="Search chats">
+    </div>
+    <a href="?view=home"><svg viewBox="0 0 16 16"><path d="M2 8l6-6 6 6v6H2z"/></svg><span>Home</span></a>
+    <a href="?view=explore"><span>Explore</span></a>
+    <button class="new" aria-label="New chat"><svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="black"/></svg></button>
+    <div class="section">
+      <button class="section-header" aria-expanded="true"><span class="title">Recent</span></button>
+      <ul class="items">
+        <li class="row"><a href="?view=chat-1">First chat</a><button class="more" aria-label="Options for First chat" aria-haspopup="menu"></button></li>
+        <li class="row"><a href="?view=chat-2">Second chat</a><button class="more" aria-label="Options for Second chat" aria-haspopup="menu"></button></li>
+      </ul>
+    </div>
+    <div class="section">
+      <h3 class="title">Settings</h3>
+      <label class="row"><input type="checkbox" id="dark"> Dark theme</label>
+    </div>
+  </nav>
+</aside>
+<main id="main"><p id="view">home</p></main>
+<div id="menu" role="menu" hidden>
+  <button role="menuitem" data-action="rename">Rename</button>
+  <button role="menuitem" data-action="delete">Delete</button>
+</div>
+<script>
+  "use strict";
+  let sidebar = document.getElementById("sidebar");
+  // Whether the sidebar was drawn while the page was still loading.
+  document.body.dataset.sidebarShownAtLoad = String(
+    sidebar.checkVisibility({ visibilityProperty: true })
+  );
+
+  let menu = document.getElementById("menu");
+  let menuTarget = null;
+
+  function show() {
+    let view = new URLSearchParams(location.search).get("view") ?? "home";
+    document.getElementById("view").textContent = view;
+    for (let link of sidebar.querySelectorAll("a")) {
+      if (link.getAttribute("href") == `?view=${view}`) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    }
+  }
+
+  function closeMenu() {
+    menu.hidden = true;
+    menuTarget?.setAttribute("aria-expanded", "false");
+    menuTarget = null;
+  }
+
+  document.addEventListener("click", event => {
+    let link = event.target.closest("a[href^='?']");
+    if (link) {
+      event.preventDefault();
+      history.pushState(null, "", link.getAttribute("href"));
+      show();
+      return;
+    }
+    let header = event.target.closest(".section-header");
+    if (header) {
+      let expanded = header.getAttribute("aria-expanded") != "true";
+      header.setAttribute("aria-expanded", String(expanded));
+      header.nextElementSibling.hidden = !expanded;
+      return;
+    }
+    let more = event.target.closest(".more");
+    if (more) {
+      menuTarget = more;
+      more.setAttribute("aria-expanded", "true");
+      menu.hidden = false;
+      return;
+    }
+    let item = event.target.closest("[role='menuitem']");
+    if (item) {
+      document.body.dataset.lastAction = `${item.dataset.action} ${menuTarget?.getAttribute("aria-label")}`;
+      closeMenu();
+      return;
+    }
+    if (event.target.closest(".new")) {
+      document.body.dataset.newChat = "true";
+    }
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key == "Escape") {
+      closeMenu();
+    } else if (event.key == "Enter" && event.target.type == "search") {
+      document.body.dataset.searched = event.target.value;
+    }
+  });
+  show();
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
   "id": "reddit",
   "name": "Reddit",
-  "description": "Reddit's left navigation. Top links are found by address and the collapsible groups (Recent, Communities, Resources, ...) by their details/summary structure, so the rule doesn't depend on class names. The page grid keeps a column for the navigation, which the css gives to the content.",
+  "description": "Reddit's left navigation. Top links are found by address and the collapsible groups (Recent, Communities, Resources, ...) by their details/summary structure, so the rule doesn't depend on class names. The page grid keeps a column for the navigation, which the css gives to the content. The nav's own collapse button is excluded: the Mono sidebar collapses instead.",
   "matches": ["*://www.reddit.com/*"],
   "root": [
     "#left-sidebar",
@@ -9,11 +9,8 @@
     "#left-sidebar-container",
     "flex-left-nav-container"
   ],
-  "hide": [
-    "#left-sidebar-container",
-    "flex-left-nav-container",
-    "#navbar-menu-button"
-  ],
+  "hide": ["#left-sidebar-container", "flex-left-nav-container"],
+  "remove": ["#navbar-menu-button"],
   "css": [
     ".grid-container:has(> #left-sidebar-container) {",
     "  grid-template-columns: minmax(0, 1fr) !important;",
@@ -21,6 +18,10 @@
     ".grid-container:has(> #left-sidebar-container) > :not(#left-sidebar-container) {",
     "  grid-column: 1 / -1 !important;",
     "}"
+  ],
+  "exclude": [
+    "button[aria-label='Collapse' i]",
+    "button[aria-label='Expand' i]"
   ],
   "ready": { "minItems": 3, "timeoutMs": 4000 },
   "current": "url",

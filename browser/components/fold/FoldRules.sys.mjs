@@ -5,45 +5,82 @@
 /**
  * The site rules: one JSON file per site under rules/, listed by id in
  * rules/index.json. A rule tells the transcriber where the site's sidebar is
- * and how its parts map to the site menu model:
+ * and how its parts map to the site menu model. Fold aims to carry every
+ * function of the site's sidebar over, so whatever a rule doesn't read is
+ * reported by checkCapture.
  *
  * - id: the rule's key, also its file name. name: the site name.
  * - description: notes for whoever edits the rule; not read.
  * - matches: match patterns of the pages the rule applies to.
  * - root: selectors tried in order for the sidebar element; shadow trees are
  *   searched too, and each selector is matched within its own tree.
- * - hide: selectors hidden on the page while Fold is on, and css: extra
- *   rules, as a string or a list of lines, for the page layout without them.
+ * - hide: selectors of the sidebar to conceal while Fold is on. They stay
+ *   laid out and rendered, so the site keeps loading what they hold, but
+ *   aren't drawn, take no space or clicks. Selectors match inside shadow
+ *   trees too, each within its own tree.
+ * - remove: selectors to take out of the layout entirely (display: none),
+ *   such as the button that opens the site's sidebar.
+ * - css: extra rules, as a string or a list of lines, for the page layout
+ *   without the sidebar.
  * - ready: { minItems, timeoutMs }. The site menu needs at least minItems
  *   items, waiting up to timeoutMs for the page to render them; otherwise the
  *   page is left alone.
- * - current: "url" to find the current item by address only, for sites
- *   whose aria-current lags behind their in-page navigation.
+ * - current: how the current item is found. "auto" (the default) takes
+ *   aria-current, aria-selected or currentSelector on the item or its row,
+ *   and the address otherwise. "url" uses the address only, for sites whose
+ *   markers lag behind; "marker" the markers only, for sites whose view
+ *   changes without the address.
+ * - currentSelector: a selector marking the current item or its row.
  * - currentIgnoresSearch: whether a link to the current path is the current
  *   item whatever the query string.
+ * - exclude: selectors of elements that are not read at all, with what's in
+ *   them, such as the site's own sidebar collapse button.
+ * - customIcons: { name: "<svg ...>" }, icons for this site's items, named
+ *   like the Mono icons. The SVG holds shapes only.
+ * - siteIcons: false to not use the site's own SVG icons for items with no
+ *   named icon. They're drawn in the Mono color.
  * - main: [{ paths, icon }], top links found by address, in this order.
  * - groups: sections read from repeated containers:
- *   - each: the container of a section, heading: its title inside it.
- *   - items: candidate links and buttons in a section; buttons need text.
- *   - container: the element of one row, searched for its picture and its
- *     secondary toggle.
- *   - secondary: { selector, pressed } for the toggle at the row end.
+ *   - each: the container of a section, heading: its title inside it. The
+ *     button around the title, or a details summary, toggles the section and
+ *     is never read as an item.
+ *   - items: links, buttons and controls in a section. Text fields become
+ *     field items and checkboxes or switches toggle items. Elements without
+ *     text are named by their accessible name.
+ *   - container: the element of one row. The row's first link, or its first
+ *     element, is the item; the other elements in the row become its
+ *     actions, like a favorite star or a menu button.
+ *   - pressed: a selector marking a row action, or what's inside it, as on.
+ *   - secondary: { selector, pressed }, the older form of `pressed`.
  *   - kinds, icons: ordered lists of { tag, href, text, external } tests
- *     (all optional) giving an item's kind or Mono icon.
+ *     (all optional) giving an item's kind or icon.
  *   - sections: [{ heading, kind, collapsed }] for a section whose heading
  *     matches: every item takes `kind`, and `collapsed` makes the section
- *     collapsible, collapsed or not at first. A section read from a
- *     details element is collapsible anyway: it starts as the page shows it,
- *     and toggling it in the sidebar clicks its summary.
+ *     collapsible, collapsed or not at first. Otherwise a section is
+ *     collapsible when it's a details element or its title button has
+ *     aria-expanded, starts as the page shows it, and toggling it in the
+ *     sidebar toggles it on the page.
+ * - extras: [{ items, heading, at, kind }], sections of elements found
+ *   anywhere in the sidebar, before ("start") or after ("end", the default)
+ *   the others, such as a search field above the links.
  *
- * href, text and heading tests are regular expressions, written as strings
- * and matched without regard to case. href is tested against the path.
+ * Icons named by a rule are Mono icons (ICON_NAMES), the rule's customIcons,
+ * or "site" for the site's own icon. href, text and heading tests are regular
+ * expressions, written as strings and matched without regard to case. href
+ * is tested against the path.
  *
  * The parent process reads the files and hands them to content processes
  * through shared data, so they don't read files themselves.
  */
 
-export const ITEM_KINDS = ["nav", "entity", "action", "link"];
+export const ITEM_KINDS = [
+  "nav",
+  "entity",
+  "action",
+  "link",
+  "field",
+  "toggle",
+];
 
 /**
  * The Mono icons a rule may name, in browser/base/content/custom-ui/
@@ -66,11 +103,34 @@ export const ICON_NAMES = [
   "trending",
 ];
 
+const MAX_SVG = 8192;
+
+/**
+ * Whether an SVG icon only draws shapes: no scripts, event handlers, foreign
+ * content or references outside itself. Icons come from rules and, read from
+ * the page, from web content processes.
+ *
+ * @param {*} svg
+ * @returns {boolean}
+ */
+export function isSafeIcon(svg) {
+  return (
+    typeof svg == "string" &&
+    svg.length <= MAX_SVG &&
+    /^<svg[\s>]/.test(svg) &&
+    !/<(script|foreignObject|style|iframe|image|a)[\s>/]/i.test(svg) &&
+    !/\son\w+\s*=/i.test(svg) &&
+    !/(href|src)\s*=(?!\s*["']?\s*#)/i.test(svg) &&
+    !/url\((?!\s*["']?\s*#)/i.test(svg)
+  );
+}
+
 const RULES_URL = "resource:///modules/fold/rules/";
 const SHARED_KEY = "Fold:rules";
 
 let ruleData = null;
 let compiledRules = null;
+let testRules = null;
 let matchSets = new WeakMap();
 let listening = false;
 
@@ -132,7 +192,7 @@ function getRuleData() {
     return ruleData;
   }
   if (Services.appinfo.processType == Services.appinfo.PROCESS_TYPE_DEFAULT) {
-    ruleData = readRuleFiles();
+    ruleData = testRules ?? readRuleFiles();
     return ruleData;
   }
   if (!listening) {
@@ -145,6 +205,18 @@ function getRuleData() {
   }
   ruleData = Services.cpmm.sharedData.get(SHARED_KEY) ?? null;
   return ruleData;
+}
+
+/**
+ * Replaces the rules read from rules/ in tests, or goes back to them with
+ * null. Fold.setRulesForTests also shares them and registers the actor again.
+ *
+ * @param {?object[]} rules Rules as written.
+ */
+export function setRulesForTests(rules) {
+  testRules = rules;
+  ruleData = compiledRules = null;
+  matchSets = new WeakMap();
 }
 
 /**
@@ -178,6 +250,9 @@ function compileTests(tests) {
 export function compileRule(rule) {
   let compiled = {
     ...rule,
+    remove: rule.remove ?? [],
+    exclude: rule.exclude?.length ? rule.exclude.join(", ") : null,
+    customIcons: rule.customIcons ?? {},
     css: Array.isArray(rule.css) ? rule.css.join("\n") : (rule.css ?? ""),
   };
   if (rule.groups) {
@@ -242,23 +317,31 @@ const RULE_KEYS = new Set([
   "matches",
   "root",
   "hide",
+  "remove",
   "css",
   "ready",
   "current",
+  "currentSelector",
   "currentIgnoresSearch",
+  "exclude",
+  "customIcons",
+  "siteIcons",
   "main",
   "groups",
+  "extras",
 ]);
 const GROUP_KEYS = new Set([
   "each",
   "heading",
   "items",
   "container",
+  "pressed",
   "secondary",
   "kinds",
   "icons",
   "sections",
 ]);
+const EXTRA_KEYS = new Set(["items", "heading", "at", "kind"]);
 const TEST_KEYS = new Set(["tag", "href", "text", "external"]);
 
 /**
@@ -320,7 +403,40 @@ export function validateRule(rule) {
     }
   }
   check(isStringList(rule.root), "root must list selectors");
-  check(isStringList(rule.hide, { empty: true }), "hide must list selectors");
+  for (let key of ["hide", "remove", "exclude"]) {
+    if (key == "hide" || rule[key] != undefined) {
+      check(
+        isStringList(rule[key], { empty: true }) &&
+          !rule[key].some(selector => selector.includes(">>>")),
+        `${key} must list selectors, each within one tree (no ">>>")`
+      );
+    }
+  }
+  let iconNames = new Set(ICON_NAMES).add("site");
+  if (
+    rule.customIcons != undefined &&
+    check(
+      rule.customIcons && typeof rule.customIcons == "object",
+      "customIcons must be an object"
+    )
+  ) {
+    for (let [name, svg] of Object.entries(rule.customIcons)) {
+      check(
+        /^[a-z0-9][a-z0-9-]*$/.test(name),
+        `customIcons "${name}" must be lowercase letters, digits and dashes`
+      );
+      check(
+        isSafeIcon(svg),
+        `customIcons.${name} must be an <svg> of at most ${MAX_SVG} characters with shapes only`
+      );
+      iconNames.add(name);
+    }
+  }
+  let iconList = [...iconNames].join(", ");
+  check(
+    rule.siteIcons == undefined || typeof rule.siteIcons == "boolean",
+    "siteIcons must be true or false"
+  );
   check(
     rule.css == undefined ||
       typeof rule.css == "string" ||
@@ -339,8 +455,13 @@ export function validateRule(rule) {
     );
   }
   check(
-    rule.current == undefined || rule.current == "url",
-    'current must be "url" when given'
+    rule.current == undefined ||
+      ["auto", "url", "marker"].includes(rule.current),
+    'current must be "auto", "url" or "marker"'
+  );
+  check(
+    rule.currentSelector == undefined || isString(rule.currentSelector),
+    "currentSelector must be a selector"
   );
   check(
     rule.currentIgnoresSearch == undefined ||
@@ -358,8 +479,35 @@ export function validateRule(rule) {
         `main[${i}].paths must list paths starting with "/"`
       );
       check(
-        ICON_NAMES.includes(entry?.icon),
-        `main[${i}].icon must be one of ${ICON_NAMES.join(", ")}`
+        iconNames.has(entry?.icon),
+        `main[${i}].icon must be one of ${iconList}`
+      );
+    });
+  }
+  if (
+    rule.extras != undefined &&
+    check(Array.isArray(rule.extras), "extras must be a list")
+  ) {
+    rule.extras.forEach((extra, i) => {
+      let where = `extras[${i}]`;
+      if (
+        !check(extra && typeof extra == "object", `${where} must be an object`)
+      ) {
+        return;
+      }
+      checkKeys(extra, EXTRA_KEYS, where);
+      check(isString(extra.items), `${where}.items must be a selector`);
+      check(
+        extra.heading == undefined || isString(extra.heading),
+        `${where}.heading must be a string`
+      );
+      check(
+        extra.at == undefined || ["start", "end"].includes(extra.at),
+        `${where}.at must be "start" or "end"`
+      );
+      check(
+        extra.kind == undefined || ITEM_KINDS.includes(extra.kind),
+        `${where}.kind must be one of ${ITEM_KINDS.join(", ")}`
       );
     });
   }
@@ -374,7 +522,7 @@ export function validateRule(rule) {
   checkKeys(groups, GROUP_KEYS, "groups");
   check(isString(groups.each), "groups.each must be a selector");
   check(isString(groups.items), "groups.items must be a selector");
-  for (let key of ["heading", "container"]) {
+  for (let key of ["heading", "container", "pressed"]) {
     check(
       groups[key] == undefined || isString(groups[key]),
       `groups.${key} must be a selector`
@@ -390,7 +538,7 @@ export function validateRule(rule) {
   }
   for (let [key, field, values] of [
     ["kinds", "kind", ITEM_KINDS],
-    ["icons", "icon", ICON_NAMES],
+    ["icons", "icon", [...iconNames]],
   ]) {
     if (
       groups[key] == undefined ||

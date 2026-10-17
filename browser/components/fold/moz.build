@@ -19,4 +19,5 @@ FINAL_TARGET_FILES.actors += [
     "actors/FoldParent.sys.mjs",
 ]
 
+BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]
 XPCSHELL_TESTS_MANIFESTS += ["tests/unit/xpcshell.toml"]
