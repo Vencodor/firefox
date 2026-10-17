@@ -1,0 +1,27 @@
+{
+  "id": "gemini",
+  "name": "Gemini",
+  "description": "Gemini's side navigation, a bard-sidenav element in the light DOM. Top links are found by address: the new chat is /app, and the library, images, scheduled and students links are relative in the page (library, images, ...), which resolve to /library and so on. The notebooks and chats sections are read through their expandable-section header buttons, so the rule doesn't depend on the hashed class names of the rows. The sidenav is a flex item beside the content, which takes the space once it's hidden, so no css is needed.",
+  "matches": ["*://gemini.google.com/*"],
+  "root": ["bard-sidenav[role='navigation']", "bard-sidenav"],
+  "hide": ["bard-sidenav"],
+  "ready": { "minItems": 3, "timeoutMs": 5000 },
+  "current": "url",
+  "currentIgnoresSearch": true,
+  "main": [
+    { "paths": ["/app"], "icon": "add" },
+    { "paths": ["/library"], "icon": "folder" },
+    { "paths": ["/images"], "icon": "image" },
+    { "paths": ["/scheduled"], "icon": "schedule" },
+    { "paths": ["/students"], "icon": "school" }
+  ],
+  "groups": {
+    "each": "expandable-section",
+    "heading": ".expandable-section-header",
+    "items": "a[href], button",
+    "container": "gem-nav-list-item",
+    "kinds": [{ "href": "^/notebooks/create$", "kind": "action" }],
+    "icons": [{ "href": "^/notebooks/create$", "icon": "add" }],
+    "sections": [{ "heading": "^(노트북|전체)$", "collapsed": false }]
+  }
+}
