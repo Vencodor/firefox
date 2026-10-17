@@ -90,6 +90,7 @@ export class SiteSidebarChild extends JSWindowActorChild {
       result = this.#read(rule);
     }
     if (!result) {
+      this.#read(rule, { report: true });
       return { model: null };
     }
     this.#rule = rule;
@@ -100,9 +101,23 @@ export class SiteSidebarChild extends JSWindowActorChild {
     return { model: result.model };
   }
 
-  #read(rule) {
-    let result = lazy.transcribe(this.document, rule);
-    if (!result || result.count < (rule.ready?.minItems ?? 1)) {
+  #read(rule, { report = false } = {}) {
+    let result;
+    try {
+      result = lazy.transcribe(this.document, rule);
+    } catch (e) {
+      console.error(`SiteSidebar: reading ${rule.id} failed`, e);
+      return null;
+    }
+    let minItems = rule.ready?.minItems ?? 1;
+    if (!result || result.count < minItems) {
+      if (report) {
+        console.warn(
+          result
+            ? `SiteSidebar: ${rule.id} found ${result.count} of ${minItems} items`
+            : `SiteSidebar: ${rule.id} found no sidebar root`
+        );
+      }
       return null;
     }
     this.#elements = result.elements;

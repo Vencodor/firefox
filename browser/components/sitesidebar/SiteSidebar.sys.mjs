@@ -13,11 +13,14 @@ const ACTOR = "SiteSidebar";
 
 let registered = false;
 
-function getActor(browser) {
+function getActor(browser, { report = false } = {}) {
   try {
     return browser?.browsingContext?.currentWindowGlobal?.getActor(ACTOR);
-  } catch {
+  } catch (e) {
     // The page doesn't match any site rule, or it's being torn down.
+    if (report) {
+      console.warn("SiteSidebar: no actor for the page", e);
+    }
     return null;
   }
 }
@@ -63,14 +66,15 @@ export const SiteSidebar = {
    *   sidebar couldn't be read and was left as it is.
    */
   async activate(browser) {
-    let actor = getActor(browser);
+    let actor = getActor(browser, { report: true });
     if (!actor) {
       return null;
     }
     try {
       let result = await actor.sendQuery("SiteSidebar:Activate");
       return result?.model ?? null;
-    } catch {
+    } catch (e) {
+      console.error("SiteSidebar: activating the page failed", e);
       return null;
     }
   },

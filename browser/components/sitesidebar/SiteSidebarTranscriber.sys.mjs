@@ -39,9 +39,10 @@ function shadowOf(element) {
 
 function parentOf(node) {
   let parent = node.parentNode;
-  return parent?.nodeType == parent?.DOCUMENT_FRAGMENT_NODE && parent.host
-    ? parent.host
-    : parent;
+  if (parent && parent.nodeType == parent.DOCUMENT_FRAGMENT_NODE) {
+    return parent.host ?? null;
+  }
+  return parent;
 }
 
 /**
@@ -69,7 +70,22 @@ class Walker {
   }
 
   query(root, selector) {
-    return this.queryAll(root, selector)[0] ?? null;
+    for (let element of root.children) {
+      if (element.matches(selector)) {
+        return element;
+      }
+      let shadow = shadowOf(element);
+      if (shadow) {
+        this.shadowRoots.add(shadow);
+      }
+      let found =
+        (shadow && this.query(shadow, selector)) ||
+        this.query(element, selector);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
   }
 }
 
