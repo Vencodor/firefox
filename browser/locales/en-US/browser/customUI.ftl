@@ -343,3 +343,15 @@ custom-ui-archive-search-empty = 검색 결과가 없어요
 
 custom-ui-archive-searching =
     .aria-label = 검색하는 중
+
+custom-ui-archive-remove-history =
+    .aria-label = 방문 기록에서 삭제
+    .title = 방문 기록에서 삭제
+
+custom-ui-archive-remove-closed =
+    .aria-label = 목록에서 지우기
+    .title = 목록에서 지우기
+
+custom-ui-archive-remove-bookmark =
+    .aria-label = 북마크 삭제
+    .title = 북마크 삭제

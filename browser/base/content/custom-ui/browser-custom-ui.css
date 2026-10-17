@@ -200,12 +200,22 @@
 
     .tab-background {
       border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+
+      @media not (forced-colors) {
+        &:not([multiselected]) {
+          outline: none;
+        }
+      }
     }
 
     .tab-background:is([selected], [multiselected]) {
       background: var(--custom-surface);
       border-color: transparent;
       box-shadow: var(--box-shadow-custom-tab, var(--box-shadow-level-1));
+    }
+
+    .tabbrowser-tab:not(:hover, :focus-within) .tab-close-button[selected] {
+      visibility: collapse;
     }
 
     .tab-label {
@@ -737,6 +747,7 @@
       border: var(--border-width) solid var(--custom-line);
       border-block-start: none;
       border-radius: 0 0 var(--border-radius-custom-page, var(--border-radius-medium)) var(--border-radius-custom-page, var(--border-radius-medium));
+      outline: none;
       overflow: clip;
       background: var(--custom-surface);
       box-shadow: var(--box-shadow-custom-page, var(--box-shadow-level-2));
@@ -746,6 +757,10 @@
       border-radius: 0;
       outline: none;
       box-shadow: none;
+    }
+
+    #tabbrowser-tabbox .browserContainer {
+      border: none !important;
     }
 
     #ai-window-splitter {
@@ -1182,6 +1197,99 @@
 @media (prefers-reduced-motion: no-preference) {
   :root[custom-ui] #sidebar-container[custom-step-resizing] {
     transition: width 140ms ease-out;
+  }
+}
+
+/* While CustomBrowserUI.resizeSidebar() changes the width, the sidebar stays
+   live beneath the transition. The page area's box moves to its new place and
+   clips its snapshots, which keep their size and stay at the end away from
+   the sidebar, so nothing is stretched; the new layout fades in at the end. */
+:root[custom-sidebar-resize] {
+  #sidebar-container {
+    view-transition-name: none;
+  }
+
+  #navigator-toolbox {
+    view-transition-name: custom-navigator-toolbox;
+  }
+
+  &::view-transition-group(tabbrowser-tabbox),
+  &::view-transition-group(custom-navigator-toolbox) {
+    z-index: 1;
+    animation-duration: 260ms;
+    animation-timing-function: var(--motion-ease-standard);
+  }
+
+  &::view-transition-image-pair(tabbrowser-tabbox),
+  &::view-transition-image-pair(custom-navigator-toolbox) {
+    overflow: clip;
+  }
+
+  &::view-transition-image-pair(tabbrowser-tabbox) {
+    border-end-start-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+    border-end-end-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+  }
+
+  &::view-transition-image-pair(custom-navigator-toolbox) {
+    border-start-start-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+    border-start-end-radius: var(--border-radius-custom-page, var(--border-radius-medium));
+  }
+
+  &:not([sidebar-positionend]) {
+    &::view-transition-old(tabbrowser-tabbox),
+    &::view-transition-new(tabbrowser-tabbox),
+    &::view-transition-old(custom-navigator-toolbox),
+    &::view-transition-new(custom-navigator-toolbox) {
+      inset-inline: auto 0;
+    }
+  }
+
+  /* A growing sidebar covers the old page, which then gives way to its new
+     layout. A shrinking one reveals the new, wider layout directly. */
+  &[custom-sidebar-resize="grow"] {
+    &::view-transition-old(tabbrowser-tabbox),
+    &::view-transition-old(custom-navigator-toolbox) {
+      animation: custom-sidebar-resize-out 260ms linear both;
+    }
+
+    &::view-transition-new(tabbrowser-tabbox),
+    &::view-transition-new(custom-navigator-toolbox) {
+      animation: custom-sidebar-resize-in 260ms linear both;
+    }
+  }
+
+  &[custom-sidebar-resize="shrink"] {
+    &::view-transition-old(tabbrowser-tabbox),
+    &::view-transition-old(custom-navigator-toolbox) {
+      display: none;
+    }
+
+    &::view-transition-new(tabbrowser-tabbox),
+    &::view-transition-new(custom-navigator-toolbox) {
+      animation: none;
+    }
+  }
+}
+
+@keyframes custom-sidebar-resize-out {
+  from,
+  65% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes custom-sidebar-resize-in {
+  from,
+  65% {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }
 

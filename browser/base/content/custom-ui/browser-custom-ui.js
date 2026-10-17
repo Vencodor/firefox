@@ -309,6 +309,49 @@ var CustomBrowserUI = {
     }
   },
 
+  /**
+   * Sets the sidebar's width in one step, so the page is laid out once at its
+   * new size instead of on every frame of a width animation. The page area's
+   * edge then moves from its old to its new place over the live sidebar,
+   * clipping its old snapshot or revealing its new one, and the old snapshot
+   * gives way to the new layout near the end. Not for dragging, where a
+   * transition per width step would fight the splitter.
+   *
+   * @param {string} width A CSS width for the sidebar container.
+   */
+  resizeSidebar(width) {
+    let container = document.getElementById("sidebar-container");
+    if (container.style.width == width) {
+      return;
+    }
+    let update = () => {
+      container.style.width = width;
+    };
+    if (
+      !this.enabled ||
+      window.gReduceMotion ||
+      !document.startViewTransition ||
+      SidebarController._activeViewTransition
+    ) {
+      update();
+      return;
+    }
+    let root = document.documentElement;
+    let grows =
+      !width || parseFloat(width) > container.getBoundingClientRect().width;
+    root.setAttribute("custom-sidebar-resize", grows ? "grow" : "shrink");
+    let transition = document.startViewTransition(update);
+    this.resizeTransition = transition;
+    // Starting another transition skips this one and rejects its ready promise.
+    transition.ready.catch(() => {});
+    transition.finished.finally(() => {
+      if (this.resizeTransition == transition) {
+        this.resizeTransition = null;
+        root.removeAttribute("custom-sidebar-resize");
+      }
+    });
+  },
+
   setPanelOpen(open, restoreFocus = true) {
     open = open && this.enabled;
     let wasOpen = !this.panel.hidden;
