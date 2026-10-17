@@ -870,6 +870,99 @@
                                 ]
                               }
                             ]
+                          },
+                          {
+                            "tag": "div",
+                            "attrs": {
+                              "class": "ng-star-inserted"
+                            },
+                            "kids": [
+                              {
+                                "tag": "gem-nav-list-item",
+                                "attrs": {
+                                  "title": "더보기",
+                                  "data-test-id": "overflow-side-nav-entry-button",
+                                  "class": "overflow-nav-item"
+                                },
+                                "kids": [
+                                  {
+                                    "tag": "button",
+                                    "attrs": {
+                                      "type": "button",
+                                      "aria-haspopup": "menu",
+                                      "aria-expanded": "false",
+                                      "aria-controls": "p42-overflow-menu",
+                                      "aria-label": "더보기",
+                                      "class": "mat-mdc-list-item mdc-list-item mat-mdc-tooltip-trigger gem-nav-list-item lm-enabled mat-mdc-list-item-interactive"
+                                    },
+                                    "kids": [
+                                      {
+                                        "tag": "div",
+                                        "attrs": {
+                                          "matlistitemicon": "",
+                                          "class": "mat-mdc-list-item-icon leading-icon-container mdc-list-item__start"
+                                        },
+                                        "kids": [
+                                          {
+                                            "tag": "gem-icon",
+                                            "attrs": {
+                                              "_nghost-ng-c4028161355": ""
+                                            },
+                                            "kids": [
+                                              {
+                                                "tag": "mat-icon",
+                                                "attrs": {
+                                                  "role": "img",
+                                                  "aria-hidden": "true",
+                                                  "class": "mat-icon notranslate lm-icon-m lumi-symbols mat-ligature-font mat-icon-no-color ng-star-inserted",
+                                                  "data-mat-icon-type": "font",
+                                                  "data-mat-icon-name": "more_horiz",
+                                                  "data-mat-icon-namespace": "lumi-symbols",
+                                                  "fonticon": "more_horiz"
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "tag": "span",
+                                        "attrs": {
+                                          "class": "mdc-list-item__content"
+                                        },
+                                        "kids": [
+                                          {
+                                            "tag": "span",
+                                            "attrs": {
+                                              "class": "mat-mdc-list-item-unscoped-content mdc-list-item__primary-text"
+                                            },
+                                            "kids": [
+                                              {
+                                                "tag": "span",
+                                                "attrs": {
+                                                  "class": "label-and-badge menu-entry-with-badge ng-star-inserted"
+                                                },
+                                                "kids": [
+                                                  {
+                                                    "tag": "span",
+                                                    "attrs": {
+                                                      "class": "title-text gds-body-s"
+                                                    },
+                                                    "kids": [
+                                                      "더보기"
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
                           }
                         ]
                       },
@@ -4424,6 +4517,145 @@
                             ]
                           }
                         ]
+                      },
+                      {
+                        "tag": "mat-action-list",
+                        "attrs": {
+                          "role": "group",
+                          "class": "mat-mdc-action-list mat-mdc-list-base mdc-list desktop-controls ng-star-inserted"
+                        },
+                        "kids": [
+                          {
+                            "tag": "sidenav-mavatar-footer",
+                            "kids": [
+                              {
+                                "tag": "div",
+                                "attrs": {
+                                  "class": "mavatar-footer-row"
+                                },
+                                "kids": [
+                                  {
+                                    "tag": "a",
+                                    "attrs": {
+                                      "href": "https://accounts.google.com/SignOutOptions?continue=https://gemini.google.com",
+                                      "class": "mavatar-footer-left ng-star-inserted",
+                                      "aria-label": "Google 계정: Test User(test@example.com)"
+                                    },
+                                    "kids": [
+                                      {
+                                        "tag": "div",
+                                        "attrs": {
+                                          "class": "mavatar-container"
+                                        },
+                                        "kids": [
+                                          {
+                                            "tag": "img",
+                                            "attrs": {
+                                              "alt": "",
+                                              "aria-hidden": "true",
+                                              "class": "mavatar-image ng-star-inserted"
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "tag": "div",
+                                        "attrs": {
+                                          "class": "mavatar-user-info ng-star-inserted"
+                                        },
+                                        "kids": [
+                                          {
+                                            "tag": "span",
+                                            "attrs": {
+                                              "class": "mavatar-user-name gds-body-m"
+                                            },
+                                            "kids": [
+                                              "Test User"
+                                            ]
+                                          },
+                                          {
+                                            "tag": "div",
+                                            "attrs": {
+                                              "class": "mavatar-tier-enterprise-labels ng-star-inserted"
+                                            },
+                                            "kids": [
+                                              {
+                                                "tag": "span",
+                                                "attrs": {
+                                                  "class": "mavatar-tier-label gds-body-s ng-star-inserted"
+                                                },
+                                                "kids": [
+                                                  "Pro"
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "tag": "div",
+                                    "attrs": {
+                                      "class": "mavatar-footer-right ng-star-inserted"
+                                    },
+                                    "kids": [
+                                      {
+                                        "tag": "div",
+                                        "attrs": {
+                                          "class": "mavatar-settings-button-wrapper"
+                                        },
+                                        "kids": [
+                                          {
+                                            "tag": "gem-icon-button",
+                                            "attrs": {
+                                              "fonticonname": "settings",
+                                              "class": "mavatar-settings-button gem-button lm-enabled"
+                                            },
+                                            "kids": [
+                                              {
+                                                "tag": "button",
+                                                "attrs": {
+                                                  "maticonbutton": "",
+                                                  "aria-label": "설정",
+                                                  "aria-haspopup": "menu",
+                                                  "aria-expanded": "false",
+                                                  "class": "mdc-icon-button mat-mdc-icon-button mat-mdc-menu-trigger"
+                                                },
+                                                "kids": [
+                                                  {
+                                                    "tag": "gem-icon",
+                                                    "attrs": {
+                                                      "_nghost-ng-c4028161355": ""
+                                                    },
+                                                    "kids": [
+                                                      {
+                                                        "tag": "mat-icon",
+                                                        "attrs": {
+                                                          "role": "img",
+                                                          "aria-hidden": "true",
+                                                          "class": "mat-icon notranslate lm-icon-m lumi-symbols mat-ligature-font mat-icon-no-color ng-star-inserted",
+                                                          "data-mat-icon-type": "font",
+                                                          "data-mat-icon-name": "settings",
+                                                          "data-mat-icon-namespace": "lumi-symbols",
+                                                          "fonticon": "settings"
+                                                        }
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
                       }
                     ]
                   }
@@ -4450,6 +4682,16 @@
     "sections": [
       "노트북",
       "전체"
+    ],
+    "labels": [
+      "채팅 검색",
+      "새 노트북",
+      "필터",
+      "예시 노트북 작업 메뉴 열기",
+      "대화 예시 1 옵션 더보기",
+      "더보기",
+      "Test User",
+      "설정"
     ],
     "current": "새 채팅"
   }

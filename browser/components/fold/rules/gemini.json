@@ -1,10 +1,14 @@
 {
   "id": "gemini",
   "name": "Gemini",
-  "description": "Gemini's side navigation, a bard-sidenav element in the light DOM. Top links are found by address: the new chat is /app, and the library, images, scheduled and students links are relative in the page (library, images, ...), which resolve to /library and so on. The notebooks and chats sections are read through their expandable-section header buttons, so the rule doesn't depend on the hashed class names of the rows. The sidenav is a flex item beside the content, which takes the space once it's hidden, so no css is needed.",
+  "description": "Gemini's side navigation, a bard-sidenav element in the light DOM. Top links are found by address: the new chat is /app, and the library, images, scheduled and students links are relative in the page (library, images, ...), which resolve to /library and so on. The notebooks and chats sections are read through their expandable-section titles, and their title buttons (aria-expanded) toggle them, so the rule doesn't depend on the hashed class names of the rows. A chat row's menu button is an action of its row. A notebook row's menu button sits beside its link, outside the row element the transcriber looks for, so it is read as an item of its own. The search button sits above the links as an extra. The overflow (더보기) button and the account footer with its settings button come after the sections, since extras can only go before the links or after the sections; the site shows the overflow between the links and the sections. The sidenav's own collapse button is excluded, and so is the icon-only copy of the top links shown when the sidenav is collapsed to a rail: the Mono sidebar replaces both. The sidenav is a flex item beside the content, which takes the space once it's hidden, so no css is needed.",
   "matches": ["*://gemini.google.com/*"],
   "root": ["bard-sidenav[role='navigation']", "bard-sidenav"],
   "hide": ["bard-sidenav"],
+  "exclude": [
+    "button[aria-label='사이드바 닫기']",
+    "mat-nav-list.top-action-list-pinned"
+  ],
   "ready": { "minItems": 3, "timeoutMs": 5000 },
   "current": "url",
   "currentIgnoresSearch": true,
@@ -15,13 +19,31 @@
     { "paths": ["/scheduled"], "icon": "schedule" },
     { "paths": ["/students"], "icon": "school" }
   ],
+  "extras": [
+    {
+      "items": "button[aria-label='채팅 검색']",
+      "at": "start",
+      "kind": "action"
+    },
+    {
+      "items": "gem-nav-list-item[data-test-id='overflow-side-nav-entry-button'] button",
+      "at": "end",
+      "kind": "action"
+    },
+    {
+      "items": "sidenav-mavatar-footer a[href], sidenav-mavatar-footer button",
+      "at": "end"
+    }
+  ],
   "groups": {
     "each": "expandable-section",
-    "heading": ".expandable-section-header",
+    "heading": ".expandable-section-title",
     "items": "a[href], button",
     "container": "gem-nav-list-item",
-    "kinds": [{ "href": "^/notebooks/create$", "kind": "action" }],
-    "icons": [{ "href": "^/notebooks/create$", "icon": "add" }],
-    "sections": [{ "heading": "^(노트북|전체)$", "collapsed": false }]
+    "kinds": [
+      { "href": "^/notebooks/create$", "kind": "action" },
+      { "tag": "button", "kind": "action" }
+    ],
+    "icons": [{ "href": "^/notebooks/create$", "icon": "add" }]
   }
 }
