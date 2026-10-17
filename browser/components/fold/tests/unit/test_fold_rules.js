@@ -11,6 +11,10 @@ const { checkCapture } = ChromeUtils.importESModule(
 
 const RULES_URL = "resource:///modules/fold/rules/";
 
+// Links put in the rebuilt documents ask the history service whether they
+// were visited, and it needs a profile.
+do_get_profile();
+
 function packagedRuleIds() {
   let uri = Services.io.newURI(RULES_URL);
   let resolved = Services.io
