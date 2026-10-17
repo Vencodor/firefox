@@ -17,6 +17,9 @@ var CustomFoldUI = {
   open: false,
   slideDistance: 24,
   easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+  // Sites update their sidebar a moment after a click or a navigation, and a
+  // newly loaded page takes a moment to draw it.
+  reloadDelays: [0, 400, 1200],
   iconBase: "chrome://browser/content/custom-ui/resources/fold/",
   iconNames: new Set([
     "add",
@@ -53,10 +56,15 @@ var CustomFoldUI = {
     this.rule = null;
     this.browser = null;
     this.model = null;
+    this.modelJSON = null;
     this.generation = 0;
+    this.reloadTimers = [];
+    this.reloadGeneration = 0;
     this.items = new Map();
     this.collapsed = new Map();
     this.slideAnimations = [];
+    this.switchVisible = false;
+    this.switchAnimation = null;
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     this.switch = new CustomSwitch({
@@ -74,8 +82,8 @@ var CustomFoldUI = {
     gBrowser.tabContainer.addEventListener("TabSelect", this);
     gBrowser.tabContainer.addEventListener("TabAttrModified", this);
     this.progressListener = {
-      onLocationChange: (browser, webProgress, request, location, flags) =>
-        this.onLocationChange(browser, webProgress, flags),
+      onLocationChange: (browser, webProgress) =>
+        this.onLocationChange(browser, webProgress),
     };
     gBrowser.addTabsProgressListener(this.progressListener);
     Services.prefs.addObserver("sidebar.verticalTabs", this);
@@ -94,7 +102,7 @@ var CustomFoldUI = {
     });
 
     this.lazy.Fold.ensureRegistered();
-    this.updateSwitch();
+    this.updateSwitch({ animate: false });
   },
 
   get available() {
@@ -132,10 +140,10 @@ var CustomFoldUI = {
   /**
    * Shows the switch while Fold is on for the selected page's site.
    */
-  updateSwitch() {
+  updateSwitch({ animate = true } = {}) {
     let rule = this.available ? this.selectedRule : null;
     this.rule = rule;
-    this.switchElement.hidden = !rule;
+    this.setSwitchVisible(!!rule, { animate });
     if (!rule) {
       return;
     }
@@ -147,6 +155,59 @@ var CustomFoldUI = {
     );
     document.l10n.setAttributes(this.menu, "custom-ui-fold-menu", args);
     this.updateSiteIcon();
+  },
+
+  /**
+   * Shows or hides the switch. Its height folds with it, so the rows below
+   * slide into place instead of jumping.
+   */
+  setSwitchVisible(visible, { animate = true } = {}) {
+    if (visible == this.switchVisible) {
+      return;
+    }
+    this.switchVisible = visible;
+    let element = this.switchElement;
+    let from = element.hidden ? null : this.switchFrame();
+    this.switchAnimation?.cancel();
+    this.switchAnimation = null;
+    element.removeAttribute("animating");
+    element.hidden = false;
+    if (!animate || this.reducedMotion.matches || !element.checkVisibility()) {
+      element.hidden = !visible;
+      return;
+    }
+    let folded = {
+      height: "0px",
+      paddingBlock: "0px",
+      marginBlockEnd: "0px",
+      opacity: 0,
+    };
+    let to = visible ? this.switchFrame() : folded;
+    element.setAttribute("animating", "");
+    let animation = element.animate([from ?? folded, to], {
+      duration: 200,
+      easing: this.easing,
+    });
+    animation.onfinish = () => {
+      this.switchAnimation = null;
+      element.removeAttribute("animating");
+      element.hidden = !this.switchVisible;
+    };
+    this.switchAnimation = animation;
+  },
+
+  /**
+   * The switch's current size, as a keyframe.
+   */
+  switchFrame() {
+    let element = this.switchElement;
+    let style = window.getComputedStyle(element);
+    return {
+      height: `${element.getBoundingClientRect().height}px`,
+      paddingBlock: `${style.paddingBlockStart} ${style.paddingBlockEnd}`,
+      marginBlockEnd: style.marginBlockEnd,
+      opacity: style.opacity,
+    };
   },
 
   updateSiteIcon() {
@@ -207,7 +268,7 @@ var CustomFoldUI = {
       this.connect(gBrowser.selectedBrowser);
     } else {
       this.disconnect();
-      if (hadFocus && !this.switchElement.hidden) {
+      if (hadFocus && this.switchVisible) {
         this.siteTab.focus();
       }
     }
@@ -220,12 +281,14 @@ var CustomFoldUI = {
 
   /**
    * Asks the page to hand its sidebar over. While the site menu stays open,
-   * a page loaded later in the same tab hands it over by itself.
+   * it's asked again after clicks and navigations in the tab.
    */
   connect(browser) {
+    this.cancelReload();
     let generation = ++this.generation;
     this.browser = browser;
     this.model = null;
+    this.modelJSON = null;
     this.render();
     this.lazy.Fold.activate(browser).then(model => {
       if (generation == this.generation) {
@@ -235,22 +298,71 @@ var CustomFoldUI = {
   },
 
   disconnect() {
+    this.cancelReload();
     this.generation++;
     if (this.browser) {
       this.lazy.Fold.deactivate(this.browser);
     }
     this.browser = null;
     this.model = null;
+    this.modelJSON = null;
   },
 
   show(model) {
+    let json = JSON.stringify(model);
+    if (json == this.modelJSON) {
+      return;
+    }
+    this.modelJSON = json;
     this.model = model;
     this.render({ failed: !model });
   },
 
   /**
-   * A change of the site menu reported by the page, including the menu of a
-   * page newly loaded in the tab.
+   * Reads the site menu again a few times. The menu shown stays until a
+   * reading comes back, and a failed reading only shows if the last one
+   * fails too, as while a page is replaced the old one can't answer. A newer
+   * round of readings drops the answers of older ones.
+   */
+  reload() {
+    this.cancelReload();
+    let { browser, reloadGeneration } = this;
+    let last = this.reloadDelays.length - 1;
+    this.reloadTimers = this.reloadDelays.map((delay, index) =>
+      setTimeout(async () => {
+        let model = await this.lazy.Fold.activate(browser);
+        if (
+          reloadGeneration == this.reloadGeneration &&
+          (model || index == last)
+        ) {
+          this.show(model);
+        }
+      }, delay)
+    );
+  },
+
+  cancelReload() {
+    this.reloadGeneration++;
+    for (let timer of this.reloadTimers) {
+      clearTimeout(timer);
+    }
+    this.reloadTimers = [];
+  },
+
+  /**
+   * Clicks the page element behind an item, then reads the menu again for
+   * what the click changed.
+   *
+   * @param {string} id The item id.
+   * @param {string} [part] "secondary" for the item's toggle.
+   */
+  run(id, part) {
+    this.lazy.Fold.run(this.browser, id, part);
+    this.reload();
+  },
+
+  /**
+   * A change of the site menu reported by the page as it happens.
    */
   onUpdate(browser, model) {
     if (this.open && browser == this.browser) {
@@ -271,7 +383,7 @@ var CustomFoldUI = {
     this.connect(gBrowser.selectedBrowser);
   },
 
-  onLocationChange(browser, webProgress, flags) {
+  onLocationChange(browser, webProgress) {
     if (!webProgress.isTopLevel || browser != gBrowser.selectedBrowser) {
       return;
     }
@@ -282,10 +394,8 @@ var CustomFoldUI = {
     }
     if (this.rule?.id != ruleId) {
       this.setOpen(false);
-    } else if (
-      flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT
-    ) {
-      this.lazy.Fold.refresh(browser);
+    } else {
+      this.reload();
     }
   },
 
@@ -454,7 +564,7 @@ var CustomFoldUI = {
     }
     if (target.classList.contains("custom-fold-secondary")) {
       if (event.button == 0) {
-        this.lazy.Fold.run(this.browser, item.id, "secondary");
+        this.run(item.id, "secondary");
       }
       return;
     }
@@ -465,7 +575,7 @@ var CustomFoldUI = {
         triggeringPrincipal: this.browser.contentPrincipal,
       });
     } else if (event.button == 0) {
-      this.lazy.Fold.run(this.browser, item.id);
+      this.run(item.id);
     }
   },
 
@@ -475,7 +585,7 @@ var CustomFoldUI = {
     heading.nextElementSibling.hidden = !expanded;
     this.collapsed.set(heading.dataset.section, !expanded);
     if (heading.dataset.toggleId && this.browser) {
-      this.lazy.Fold.run(this.browser, heading.dataset.toggleId);
+      this.run(heading.dataset.toggleId);
     }
   },
 
@@ -578,6 +688,7 @@ var CustomFoldUI = {
     gBrowser.tabContainer.removeEventListener("TabAttrModified", this);
     gBrowser.removeTabsProgressListener(this.progressListener);
     this.rootObserver.disconnect();
+    this.cancelReload();
   },
 };
 

@@ -16,7 +16,7 @@
 | `FoldTranscriber.sys.mjs` | 웹페이지 | 공통 전사 엔진: 규칙에 따라 페이지를 읽어 메뉴 모델을 만든다. 페이지는 바꾸지 않는다 |
 | `actors/FoldChild.sys.mjs` | 웹페이지 | 문서 시작 시 사이드바 접기와 읽기 확인(실패 시 되돌림), 설정 변경 반영, 변화 감시, 원래 요소 대신 클릭 |
 | `actors/FoldParent.sys.mjs` | 브라우저 | 페이지에서 바뀐 메뉴를 해당 창의 사이드바로 전달 |
-| `Fold.sys.mjs` | 브라우저 | actor 등록과 사이드바가 쓰는 함수(activate, deactivate, refresh, run) |
+| `Fold.sys.mjs` | 브라우저 | actor 등록과 사이드바가 쓰는 함수(activate, deactivate, run) |
 
 웹페이지의 사이드바는 지우지 않고 스타일시트로 숨긴다. 사이트의 스크립트가 계속 동작하고,
 메뉴 항목을 누르면 숨겨진 원래 요소를 클릭해 사이트가 직접 처리한다(SPA 화면 전환, 로그인 상태 등).

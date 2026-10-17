@@ -28,6 +28,12 @@
       &[hidden] {
         display: none;
       }
+
+      /* Folds with its height while it appears or goes away. */
+      &[animating] {
+        box-sizing: border-box;
+        overflow: clip;
+      }
     }
 
     #custom-fold-switch-tabs {

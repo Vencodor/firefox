@@ -16,9 +16,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 const READY_INTERVAL = 200;
 const UPDATE_DELAY = 150;
-// Sites often change the current item and the sidebar some time after their
-// in-page navigation changes the address, so it's read again a few times.
-const REFRESH_DELAYS = [0, 300, 1000];
 const WATCHED_ATTRIBUTES = [
   "aria-current",
   "aria-expanded",
@@ -51,7 +48,6 @@ export class FoldChild extends JSWindowActorChild {
   #observer = null;
   #sheet = null;
   #timer = null;
-  #refreshTimers = [];
   #pending = null;
   #sent = "";
 
@@ -64,9 +60,6 @@ export class FoldChild extends JSWindowActorChild {
         break;
       case "Fold:Run":
         this.#run(data);
-        break;
-      case "Fold:Refresh":
-        this.#refresh();
         break;
     }
     return null;
@@ -86,14 +79,12 @@ export class FoldChild extends JSWindowActorChild {
         if (this.#folded) {
           this.#check();
         }
-        this.#offer();
         break;
       // A page brought back from back/forward navigation follows the current
-      // setting, and hands its sidebar over if its tab shows the Fold menu.
+      // setting.
       case "pageshow":
         if (event.persisted) {
           this.#syncFold();
-          this.#offer();
         }
         break;
       case "pagehide":
@@ -175,25 +166,6 @@ export class FoldChild extends JSWindowActorChild {
     }
   }
 
-  async #offer() {
-    if (this.#active) {
-      return;
-    }
-    let wanted = false;
-    try {
-      wanted = await this.sendQuery("Fold:Wanted");
-    } catch {
-      return;
-    }
-    if (!wanted || this.#active || this.#destroyed) {
-      return;
-    }
-    let result = await this.#activate();
-    if (!this.#destroyed) {
-      this.sendAsyncMessage("Fold:Update", result);
-    }
-  }
-
   didDestroy() {
     this.#destroyed = true;
     this.#stopWatching();
@@ -205,9 +177,9 @@ export class FoldChild extends JSWindowActorChild {
   }
 
   /**
-   * Reads the sidebar and hides it on the page. A page loading while its tab
-   * shows the site menu may be asked by both the sidebar and its own load, so
-   * one reading answers both.
+   * Reads the sidebar and hides it on the page. The Mono sidebar asks again
+   * after clicks and navigations, so requests made while a reading waits for
+   * the page share it.
    */
   #activate() {
     this.#pending ??= this.#start().finally(() => (this.#pending = null));
@@ -280,7 +252,6 @@ export class FoldChild extends JSWindowActorChild {
     this.#active = false;
     clearTimeout(this.#timer);
     this.#timer = null;
-    this.#clearRefresh();
     this.#observer?.disconnect();
     this.#elements = new Map();
   }
@@ -341,23 +312,6 @@ export class FoldChild extends JSWindowActorChild {
     }
   }
 
-  #refresh() {
-    if (!this.#active) {
-      return;
-    }
-    this.#clearRefresh();
-    this.#refreshTimers = REFRESH_DELAYS.map(delay =>
-      setTimeout(() => this.#update(), delay)
-    );
-  }
-
-  #clearRefresh() {
-    for (let timer of this.#refreshTimers) {
-      clearTimeout(timer);
-    }
-    this.#refreshTimers = [];
-  }
-
   #scheduleUpdate(delay = UPDATE_DELAY) {
     clearTimeout(this.#timer);
     this.#timer = setTimeout(() => this.#update(), delay);
@@ -396,6 +350,5 @@ export class FoldChild extends JSWindowActorChild {
       return;
     }
     element.click();
-    this.#refresh();
   }
 }

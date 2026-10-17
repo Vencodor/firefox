@@ -14,9 +14,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
 const ACTOR = "Fold";
 
 let registered = false;
-// The browsers whose tab shows the site menu, so that a page loaded there
-// later hands its sidebar over too.
-let wanted = new WeakSet();
 
 function getActor(browser, { report = false } = {}) {
   try {
@@ -90,14 +87,13 @@ export const Fold = {
 
   /**
    * Hides the page's sidebar and reads its site menu, waiting for the page to
-   * render it.
+   * render it. Asking again reads the menu again.
    *
    * @param {Element} browser
    * @returns {Promise<?object>} The site menu model, or null when the page's
    *   sidebar couldn't be read and was left as it is.
    */
   async activate(browser) {
-    wanted.add(browser);
     let actor = getActor(browser, { report: true });
     if (!actor) {
       return null;
@@ -106,26 +102,16 @@ export const Fold = {
       let result = await actor.sendQuery("Fold:Activate");
       return result?.model ?? null;
     } catch (e) {
-      console.error("Fold: activating the page failed", e);
+      // A page left while it was being read is not an error.
+      if (e.name != "AbortError") {
+        console.error("Fold: activating the page failed", e);
+      }
       return null;
     }
   },
 
   deactivate(browser) {
-    wanted.delete(browser);
     this.send(browser, "Fold:Deactivate");
-  },
-
-  /**
-   * @param {Element} browser
-   * @returns {boolean} Whether the browser's tab shows the site menu.
-   */
-  isWanted(browser) {
-    return wanted.has(browser);
-  },
-
-  refresh(browser) {
-    this.send(browser, "Fold:Refresh");
   },
 
   /**
