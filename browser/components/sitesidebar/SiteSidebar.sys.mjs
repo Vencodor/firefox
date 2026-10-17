@@ -44,6 +44,9 @@ export const SiteSidebar = {
       },
       matches: lazy.allMatches(),
       messageManagerGroups: ["browsers"],
+      // Sites run in web content processes. Whatever the page sends is only
+      // drawn as text by the sidebar, and links are checked before opening.
+      safeForUntrustedWebProcess: true,
     });
     registered = true;
   },

@@ -480,8 +480,9 @@ var CustomSiteSidebarUI = {
       return;
     }
     let where = BrowserUtils.whereToOpenLink(event, false, true);
-    if (where != "current" && item.href) {
-      openLinkIn(item.href, where, {
+    let href = item.href && URL.parse(item.href);
+    if (where != "current" && href && /^https?:$/.test(href.protocol)) {
+      openLinkIn(href.href, where, {
         triggeringPrincipal: this.browser.contentPrincipal,
       });
     } else if (event.button == 0) {
