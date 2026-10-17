@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import reddit from "resource:///modules/sitesidebar/rules/reddit.sys.mjs";
+import reddit from "resource:///modules/fold/rules/reddit.sys.mjs";
 
 /**
  * The site rules, one module per site under rules/. A rule tells the
@@ -63,6 +63,54 @@ export function findRule(url) {
     }
   }
   return null;
+}
+
+const ENABLED_PREF = "browser.customUI.fold.enabled";
+const DISABLED_SITES_PREF = "browser.customUI.fold.disabledSites";
+
+/**
+ * The prefs that decide whether Fold is on for a site.
+ */
+export const FOLD_PREFS = [ENABLED_PREF, DISABLED_SITES_PREF];
+
+/**
+ * @returns {string[]} The ids of the rules the user turned Fold off for.
+ */
+export function disabledSites() {
+  try {
+    let ids = JSON.parse(
+      Services.prefs.getStringPref(DISABLED_SITES_PREF, "[]")
+    );
+    return Array.isArray(ids) ? ids : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * @param {?object} rule A site rule, or { id } for one.
+ * @returns {boolean} Whether Fold folds the sidebar of the rule's site.
+ */
+export function isFoldEnabled(rule) {
+  return (
+    !!rule &&
+    Services.prefs.getBoolPref(ENABLED_PREF, false) &&
+    !disabledSites().includes(rule.id)
+  );
+}
+
+/**
+ * Turns Fold on or off for one site.
+ *
+ * @param {string} id The rule's id.
+ * @param {boolean} enabled
+ */
+export function setFoldEnabled(id, enabled) {
+  let ids = disabledSites().filter(other => other != id);
+  if (!enabled) {
+    ids.push(id);
+  }
+  Services.prefs.setStringPref(DISABLED_SITES_PREF, JSON.stringify(ids));
 }
 
 export function allMatches() {

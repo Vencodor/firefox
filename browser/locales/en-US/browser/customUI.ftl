@@ -356,24 +356,26 @@ custom-ui-archive-remove-bookmark =
     .aria-label = 북마크 삭제
     .title = 북마크 삭제
 
-## Site menu: a page's own sidebar shown in the tab sidebar.
+## Fold: a page's own sidebar folded into the tab sidebar.
 ## Variables:
 ##   $site (String) - The site name, such as "Reddit".
 
-custom-ui-site-switch =
+custom-ui-fold-switch =
     .aria-label = 사이드바 보기
 
-custom-ui-site-switch-tabs =
+custom-ui-fold-switch-tabs =
     .aria-label = 탭
     .title = 탭
 
-custom-ui-site-switch-site =
+custom-ui-fold-switch-site =
     .aria-label = { $site } 메뉴
     .title = { $site } 메뉴
 
-custom-ui-site-sidebar-menu =
+custom-ui-fold-menu =
     .aria-label = { $site } 메뉴
 
-custom-ui-site-sidebar-loading = 메뉴를 읽는 중…
+custom-ui-fold-loading = 메뉴를 읽는 중…
 
-custom-ui-site-sidebar-unavailable = 이 페이지의 메뉴를 가져오지 못했어요
+custom-ui-fold-unavailable = 이 페이지의 메뉴를 가져오지 못했어요
+
+custom-ui-page-fold = 이 사이트에서 Fold 사용

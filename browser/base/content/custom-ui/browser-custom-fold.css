@@ -7,8 +7,8 @@
 /* The site menu reuses the archive's sections, headings and rows, so a
    transcribed sidebar looks and collapses like the rest of the sidebar. */
 
-#custom-site-sidebar,
-#custom-site-switch {
+#custom-fold,
+#custom-fold-switch {
   display: none;
 }
 
@@ -16,12 +16,12 @@
   :root[custom-ui]:not([customizing], [inDOMFullscreen], [fullscreenNavToolboxHidden]) {
     /* Covers the tab list and notice rows like the archive; the address and
        the switch above stay. */
-    #sidebar-container:not([hidden]) > #custom-site-sidebar {
+    #sidebar-container:not([hidden]) > #custom-fold {
       grid-row: 4 / 6;
     }
 
     /* The archive's icon-tab track, under the address. */
-    #custom-site-switch {
+    #custom-fold-switch {
       display: grid;
       margin: 0 var(--space-custom-edge) var(--space-small);
 
@@ -30,30 +30,30 @@
       }
     }
 
-    #custom-site-switch-tabs {
+    #custom-fold-switch-tabs {
       --custom-archive-tab-icon: url("chrome://browser/skin/tabs.svg");
     }
 
-    #custom-site-switch-site {
+    #custom-fold-switch-site {
       display: flex;
       align-items: center;
       justify-content: center;
       background: none;
     }
 
-    #custom-site-switch-icon {
+    #custom-fold-switch-icon {
       position: relative;
       width: var(--icon-size-small);
       height: var(--icon-size-small);
     }
 
-    #sidebar-container:not([custom-site-sidebar]) > #custom-site-sidebar,
-    #sidebar-container[custom-site-sidebar] > :is(sidebar-main, #custom-notice-sidebar) {
+    #sidebar-container:not([custom-fold]) > #custom-fold,
+    #sidebar-container[custom-fold] > :is(sidebar-main, #custom-notice-sidebar) {
       opacity: 0;
       pointer-events: none;
     }
 
-    #custom-site-sidebar {
+    #custom-fold {
       display: flex;
       flex-direction: column;
       min-width: 0;
@@ -62,7 +62,7 @@
     }
 
     /* Rows are buttons with the archive row's box. */
-    .custom-site-sidebar-row {
+    .custom-fold-row {
       width: 100%;
       margin: 0;
       padding-block: 0;
@@ -80,7 +80,7 @@
     }
 
     /* The current page reads like the selected tab. */
-    .custom-site-sidebar-current {
+    .custom-fold-current {
       background-color: var(--custom-surface);
       box-shadow: var(--box-shadow-custom-tab);
 
@@ -97,11 +97,11 @@
       }
     }
 
-    .custom-site-sidebar-avatar {
+    .custom-fold-avatar {
       border-radius: var(--border-radius-circle);
     }
 
-    .custom-site-sidebar-letter {
+    .custom-fold-letter {
       display: flex;
       flex: none;
       align-items: center;
@@ -117,7 +117,7 @@
     }
 
     /* Same pill as the archive's time. */
-    .custom-site-sidebar-badge {
+    .custom-fold-badge {
       flex: none;
       padding: 0 var(--space-small);
       border: var(--border-width) solid var(--custom-line);
@@ -128,13 +128,13 @@
       line-height: 1.4;
     }
 
-    .custom-site-sidebar-item {
+    .custom-fold-item {
       position: relative;
     }
 
     /* Matches the tab close button: shown at the row end while the row is
        hovered or focused, or always while it's on. */
-    .custom-site-sidebar-secondary {
+    .custom-fold-secondary {
       display: none;
       position: absolute;
       inset-inline-end: calc(var(--space-custom-padding) - var(--tab-content-button-padding) / 2);
@@ -146,7 +146,7 @@
       padding: 0;
       border: 0;
       border-radius: calc(var(--border-radius-custom-tab) - 3px);
-      background: var(--button-background-color-ghost) url("chrome://browser/content/custom-ui/resources/site-sidebar/star.svg") center / 12px no-repeat;
+      background: var(--button-background-color-ghost) url("chrome://browser/content/custom-ui/resources/fold/star.svg") center / 12px no-repeat;
       color: var(--button-text-color-ghost);
       -moz-context-properties: fill;
       fill: currentColor;
@@ -160,7 +160,7 @@
 
       &[aria-pressed="true"] {
         display: block;
-        background-image: url("chrome://browser/content/custom-ui/resources/site-sidebar/star-filled.svg");
+        background-image: url("chrome://browser/content/custom-ui/resources/fold/star-filled.svg");
         color: var(--custom-ink);
       }
 
@@ -170,15 +170,15 @@
       }
     }
 
-    .custom-site-sidebar-item:is(:hover, :focus-within) > .custom-site-sidebar-secondary {
+    .custom-fold-item:is(:hover, :focus-within) > .custom-fold-secondary {
       display: block;
     }
 
-    .custom-site-sidebar-has-secondary:is(:hover, :focus-within, .custom-site-sidebar-pressed) > .custom-site-sidebar-row {
+    .custom-fold-has-secondary:is(:hover, :focus-within, .custom-fold-pressed) > .custom-fold-row {
       padding-inline-end: calc(var(--space-custom-padding) + var(--tab-content-button-size));
     }
 
-    .custom-site-sidebar-toggle {
+    .custom-fold-toggle {
       display: flex;
       align-items: center;
       gap: var(--space-xsmall);
@@ -216,13 +216,13 @@
     }
 
     #sidebar-container:not([sidebar-launcher-expanded]) {
-      :is(.custom-site-sidebar-badge, .custom-site-sidebar-secondary) {
+      :is(.custom-fold-badge, .custom-fold-secondary) {
         display: none;
       }
     }
 
     @media (forced-colors: active) {
-      .custom-site-sidebar-current {
+      .custom-fold-current {
         outline: var(--outline-custom-selected);
       }
     }

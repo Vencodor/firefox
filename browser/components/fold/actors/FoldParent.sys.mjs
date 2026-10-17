@@ -5,21 +5,21 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  SiteSidebar: "resource:///modules/sitesidebar/SiteSidebar.sys.mjs",
+  Fold: "resource:///modules/fold/Fold.sys.mjs",
 });
 
 /**
  * Passes a page's site menu to the window showing that page, and tells a
  * newly loaded page whether its tab shows the site menu.
  */
-export class SiteSidebarParent extends JSWindowActorParent {
+export class FoldParent extends JSWindowActorParent {
   receiveMessage({ name, data }) {
     let browser = this.browsingContext.top.embedderElement;
     switch (name) {
-      case "SiteSidebar:Wanted":
-        return !!browser && lazy.SiteSidebar.isWanted(browser);
-      case "SiteSidebar:Update":
-        browser?.ownerGlobal?.CustomSiteSidebarUI?.onUpdate(
+      case "Fold:Wanted":
+        return !!browser && lazy.Fold.isWanted(browser);
+      case "Fold:Update":
+        browser?.ownerGlobal?.CustomFoldUI?.onUpdate(
           browser,
           data?.model ?? null
         );

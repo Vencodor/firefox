@@ -7,9 +7,11 @@ import { setTimeout, clearTimeout } from "resource://gre/modules/Timer.sys.mjs";
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  findRule: "resource:///modules/sitesidebar/SiteSidebarRules.sys.mjs",
-  hidingStyle: "resource:///modules/sitesidebar/SiteSidebarTranscriber.sys.mjs",
-  transcribe: "resource:///modules/sitesidebar/SiteSidebarTranscriber.sys.mjs",
+  FOLD_PREFS: "resource:///modules/fold/FoldRules.sys.mjs",
+  findRule: "resource:///modules/fold/FoldRules.sys.mjs",
+  isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
+  hidingStyle: "resource:///modules/fold/FoldTranscriber.sys.mjs",
+  transcribe: "resource:///modules/fold/FoldTranscriber.sys.mjs",
 });
 
 const READY_INTERVAL = 200;
@@ -30,15 +32,21 @@ const WATCHED_ATTRIBUTES = [
 ];
 
 /**
- * Reads the page's sidebar for the site menu while the Mono sidebar shows it.
- * The page's own sidebar stays in the document, hidden by a stylesheet, so the
- * site's scripts keep working and its elements can be clicked for the user.
+ * Folds a page's sidebar away and reads it for the Fold menu.
+ *
+ * With Fold on for the site, the sidebar is hidden as soon as the document
+ * starts, before anything is drawn, and is shown again if it can't be read.
+ * It stays in the document, hidden by a stylesheet, so the site's scripts keep
+ * working and its elements can be clicked for the user. While the Mono
+ * sidebar shows the Fold menu, changes to the page's sidebar are sent to it.
  */
-export class SiteSidebarChild extends JSWindowActorChild {
+export class FoldChild extends JSWindowActorChild {
+  #rule = undefined;
+  #folded = false;
   #active = false;
   #destroyed = false;
   #generation = 0;
-  #rule = null;
+  #checkGeneration = 0;
   #elements = new Map();
   #observer = null;
   #sheet = null;
@@ -49,15 +57,15 @@ export class SiteSidebarChild extends JSWindowActorChild {
 
   receiveMessage({ name, data }) {
     switch (name) {
-      case "SiteSidebar:Activate":
+      case "Fold:Activate":
         return this.#activate();
-      case "SiteSidebar:Deactivate":
+      case "Fold:Deactivate":
         this.#deactivate();
         break;
-      case "SiteSidebar:Run":
+      case "Fold:Run":
         this.#run(data);
         break;
-      case "SiteSidebar:Refresh":
+      case "Fold:Refresh":
         this.#refresh();
         break;
     }
@@ -69,17 +77,101 @@ export class SiteSidebarChild extends JSWindowActorChild {
       return;
     }
     switch (event.type) {
-      // A page kept for back/forward navigation comes back as it was before
-      // the site menu took its sidebar.
-      case "pagehide":
-        this.#deactivate();
+      case "DOMDocElementInserted":
+        if (lazy.isFoldEnabled(this.#getRule())) {
+          this.#fold();
+        }
         break;
-      // A page loaded, or brought back, while its tab shows the site menu
-      // hands its sidebar over by itself.
       case "DOMContentLoaded":
-      case "pageshow":
+        if (this.#folded) {
+          this.#check();
+        }
         this.#offer();
         break;
+      // A page brought back from back/forward navigation follows the current
+      // setting, and hands its sidebar over if its tab shows the Fold menu.
+      case "pageshow":
+        if (event.persisted) {
+          this.#syncFold();
+          this.#offer();
+        }
+        break;
+      case "pagehide":
+        this.#generation++;
+        this.#stopWatching();
+        break;
+    }
+  }
+
+  observe() {
+    this.#syncFold();
+  }
+
+  /**
+   * The site rule for the page, looked up once. Pages with a rule follow
+   * changes of the Fold setting.
+   */
+  #getRule() {
+    if (this.#rule === undefined) {
+      this.#rule = lazy.findRule(this.document.URL);
+      if (this.#rule) {
+        for (let pref of lazy.FOLD_PREFS) {
+          Services.prefs.addObserver(pref, this);
+        }
+      }
+    }
+    return this.#rule;
+  }
+
+  #syncFold() {
+    if (this.#destroyed) {
+      return;
+    }
+    if (lazy.isFoldEnabled(this.#getRule())) {
+      if (!this.#folded) {
+        this.#fold();
+        if (this.document.readyState != "loading") {
+          this.#check();
+        }
+      }
+    } else {
+      this.#unfold();
+    }
+  }
+
+  #fold() {
+    this.#folded = true;
+    this.#applySheet(this.#rule);
+  }
+
+  /**
+   * Shows the page's own sidebar again and stops reading it.
+   */
+  #unfold() {
+    this.#checkGeneration++;
+    this.#folded = false;
+    this.#stopWatching();
+    this.#removeSheet();
+  }
+
+  /**
+   * Gives the page its sidebar back if the rule can't read it in time, so a
+   * changed site never loses its navigation.
+   */
+  async #check() {
+    let generation = ++this.#checkGeneration;
+    let rule = this.#rule;
+    let deadline = Date.now() + (rule.ready?.timeoutMs ?? 0);
+    while (!this.#read(rule)) {
+      if (Date.now() >= deadline) {
+        this.#read(rule, { report: true });
+        this.#unfold();
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, READY_INTERVAL));
+      if (this.#destroyed || generation != this.#checkGeneration) {
+        return;
+      }
     }
   }
 
@@ -89,7 +181,7 @@ export class SiteSidebarChild extends JSWindowActorChild {
     }
     let wanted = false;
     try {
-      wanted = await this.sendQuery("SiteSidebar:Wanted");
+      wanted = await this.sendQuery("Fold:Wanted");
     } catch {
       return;
     }
@@ -98,13 +190,18 @@ export class SiteSidebarChild extends JSWindowActorChild {
     }
     let result = await this.#activate();
     if (!this.#destroyed) {
-      this.sendAsyncMessage("SiteSidebar:Update", result);
+      this.sendAsyncMessage("Fold:Update", result);
     }
   }
 
   didDestroy() {
     this.#destroyed = true;
-    this.#stop();
+    this.#stopWatching();
+    if (this.#rule) {
+      for (let pref of lazy.FOLD_PREFS) {
+        Services.prefs.removeObserver(pref, this);
+      }
+    }
   }
 
   /**
@@ -119,7 +216,7 @@ export class SiteSidebarChild extends JSWindowActorChild {
 
   async #start() {
     let generation = ++this.#generation;
-    let rule = lazy.findRule(this.document.URL);
+    let rule = this.#getRule();
     if (!rule) {
       return { model: null };
     }
@@ -134,11 +231,11 @@ export class SiteSidebarChild extends JSWindowActorChild {
     }
     if (!result) {
       this.#read(rule, { report: true });
+      this.#unfold();
       return { model: null };
     }
-    this.#rule = rule;
     this.#active = true;
-    this.#applySheet(rule);
+    this.#fold();
     this.#watch(result.watched);
     this.#sent = JSON.stringify(result.model);
     return { model: result.model };
@@ -149,7 +246,7 @@ export class SiteSidebarChild extends JSWindowActorChild {
     try {
       result = lazy.transcribe(this.document, rule);
     } catch (e) {
-      console.error(`SiteSidebar: reading ${rule.id} failed`, e);
+      console.error(`Fold: reading ${rule.id} failed`, e);
       return null;
     }
     let minItems = rule.ready?.minItems ?? 1;
@@ -157,8 +254,8 @@ export class SiteSidebarChild extends JSWindowActorChild {
       if (report) {
         console.warn(
           result
-            ? `SiteSidebar: ${rule.id} found ${result.count} of ${minItems} items`
-            : `SiteSidebar: ${rule.id} found no sidebar root`
+            ? `Fold: ${rule.id} found ${result.count} of ${minItems} items`
+            : `Fold: ${rule.id} found no sidebar root`
         );
       }
       return null;
@@ -167,19 +264,25 @@ export class SiteSidebarChild extends JSWindowActorChild {
     return result;
   }
 
+  /**
+   * Stops sending the Fold menu. The sidebar stays folded while Fold is on
+   * for the site.
+   */
   #deactivate() {
     this.#generation++;
-    this.#stop();
+    this.#stopWatching();
+    if (!lazy.isFoldEnabled(this.#getRule())) {
+      this.#unfold();
+    }
   }
 
-  #stop() {
+  #stopWatching() {
     this.#active = false;
     clearTimeout(this.#timer);
     this.#timer = null;
     this.#clearRefresh();
     this.#observer?.disconnect();
     this.#elements = new Map();
-    this.#removeSheet();
   }
 
   #applySheet(rule) {
@@ -269,15 +372,16 @@ export class SiteSidebarChild extends JSWindowActorChild {
     if (!result) {
       // The sidebar is gone or no longer readable: give the page its own
       // sidebar back.
-      this.#deactivate();
-      this.sendAsyncMessage("SiteSidebar:Update", { model: null });
+      this.#generation++;
+      this.#unfold();
+      this.sendAsyncMessage("Fold:Update", { model: null });
       return;
     }
     this.#watch(result.watched);
     let json = JSON.stringify(result.model);
     if (json != this.#sent) {
       this.#sent = json;
-      this.sendAsyncMessage("SiteSidebar:Update", { model: result.model });
+      this.sendAsyncMessage("Fold:Update", { model: result.model });
     }
   }
 

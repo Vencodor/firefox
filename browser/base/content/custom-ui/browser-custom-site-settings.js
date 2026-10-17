@@ -18,6 +18,7 @@ var CustomSiteSettings = {
     this.zoomOut = document.getElementById("custom-page-zoom-out");
     this.zoomReset = document.getElementById("custom-page-zoom-reset");
     this.zoomIn = document.getElementById("custom-page-zoom-in");
+    this.fold = document.getElementById("custom-page-fold");
     this.connection = document.getElementById("custom-page-connection");
     this.siteInfo = document.getElementById("custom-page-site-info");
     this.tracking = document.getElementById("custom-page-tracking");
@@ -120,6 +121,16 @@ var CustomSiteSettings = {
       !!translations?.hasAttribute("translationsactive")
     );
     this.updateZoom();
+    this.updateFold();
+  },
+
+  updateFold() {
+    let state = window.CustomFoldUI?.getSiteState();
+    this.fold.hidden = !state;
+    if (state) {
+      this.fold.dataset.site = state.id;
+      this.fold.setAttribute("aria-checked", String(state.enabled));
+    }
   },
 
   updateExtensions() {
@@ -315,6 +326,12 @@ var CustomSiteSettings = {
       case "custom-page-zoom-in":
         FullZoom.enlarge();
         return;
+      case "custom-page-fold": {
+        let enabled = button.getAttribute("aria-checked") != "true";
+        button.setAttribute("aria-checked", String(enabled));
+        window.CustomFoldUI?.setSiteEnabled(button.dataset.site, enabled);
+        return;
+      }
       case "custom-page-site-settings":
         this.multiView.showSubView(this.siteView.id, button);
         return;

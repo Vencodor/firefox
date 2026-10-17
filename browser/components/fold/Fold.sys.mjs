@@ -5,11 +5,13 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  allMatches: "resource:///modules/sitesidebar/SiteSidebarRules.sys.mjs",
-  findRule: "resource:///modules/sitesidebar/SiteSidebarRules.sys.mjs",
+  allMatches: "resource:///modules/fold/FoldRules.sys.mjs",
+  findRule: "resource:///modules/fold/FoldRules.sys.mjs",
+  isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
+  setFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
 });
 
-const ACTOR = "SiteSidebar";
+const ACTOR = "Fold";
 
 let registered = false;
 // The browsers whose tab shows the site menu, so that a page loaded there
@@ -22,7 +24,7 @@ function getActor(browser, { report = false } = {}) {
   } catch (e) {
     // The page doesn't match any site rule, or it's being torn down.
     if (report) {
-      console.warn("SiteSidebar: no actor for the page", e);
+      console.warn("Fold: no actor for the page", e);
     }
     return null;
   }
@@ -32,18 +34,19 @@ function getActor(browser, { report = false } = {}) {
  * The browser side of the site menu: which pages have a site rule, and the
  * messages that ask a page to show, update or act on its site menu.
  */
-export const SiteSidebar = {
+export const Fold = {
   ensureRegistered() {
     if (registered) {
       return;
     }
     ChromeUtils.registerWindowActor(ACTOR, {
       parent: {
-        esModuleURI: "resource:///actors/SiteSidebarParent.sys.mjs",
+        esModuleURI: "resource:///actors/FoldParent.sys.mjs",
       },
       child: {
-        esModuleURI: "resource:///actors/SiteSidebarChild.sys.mjs",
+        esModuleURI: "resource:///actors/FoldChild.sys.mjs",
         events: {
+          DOMDocElementInserted: {},
           DOMContentLoaded: {},
           pageshow: { createActor: false },
           pagehide: { createActor: false },
@@ -68,6 +71,24 @@ export const SiteSidebar = {
   },
 
   /**
+   * @param {string} id A rule's id.
+   * @returns {boolean} Whether Fold is on for the rule's site.
+   */
+  isEnabledFor(id) {
+    return lazy.isFoldEnabled({ id });
+  },
+
+  /**
+   * Turns Fold on or off for a site. Its open pages fold or unfold at once.
+   *
+   * @param {string} id A rule's id.
+   * @param {boolean} enabled
+   */
+  setEnabledFor(id, enabled) {
+    lazy.setFoldEnabled(id, enabled);
+  },
+
+  /**
    * Hides the page's sidebar and reads its site menu, waiting for the page to
    * render it.
    *
@@ -82,17 +103,17 @@ export const SiteSidebar = {
       return null;
     }
     try {
-      let result = await actor.sendQuery("SiteSidebar:Activate");
+      let result = await actor.sendQuery("Fold:Activate");
       return result?.model ?? null;
     } catch (e) {
-      console.error("SiteSidebar: activating the page failed", e);
+      console.error("Fold: activating the page failed", e);
       return null;
     }
   },
 
   deactivate(browser) {
     wanted.delete(browser);
-    this.send(browser, "SiteSidebar:Deactivate");
+    this.send(browser, "Fold:Deactivate");
   },
 
   /**
@@ -104,7 +125,7 @@ export const SiteSidebar = {
   },
 
   refresh(browser) {
-    this.send(browser, "SiteSidebar:Refresh");
+    this.send(browser, "Fold:Refresh");
   },
 
   /**
@@ -115,7 +136,7 @@ export const SiteSidebar = {
    * @param {string} [part] "secondary" for the item's toggle.
    */
   run(browser, id, part) {
-    this.send(browser, "SiteSidebar:Run", { id, part });
+    this.send(browser, "Fold:Run", { id, part });
   },
 
   send(browser, name, data) {

@@ -664,6 +664,10 @@
     --custom-page-row-icon: url("chrome://browser/skin/tracking-protection.svg");
   }
 
+  #custom-page-fold {
+    --custom-page-row-icon: url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg");
+  }
+
   .custom-page-switch {
     position: relative;
     flex: none;
@@ -694,7 +698,7 @@
     }
   }
 
-  :is(#custom-page-tracking, #custom-page-permissions, #custom-page-clear-data)[hidden] {
+  :is(#custom-page-fold, #custom-page-tracking, #custom-page-permissions, #custom-page-clear-data)[hidden] {
     display: none;
   }
 

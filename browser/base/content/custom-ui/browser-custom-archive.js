@@ -51,7 +51,7 @@ var CustomArchiveUI = {
     this.clearButton = document.getElementById("custom-archive-search-clear");
     this.tabLayer = [
       ...this.container.querySelectorAll(
-        ":scope > :is(#custom-sidebar-address, #custom-site-switch, sidebar-main, #custom-notice-sidebar)"
+        ":scope > :is(#custom-sidebar-address, #custom-fold-switch, sidebar-main, #custom-notice-sidebar)"
       ),
     ];
     this.archiveLayer = [this.search, this.archive];
@@ -415,7 +415,7 @@ var CustomArchiveUI = {
       return;
     }
     if (open) {
-      window.CustomSiteSidebarUI?.setOpen(false, { animate: false });
+      window.CustomFoldUI?.setOpen(false, { animate: false });
     }
     this.open = open;
     let hadFocus = this.archiveLayer.some(element =>

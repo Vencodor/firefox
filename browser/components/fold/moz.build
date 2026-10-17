@@ -2,15 +2,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-EXTRA_JS_MODULES.sitesidebar += [
-    "SiteSidebar.sys.mjs",
-    "SiteSidebarRules.sys.mjs",
-    "SiteSidebarTranscriber.sys.mjs",
+EXTRA_JS_MODULES.fold += [
+    "Fold.sys.mjs",
+    "FoldRules.sys.mjs",
+    "FoldTranscriber.sys.mjs",
 ]
-EXTRA_JS_MODULES.sitesidebar.rules += [
+EXTRA_JS_MODULES.fold.rules += [
     "rules/reddit.sys.mjs",
 ]
 FINAL_TARGET_FILES.actors += [
-    "actors/SiteSidebarChild.sys.mjs",
-    "actors/SiteSidebarParent.sys.mjs",
+    "actors/FoldChild.sys.mjs",
+    "actors/FoldParent.sys.mjs",
 ]

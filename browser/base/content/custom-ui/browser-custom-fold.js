@@ -5,17 +5,19 @@
 /* import-globals-from browser-custom-switch.js */
 
 /**
- * The sidebar's site menu: on a page with a site rule, the switch under the
- * address swaps the tab list for the page's own sidebar, transcribed into
- * Mono rows, and hides that sidebar on the page. The page reads and clicks
- * its elements through the SiteSidebar actor.
+ * Fold: on a site with a site rule, the page's own sidebar is folded away as
+ * the page loads, and the switch under the address swaps the tab list for
+ * that sidebar's menu, transcribed into Mono rows. The page reads and clicks
+ * its elements through the Fold actor. Fold is on by default and can be
+ * turned off per site from the page settings panel.
  */
-var CustomSiteSidebarUI = {
-  pref: "browser.customUI.siteSidebar.enabled",
+var CustomFoldUI = {
+  pref: "browser.customUI.fold.enabled",
+  sitesPref: "browser.customUI.fold.disabledSites",
   open: false,
   slideDistance: 24,
   easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-  iconBase: "chrome://browser/content/custom-ui/resources/site-sidebar/",
+  iconBase: "chrome://browser/content/custom-ui/resources/fold/",
   iconNames: new Set([
     "add",
     "all",
@@ -33,16 +35,16 @@ var CustomSiteSidebarUI = {
 
   init() {
     ChromeUtils.defineESModuleGetters(this.lazy, {
-      SiteSidebar: "resource:///modules/sitesidebar/SiteSidebar.sys.mjs",
+      Fold: "resource:///modules/fold/Fold.sys.mjs",
       getMozRemoteImageURL: "moz-src:///toolkit/modules/FaviconUtils.sys.mjs",
     });
     this.root = document.documentElement;
     this.container = document.getElementById("sidebar-container");
-    this.section = document.getElementById("custom-site-sidebar");
-    this.menu = document.getElementById("custom-site-sidebar-menu");
-    this.switchElement = document.getElementById("custom-site-switch");
-    this.siteTab = document.getElementById("custom-site-switch-site");
-    this.siteIcon = document.getElementById("custom-site-switch-icon");
+    this.section = document.getElementById("custom-fold");
+    this.menu = document.getElementById("custom-fold-menu");
+    this.switchElement = document.getElementById("custom-fold-switch");
+    this.siteTab = document.getElementById("custom-fold-switch-site");
+    this.siteIcon = document.getElementById("custom-fold-switch-icon");
     this.tabLayer = [
       ...this.container.querySelectorAll(
         ":scope > :is(sidebar-main, #custom-notice-sidebar)"
@@ -78,6 +80,7 @@ var CustomSiteSidebarUI = {
     gBrowser.addTabsProgressListener(this.progressListener);
     Services.prefs.addObserver("sidebar.verticalTabs", this);
     Services.prefs.addObserver(this.pref, this);
+    Services.prefs.addObserver(this.sitesPref, this);
     window.addEventListener("unload", this, { once: true });
     this.rootObserver = new MutationObserver(() => this.updateAvailable());
     this.rootObserver.observe(this.root, {
@@ -90,7 +93,7 @@ var CustomSiteSidebarUI = {
       ],
     });
 
-    this.lazy.SiteSidebar.ensureRegistered();
+    this.lazy.Fold.ensureRegistered();
     this.updateSwitch();
   },
 
@@ -107,7 +110,7 @@ var CustomSiteSidebarUI = {
 
   updateAvailable() {
     this.updateSwitch();
-    if (this.open && !this.available) {
+    if (this.open && (!this.available || !this.rule)) {
       this.setOpen(false, { animate: false });
     }
   },
@@ -117,12 +120,20 @@ var CustomSiteSidebarUI = {
   },
 
   /**
-   * Shows the switch while the selected page has a site rule.
+   * The site rule of the selected page while Fold is on for it.
+   *
+   * @returns {?{id: string, name: string}}
+   */
+  get selectedRule() {
+    let rule = this.lazy.Fold.ruleFor(gBrowser.selectedBrowser.currentURI);
+    return rule && this.lazy.Fold.isEnabledFor(rule.id) ? rule : null;
+  },
+
+  /**
+   * Shows the switch while Fold is on for the selected page's site.
    */
   updateSwitch() {
-    let rule = this.available
-      ? this.lazy.SiteSidebar.ruleFor(gBrowser.selectedBrowser.currentURI)
-      : null;
+    let rule = this.available ? this.selectedRule : null;
     this.rule = rule;
     this.switchElement.hidden = !rule;
     if (!rule) {
@@ -131,10 +142,10 @@ var CustomSiteSidebarUI = {
     let args = { site: rule.name };
     document.l10n.setAttributes(
       this.siteTab,
-      "custom-ui-site-switch-site",
+      "custom-ui-fold-switch-site",
       args
     );
-    document.l10n.setAttributes(this.menu, "custom-ui-site-sidebar-menu", args);
+    document.l10n.setAttributes(this.menu, "custom-ui-fold-menu", args);
     this.updateSiteIcon();
   },
 
@@ -186,7 +197,7 @@ var CustomSiteSidebarUI = {
     }
     this.open = open;
     let hadFocus = this.section.contains(document.activeElement);
-    this.container.toggleAttribute("custom-site-sidebar", open);
+    this.container.toggleAttribute("custom-fold", open);
     for (let element of this.tabLayer) {
       element.inert = open;
     }
@@ -216,7 +227,7 @@ var CustomSiteSidebarUI = {
     this.browser = browser;
     this.model = null;
     this.render();
-    this.lazy.SiteSidebar.activate(browser).then(model => {
+    this.lazy.Fold.activate(browser).then(model => {
       if (generation == this.generation) {
         this.show(model);
       }
@@ -226,7 +237,7 @@ var CustomSiteSidebarUI = {
   disconnect() {
     this.generation++;
     if (this.browser) {
-      this.lazy.SiteSidebar.deactivate(this.browser);
+      this.lazy.Fold.deactivate(this.browser);
     }
     this.browser = null;
     this.model = null;
@@ -274,7 +285,7 @@ var CustomSiteSidebarUI = {
     } else if (
       flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT
     ) {
-      this.lazy.SiteSidebar.refresh(browser);
+      this.lazy.Fold.refresh(browser);
     }
   },
 
@@ -292,9 +303,7 @@ var CustomSiteSidebarUI = {
       message.className = "custom-archive-empty";
       document.l10n.setAttributes(
         message,
-        failed
-          ? "custom-ui-site-sidebar-unavailable"
-          : "custom-ui-site-sidebar-loading"
+        failed ? "custom-ui-fold-unavailable" : "custom-ui-fold-loading"
       );
       fragment.append(message);
     }
@@ -314,7 +323,7 @@ var CustomSiteSidebarUI = {
     if (element.dataset.section) {
       return `section|${element.dataset.section}`;
     }
-    let part = element.classList.contains("custom-site-sidebar-secondary")
+    let part = element.classList.contains("custom-fold-secondary")
       ? "secondary"
       : "row";
     return `${part}|${element.dataset.itemId ?? ""}`;
@@ -337,7 +346,7 @@ var CustomSiteSidebarUI = {
         let collapsed = this.collapsed.get(key) ?? !!section.collapsed;
         heading = document.createElement("button");
         heading.type = "button";
-        heading.className = "custom-archive-heading custom-site-sidebar-toggle";
+        heading.className = "custom-archive-heading custom-fold-toggle";
         heading.dataset.section = key;
         if (section.toggleId) {
           heading.dataset.toggleId = section.toggleId;
@@ -360,14 +369,14 @@ var CustomSiteSidebarUI = {
 
   createItem(item) {
     let entry = document.createElement("li");
-    entry.className = "custom-site-sidebar-item";
+    entry.className = "custom-fold-item";
     let row = document.createElement("button");
     row.type = "button";
-    row.className = "custom-archive-row custom-site-sidebar-row";
+    row.className = "custom-archive-row custom-fold-row";
     row.dataset.itemId = item.id;
     row.title = item.label;
     if (item.current) {
-      row.classList.add("custom-site-sidebar-current");
+      row.classList.add("custom-fold-current");
       row.setAttribute("aria-current", "page");
     }
     let label = document.createElement("span");
@@ -376,7 +385,7 @@ var CustomSiteSidebarUI = {
     row.append(this.createIcon(item), label);
     if (item.badge) {
       let badge = document.createElement("span");
-      badge.className = "custom-site-sidebar-badge";
+      badge.className = "custom-fold-badge";
       badge.textContent = item.badge;
       row.append(badge);
     }
@@ -384,16 +393,13 @@ var CustomSiteSidebarUI = {
     if (item.secondary) {
       let toggle = document.createElement("button");
       toggle.type = "button";
-      toggle.className = "custom-site-sidebar-secondary";
+      toggle.className = "custom-fold-secondary";
       toggle.dataset.itemId = item.id;
       toggle.setAttribute("aria-pressed", String(!!item.secondary.pressed));
       toggle.setAttribute("aria-label", item.secondary.label);
       toggle.title = item.secondary.label;
-      entry.classList.add("custom-site-sidebar-has-secondary");
-      entry.classList.toggle(
-        "custom-site-sidebar-pressed",
-        !!item.secondary.pressed
-      );
+      entry.classList.add("custom-fold-has-secondary");
+      entry.classList.toggle("custom-fold-pressed", !!item.secondary.pressed);
       entry.append(toggle);
     }
     this.items.set(item.id, item);
@@ -405,7 +411,7 @@ var CustomSiteSidebarUI = {
     let image = icon.image && URL.parse(icon.image);
     if (image && /^https?:$/.test(image.protocol)) {
       let img = document.createElement("img");
-      img.className = "custom-archive-icon custom-site-sidebar-avatar";
+      img.className = "custom-archive-icon custom-fold-avatar";
       img.alt = "";
       img.src = this.lazy.getMozRemoteImageURL(image.href, {
         size: Math.ceil(16 * window.devicePixelRatio),
@@ -414,7 +420,7 @@ var CustomSiteSidebarUI = {
     }
     if (icon.letter != undefined || item.kind == "entity") {
       let letter = document.createElement("span");
-      letter.className = "custom-site-sidebar-letter";
+      letter.className = "custom-fold-letter";
       letter.setAttribute("aria-hidden", "true");
       letter.textContent = (icon.letter ?? item.label.charAt(0)).slice(0, 1);
       return letter;
@@ -436,7 +442,7 @@ var CustomSiteSidebarUI = {
     if (!target || !this.menu.contains(target)) {
       return;
     }
-    if (target.classList.contains("custom-site-sidebar-toggle")) {
+    if (target.classList.contains("custom-fold-toggle")) {
       if (event.button == 0) {
         this.toggleSection(target);
       }
@@ -446,9 +452,9 @@ var CustomSiteSidebarUI = {
     if (!item || !this.browser) {
       return;
     }
-    if (target.classList.contains("custom-site-sidebar-secondary")) {
+    if (target.classList.contains("custom-fold-secondary")) {
       if (event.button == 0) {
-        this.lazy.SiteSidebar.run(this.browser, item.id, "secondary");
+        this.lazy.Fold.run(this.browser, item.id, "secondary");
       }
       return;
     }
@@ -459,7 +465,7 @@ var CustomSiteSidebarUI = {
         triggeringPrincipal: this.browser.contentPrincipal,
       });
     } else if (event.button == 0) {
-      this.lazy.SiteSidebar.run(this.browser, item.id);
+      this.lazy.Fold.run(this.browser, item.id);
     }
   },
 
@@ -469,7 +475,7 @@ var CustomSiteSidebarUI = {
     heading.nextElementSibling.hidden = !expanded;
     this.collapsed.set(heading.dataset.section, !expanded);
     if (heading.dataset.toggleId && this.browser) {
-      this.lazy.SiteSidebar.run(this.browser, heading.dataset.toggleId);
+      this.lazy.Fold.run(this.browser, heading.dataset.toggleId);
     }
   },
 
@@ -544,9 +550,30 @@ var CustomSiteSidebarUI = {
     }
   },
 
+  /**
+   * The Fold state of the selected page's site, for the page settings panel.
+   *
+   * @returns {?{id: string, enabled: boolean}} null when Fold is off or the
+   *   site has no rule.
+   */
+  getSiteState() {
+    if (!Services.prefs.getBoolPref(this.pref, false)) {
+      return null;
+    }
+    let rule = this.lazy.Fold.ruleFor(gBrowser.selectedBrowser.currentURI);
+    return rule
+      ? { id: rule.id, enabled: this.lazy.Fold.isEnabledFor(rule.id) }
+      : null;
+  },
+
+  setSiteEnabled(id, enabled) {
+    this.lazy.Fold.setEnabledFor(id, enabled);
+  },
+
   uninit() {
     Services.prefs.removeObserver("sidebar.verticalTabs", this);
     Services.prefs.removeObserver(this.pref, this);
+    Services.prefs.removeObserver(this.sitesPref, this);
     gBrowser.tabContainer.removeEventListener("TabSelect", this);
     gBrowser.tabContainer.removeEventListener("TabAttrModified", this);
     gBrowser.removeTabsProgressListener(this.progressListener);
@@ -554,4 +581,4 @@ var CustomSiteSidebarUI = {
   },
 };
 
-delayedStartupPromise.then(() => CustomSiteSidebarUI.init());
+delayedStartupPromise.then(() => CustomFoldUI.init());
