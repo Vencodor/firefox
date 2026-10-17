@@ -21,8 +21,14 @@
   main {
     grid-column: 2;
   }
-  [role="menu"] {
+  [role="menu"],
+  [role="dialog"] {
     position: absolute;
+  }
+  #backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgb(0 0 0 / 30%);
   }
 </style>
 </head>
@@ -40,7 +46,7 @@
       <button class="section-header" aria-expanded="true"><span class="title">Recent</span></button>
       <ul class="items">
         <li class="row"><a href="?view=chat-1">First chat</a><button class="more" aria-label="Options for First chat" aria-haspopup="menu"></button></li>
-        <li class="row"><a href="?view=chat-2">Second chat</a><button class="more" aria-label="Options for Second chat" aria-haspopup="menu"></button></li>
+        <li class="row"><a href="?view=chat-2">Second chat</a><span class="menu-button" aria-haspopup="menu"><button class="more" aria-label="Options for Second chat"></button></span></li>
       </ul>
     </div>
     <div class="section">
@@ -54,6 +60,14 @@
   <button role="menuitem" data-action="rename">Rename</button>
   <button role="menuitem" data-action="delete">Delete</button>
 </div>
+<div id="backdrop" hidden></div>
+<div id="rename" role="dialog" aria-labelledby="rename-title" hidden>
+  <h2 id="rename-title">Rename chat</h2>
+  <p>Give the chat a new name.</p>
+  <input id="rename-input" aria-label="Chat name">
+  <button id="rename-cancel">Cancel</button>
+  <button id="rename-save">Save</button>
+</div>
 <script>
   "use strict";
   let sidebar = document.getElementById("sidebar");
@@ -64,6 +78,19 @@
 
   let menu = document.getElementById("menu");
   let menuTarget = null;
+  let rename = document.getElementById("rename");
+  let backdrop = document.getElementById("backdrop");
+  let renaming = null;
+
+  function chatName(button) {
+    return button.closest(".row").querySelector("a").textContent;
+  }
+
+  function closeRename() {
+    rename.hidden = true;
+    backdrop.hidden = true;
+    renaming = null;
+  }
 
   function show() {
     let view = new URLSearchParams(location.search).get("view") ?? "home";
@@ -107,8 +134,27 @@
     }
     let item = event.target.closest("[role='menuitem']");
     if (item) {
-      document.body.dataset.lastAction = `${item.dataset.action} ${menuTarget?.getAttribute("aria-label")}`;
+      let name = chatName(menuTarget);
       closeMenu();
+      if (item.dataset.action == "rename") {
+        renaming = name;
+        document.getElementById("rename-input").value = name;
+        rename.hidden = false;
+        backdrop.hidden = false;
+      } else {
+        document.body.dataset.lastAction = `delete ${name}`;
+      }
+      return;
+    }
+    if (event.target.id == "rename-save") {
+      document.body.dataset.lastAction = `rename ${renaming} to ${
+        document.getElementById("rename-input").value
+      }`;
+      closeRename();
+      return;
+    }
+    if (event.target.id == "rename-cancel") {
+      closeRename();
       return;
     }
     if (event.target.closest(".new")) {
@@ -118,6 +164,7 @@
   document.addEventListener("keydown", event => {
     if (event.key == "Escape") {
       closeMenu();
+      closeRename();
     } else if (event.key == "Enter" && event.target.type == "search") {
       document.body.dataset.searched = event.target.value;
     }

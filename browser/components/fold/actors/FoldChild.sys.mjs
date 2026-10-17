@@ -11,6 +11,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   findRule: "resource:///modules/fold/FoldRules.sys.mjs",
   isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
   hidingStyle: "resource:///modules/fold/FoldTranscriber.sys.mjs",
+  readDialog: "resource:///modules/fold/FoldTranscriber.sys.mjs",
   readMenu: "resource:///modules/fold/FoldTranscriber.sys.mjs",
   transcribe: "resource:///modules/fold/FoldTranscriber.sys.mjs",
 });
@@ -26,6 +27,10 @@ const READY_INTERVAL = 200;
 const UPDATE_DELAY = 150;
 const POPUP_INTERVAL = 50;
 const POPUP_TIMEOUT = 1500;
+const DIALOG_TIMEOUT = 1000;
+const RELAY = "data-mono-fold-relay";
+const DIALOGS = "[role='dialog'], [role='alertdialog'], dialog[open]";
+const MENU_ITEMS = "[role^='menuitem'], [role='option']";
 const POPUPS =
   "[role='menu'], [role='listbox'], [role='dialog'], dialog[open], [popover]";
 const WATCHED_ATTRIBUTES = [
@@ -69,6 +74,7 @@ export class FoldChild extends JSWindowActorChild {
   #timer = null;
   #pending = null;
   #popup = null;
+  #dialog = null;
   #sent = "";
 
   receiveMessage({ name, data }) {
@@ -82,8 +88,7 @@ export class FoldChild extends JSWindowActorChild {
         this.#sync(data);
         break;
       case "Fold:Run":
-        this.#run(data);
-        break;
+        return this.#run(data);
       case "Fold:Input":
         this.#input(data);
         break;
@@ -91,6 +96,11 @@ export class FoldChild extends JSWindowActorChild {
         return this.#openPopup(data);
       case "Fold:ClosePopup":
         this.#closePopup();
+        break;
+      case "Fold:ReadDialog":
+        return this.#readDialog();
+      case "Fold:CloseDialog":
+        this.#closeDialog();
         break;
     }
     return null;
@@ -310,8 +320,12 @@ export class FoldChild extends JSWindowActorChild {
       }
       return null;
     }
-    // A reading replaces the element map; the open menu's items stay.
-    for (let id of this.#popup?.ids ?? []) {
+    // A reading replaces the element map; the open menu's and dialog's
+    // items stay.
+    for (let id of [
+      ...(this.#popup?.ids ?? []),
+      ...(this.#dialog?.ids ?? []),
+    ]) {
       let entry = this.#elements.get(id);
       if (entry) {
         result.elements.set(id, entry);
@@ -328,6 +342,7 @@ export class FoldChild extends JSWindowActorChild {
   #deactivate() {
     this.#generation++;
     this.#closePopup();
+    this.#endDialog();
     this.#stopWatching();
     if (!lazy.isFoldEnabled(this.#getRule())) {
       this.#unfold();
@@ -436,16 +451,20 @@ export class FoldChild extends JSWindowActorChild {
   }
 
   /**
-   * Clicks the page element behind an item, action, section title or menu
-   * item, as the user would.
+   * Clicks the page element behind an item, action, section title, menu
+   * item or dialog button, as the user would. A dialog the click opens is
+   * read for the Mono sidebar and concealed on the page.
    *
    * @param {{id: string}} data
+   * @returns {Promise<?{dialog: object}>} The dialog the click opened, if
+   *   any.
    */
-  #run({ id }) {
+  async #run({ id }) {
     let element = this.#element(id);
     if (!element) {
-      return;
+      return null;
     }
+    let before = this.#visible(element, DIALOGS);
     // The user clicked in the Mono sidebar, so the page may act as on its
     // own click, such as opening a new window.
     this.document.notifyUserGestureActivation();
@@ -453,6 +472,135 @@ export class FoldChild extends JSWindowActorChild {
     if (id.startsWith("popup/")) {
       this.#closePopup({ dismiss: false });
     }
+    let deadline = Date.now() + DIALOG_TIMEOUT;
+    while (Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, POPUP_INTERVAL));
+      if (this.#destroyed || !this.#active) {
+        return null;
+      }
+      let dialog = [...this.#visible(element, DIALOGS)].find(
+        candidate => !before.has(candidate)
+      );
+      if (dialog) {
+        return { dialog: this.#relayDialog(dialog) };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Conceals a dialog the site opened, and what dims the page behind it,
+   * and reads it for the Mono sidebar.
+   *
+   * @param {Element} element The site's dialog.
+   * @returns {object} The dialog as readDialog reads it.
+   */
+  #relayDialog(element) {
+    this.#endDialog();
+    let concealed = [element, ...this.#backdrops(element)];
+    for (let node of concealed) {
+      node.setAttribute(RELAY, "");
+    }
+    this.#dialog = { element, concealed, ids: [] };
+    return this.#readDialogNow();
+  }
+
+  #readDialogNow() {
+    let relay = this.#dialog;
+    for (let id of relay.ids) {
+      this.#elements.delete(id);
+    }
+    let { dialog, elements } = lazy.readDialog(this.document, relay.element);
+    for (let [id, entry] of elements) {
+      this.#elements.set(id, entry);
+    }
+    relay.ids = [...elements.keys()];
+    return dialog;
+  }
+
+  /**
+   * The relayed dialog as it is now, for the Mono sidebar to follow it.
+   *
+   * @returns {{dialog: ?object}} null once the site closed it.
+   */
+  #readDialog() {
+    let relay = this.#dialog;
+    if (!relay) {
+      return { dialog: null };
+    }
+    if (!relay.element.isConnected || !relay.element.checkVisibility()) {
+      this.#endDialog();
+      return { dialog: null };
+    }
+    return { dialog: this.#readDialogNow() };
+  }
+
+  #closeDialog() {
+    this.#dialog?.element.dispatchEvent(
+      new this.contentWindow.KeyboardEvent("keydown", {
+        key: "Escape",
+        code: "Escape",
+        keyCode: 27,
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      })
+    );
+  }
+
+  /**
+   * Stops relaying the dialog; one still open shows on the page again.
+   */
+  #endDialog() {
+    let relay = this.#dialog;
+    if (!relay) {
+      return;
+    }
+    this.#dialog = null;
+    for (let id of relay.ids) {
+      this.#elements.delete(id);
+    }
+    for (let node of relay.concealed) {
+      node.removeAttribute(RELAY);
+    }
+  }
+
+  /**
+   * The empty layers covering the page next to a dialog, which sites use to
+   * dim the page behind it.
+   *
+   * @param {Element} dialog
+   * @returns {Element[]}
+   */
+  #backdrops(dialog) {
+    let win = this.contentWindow;
+    let found = [];
+    let node = dialog;
+    for (let depth = 0; depth < 4; depth++) {
+      let parent = node.parentNode;
+      if (!parent) {
+        break;
+      }
+      for (let sibling of parent.children) {
+        if (sibling === node) {
+          continue;
+        }
+        let rect = sibling.getBoundingClientRect();
+        if (
+          rect.width >= win.innerWidth * 0.9 &&
+          rect.height >= win.innerHeight * 0.9 &&
+          !sibling.textContent.trim()
+        ) {
+          found.push(sibling);
+        }
+      }
+      node =
+        parent.nodeType == parent.DOCUMENT_FRAGMENT_NODE ? parent.host : parent;
+      if (!node || node.localName == "body") {
+        break;
+      }
+    }
+    return found;
   }
 
   /**
@@ -494,15 +642,31 @@ export class FoldChild extends JSWindowActorChild {
     }
   }
 
-  #openPopups(trigger) {
+  /**
+   * The shown elements matching a selector in the document and in the tree
+   * of an element, where sites put their menus and dialogs.
+   *
+   * @param {Element} element
+   * @param {string} selector
+   * @returns {Set<Element>}
+   */
+  #visible(element, selector) {
     let found = new Set();
-    for (let root of new Set([this.document, trigger.getRootNode()])) {
-      for (let element of root.querySelectorAll(POPUPS)) {
-        if (element.checkVisibility()) {
-          found.add(element);
+    for (let root of new Set([this.document, element.getRootNode()])) {
+      if (!root.querySelectorAll) {
+        continue;
+      }
+      for (let candidate of root.querySelectorAll(selector)) {
+        if (candidate.checkVisibility()) {
+          found.add(candidate);
         }
       }
     }
+    return found;
+  }
+
+  #openPopups(trigger) {
+    let found = this.#visible(trigger, POPUPS);
     let controlled = trigger.getAttribute("aria-controls");
     let target =
       controlled &&
@@ -520,7 +684,8 @@ export class FoldChild extends JSWindowActorChild {
    * while it's open.
    *
    * @param {{id: string}} data
-   * @returns {Promise<?{items: object[]}>} null when no menu opened.
+   * @returns {Promise<?object>} { items } of the menu, { dialog } when a
+   *   dialog opened instead, or null when nothing opened.
    */
   async #openPopup({ id }) {
     let trigger = this.#element(id);
@@ -546,7 +711,11 @@ export class FoldChild extends JSWindowActorChild {
       lazy.log.debug(`no menu opened from ${id}`);
       return null;
     }
-    popup.setAttribute("data-mono-fold-relay", "");
+    // A button may open a dialog with fields rather than a menu.
+    if (popup.matches(DIALOGS) && !popup.querySelector(MENU_ITEMS)) {
+      return { dialog: this.#relayDialog(popup) };
+    }
+    popup.setAttribute(RELAY, "");
     let { items, elements } = lazy.readMenu(this.document, popup);
     for (let [itemId, entry] of elements) {
       this.#elements.set(itemId, entry);
@@ -591,6 +760,6 @@ export class FoldChild extends JSWindowActorChild {
       }
     }
     // Shown again only once the site has closed it.
-    setTimeout(() => popup.removeAttribute("data-mono-fold-relay"), 500);
+    setTimeout(() => popup.removeAttribute(RELAY), 500);
   }
 }

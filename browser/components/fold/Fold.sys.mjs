@@ -26,6 +26,9 @@ const MAX_VALUE = 500;
 const MAX_URL = 4096;
 const MAX_ACTIONS = 8;
 const MAX_MENU_ITEMS = 40;
+const MAX_DIALOG_ITEMS = 20;
+const MAX_DIALOG_TEXT = 600;
+const DIALOG_KINDS = ["field", "toggle", "button"];
 
 let registered = false;
 let captureRegistered = false;
@@ -89,6 +92,7 @@ function cleanItem(item) {
     icon: cleanIcon(item.icon),
     badge: text(item.badge),
     current: item.current === true,
+    popup: item.popup === true || undefined,
   };
   if (Array.isArray(item.actions)) {
     let actions = item.actions
@@ -161,6 +165,43 @@ export function cleanModel(model) {
     };
   });
   return { site: { name: text(model.site?.name) ?? "" }, sections };
+}
+
+/**
+ * @param {*} dialog A dialog the page read with readDialog.
+ * @returns {?object} { title, text, items }, its items as
+ *   { id, kind, label, value?, placeholder?, checked?, disabled? }.
+ */
+function cleanDialog(dialog) {
+  if (!dialog || typeof dialog != "object" || !Array.isArray(dialog.items)) {
+    return null;
+  }
+  let items = dialog.items
+    .slice(0, MAX_DIALOG_ITEMS)
+    .map(item => {
+      let label = text(item?.label);
+      if (!label || !DIALOG_KINDS.includes(item.kind)) {
+        return null;
+      }
+      return {
+        id: text(item.id) ?? "",
+        kind: item.kind,
+        label,
+        value:
+          item.kind == "field" && typeof item.value == "string"
+            ? item.value.slice(0, MAX_VALUE)
+            : undefined,
+        placeholder: text(item.placeholder),
+        checked: item.kind == "toggle" ? item.checked === true : undefined,
+        disabled: item.disabled === true || undefined,
+      };
+    })
+    .filter(Boolean);
+  return {
+    title: text(dialog.title) ?? "",
+    text: text(dialog.text, MAX_DIALOG_TEXT) ?? "",
+    items,
+  };
 }
 
 /**
@@ -264,14 +305,54 @@ export const Fold = {
   },
 
   /**
-   * Clicks the page element behind an item, an action, a section title or an
-   * item of a site menu opened with openPopup.
+   * Clicks the page element behind an item, an action, a section title, an
+   * item of a site menu opened with openPopup or a dialog button.
    *
    * @param {Element} browser
    * @param {string} id
+   * @returns {Promise<?object>} A dialog the click opened, read for the Mono
+   *   sidebar and concealed on the page, or null.
    */
-  run(browser, id) {
-    this.send(browser, "Fold:Run", { id });
+  async run(browser, id) {
+    let actor = getActor(browser);
+    if (!actor) {
+      return null;
+    }
+    try {
+      return cleanDialog((await actor.sendQuery("Fold:Run", { id }))?.dialog);
+    } catch (e) {
+      // A click that leaves the page ends the query.
+      if (e.name != "AbortError") {
+        console.error("Fold: clicking the page failed", e);
+      }
+      return null;
+    }
+  },
+
+  /**
+   * @param {Element} browser
+   * @returns {Promise<?object>} The dialog a click opened, as it is now, or
+   *   null once the site closed it.
+   */
+  async readDialog(browser) {
+    let actor = getActor(browser);
+    if (!actor) {
+      return null;
+    }
+    try {
+      return cleanDialog((await actor.sendQuery("Fold:ReadDialog"))?.dialog);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Closes the relayed dialog like Escape does on the page.
+   *
+   * @param {Element} browser
+   */
+  closeDialog(browser) {
+    this.send(browser, "Fold:CloseDialog");
   },
 
   /**
@@ -338,11 +419,12 @@ export const Fold = {
   },
 
   /**
-   * Opens the site's menu behind a row action and reads it.
+   * Opens the site's menu behind an item or action and reads it.
    *
    * @param {Element} browser
-   * @param {string} id The action id.
-   * @returns {Promise<?object[]>} The menu items, or null if none opened.
+   * @param {string} id The item or action id.
+   * @returns {Promise<?object>} { items } for a menu, { dialog } when the
+   *   button opened a dialog instead, or null if nothing opened.
    */
   async openPopup(browser, id) {
     let actor = getActor(browser);
@@ -350,7 +432,13 @@ export const Fold = {
       return null;
     }
     try {
-      return cleanMenu(await actor.sendQuery("Fold:OpenPopup", { id }));
+      let result = await actor.sendQuery("Fold:OpenPopup", { id });
+      if (result?.dialog) {
+        let dialog = cleanDialog(result.dialog);
+        return dialog ? { dialog } : null;
+      }
+      let items = cleanMenu(result);
+      return items ? { items } : null;
     } catch (e) {
       if (e.name != "AbortError") {
         console.error("Fold: opening the site's menu failed", e);

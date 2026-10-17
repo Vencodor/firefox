@@ -17,10 +17,10 @@
 | `FoldRules.sys.mjs` | 공통 | 규칙 형식 설명과 검사(`validateRule`), 규칙 읽기와 공유, 주소로 규칙 찾기, 사이트별 Fold 설정 |
 | `FoldTranscriber.sys.mjs` | 웹페이지 | 공통 전사 엔진: 규칙에 따라 페이지를 읽어 메뉴 모델을 만든다. 페이지는 바꾸지 않는다 |
 | `FoldCapture.sys.mjs` | 공통 | Capture Fold: 페이지의 내비게이션을 규칙 작성용 데이터로 기록, 그 데이터를 문서로 다시 만들어 규칙 검사(`checkCapture`) |
-| `actors/FoldChild.sys.mjs` | 웹페이지 | 문서 시작 시 사이드바 접기와 읽기 확인(실패 시 되돌림), 설정 변경과 브라우저의 동기화 반영, 변화 감시, 원래 요소 대신 클릭·입력, 사이트 메뉴 중계 |
+| `actors/FoldChild.sys.mjs` | 웹페이지 | 문서 시작 시 사이드바 접기와 읽기 확인(실패 시 되돌림), 설정 변경과 브라우저의 동기화 반영, 변화 감시, 원래 요소 대신 클릭·입력, 사이트 메뉴와 대화상자 중계 |
 | `actors/FoldParent.sys.mjs` | 브라우저 | 페이지에서 바뀐 메뉴를 검사해 해당 창의 사이드바로 전달 |
 | `actors/FoldCapture*.sys.mjs` | 양쪽 | Capture Fold 요청 시에만 등록되는 actor |
-| `Fold.sys.mjs` | 브라우저 | actor 등록과 사이드바가 쓰는 함수(activate, deactivate, sync, run, input, openPopup, capture), 페이지에서 온 모델 검사 |
+| `Fold.sys.mjs` | 브라우저 | actor 등록과 사이드바가 쓰는 함수(activate, deactivate, sync, run, input, openPopup, readDialog, capture), 페이지에서 온 모델·메뉴·대화상자 검사 |
 | `tests/unit/` | 테스트 | 규칙 검사와, `captures/`의 캡처로 각 규칙이 모든 조작 요소를 읽는지 확인하는 xpcshell 테스트 |
 | `tests/browser/` | 테스트 | 테스트 사이트로 실제 숨김(메뉴가 닫혀 있을 때, 새로고침, 사이트별 끄기)과 메뉴 조작을 확인하는 mochitest |
 
@@ -34,6 +34,9 @@
 페이지는 문서가 시작될 때 스스로 사이드바를 감추고, 브라우저도 Fold 사이트의 탭이 로드되거나 선택될 때와
 설정이 바뀔 때 동기화를 보낸다(`Fold.sync`). 그래서 Fold가 준비되기 전에 열린 탭도 메뉴를 열지 않은 채 감춰진다.
 규칙의 `ready` 조건을 채우지 못하면 숨김을 풀어 페이지를 원래대로 두고, 메뉴에는 실패 문구만 보인다.
+사이트 메뉴를 여는 버튼(자신이나 가까운 감싸는 요소의 `aria-haspopup`, 또는 규칙의 `popups`)을 누르면 열린 메뉴를 읽어
+Mono 메뉴로 보여 주고(`Fold.openPopup`), 클릭이 대화상자를 열면 그 내용을 사이드바의 시트로 보여 준다(`Fold.run`의 결과,
+`Fold.readDialog`로 따라감). 사이트의 메뉴·대화상자와 그 뒤의 배경은 그동안 감춘다.
 페이지 쪽 판단은 `browser.customUI.fold.loglevel`을 `Debug`로 바꾸면 브라우저 콘솔에서 볼 수 있다.
 
 ## 사이트 추가

@@ -121,6 +121,7 @@ async function check(rulePath, capturePath) {
         item.current && "current",
         item.badge,
         item.checked != undefined && (item.checked ? "on" : "off"),
+        item.popup && "opens a menu",
         item.icon && Object.keys(item.icon)[0] + " icon",
       ]
         .filter(Boolean)

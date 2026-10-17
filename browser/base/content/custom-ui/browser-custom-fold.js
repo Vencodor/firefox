@@ -21,6 +21,7 @@ var CustomFoldUI = {
   // newly loaded page takes a moment to draw it.
   reloadDelays: [0, 400, 1200],
   inputDelay: 250,
+  dialogInterval: 400,
   iconBase: "chrome://browser/content/custom-ui/resources/fold/",
 
   lazy: {},
@@ -218,7 +219,11 @@ var CustomFoldUI = {
   handleEvent(event) {
     switch (event.type) {
       case "click":
-        this.onMenuClick(event);
+        if (this.dialogElement?.contains(event.target)) {
+          this.onDialogClick(event);
+        } else {
+          this.onMenuClick(event);
+        }
         break;
       case "auxclick":
         if (event.button == 1) {
@@ -319,6 +324,9 @@ var CustomFoldUI = {
 
   disconnect() {
     this.cancelReload();
+    this.hideDialog({ reload: false });
+    this.pendingInput = null;
+    clearTimeout(this.inputTimer);
     this.generation++;
     if (this.browser) {
       this.lazy.Fold.deactivate(this.browser);
@@ -376,7 +384,13 @@ var CustomFoldUI = {
    * @param {string} id
    */
   run(id) {
-    this.lazy.Fold.run(this.browser, id);
+    let browser = this.browser;
+    this.flushInput();
+    this.lazy.Fold.run(browser, id).then(dialog => {
+      if (dialog && browser == this.browser && this.open) {
+        this.showDialog(dialog);
+      }
+    });
     this.reload();
   },
 
@@ -717,6 +731,12 @@ var CustomFoldUI = {
       }
       return;
     }
+    if (item.popup) {
+      if (event.button == 0) {
+        this.relay(item.id, target);
+      }
+      return;
+    }
     let where = BrowserUtils.whereToOpenLink(event, false, true);
     let href = item.href && URL.parse(item.href);
     if (where != "current" && href && /^https?:$/.test(href.protocol)) {
@@ -733,20 +753,203 @@ var CustomFoldUI = {
     if (input.localName != "input" || !this.browser) {
       return;
     }
+    this.pendingInput = {
+      id: input.dataset.dialogId ?? input.dataset.itemId,
+      value: input.value,
+    };
     clearTimeout(this.inputTimer);
-    this.inputTimer = setTimeout(
-      () =>
-        this.lazy.Fold.input(this.browser, input.dataset.itemId, input.value),
-      this.inputDelay
-    );
+    this.inputTimer = setTimeout(() => this.flushInput(), this.inputDelay);
+  },
+
+  /**
+   * Sends what was typed but not sent yet, before a click that may use it,
+   * such as a dialog's save button.
+   */
+  flushInput() {
+    clearTimeout(this.inputTimer);
+    let pending = this.pendingInput;
+    this.pendingInput = null;
+    if (pending && this.browser) {
+      this.lazy.Fold.input(this.browser, pending.id, pending.value);
+    }
   },
 
   submitField(input) {
     clearTimeout(this.inputTimer);
-    this.lazy.Fold.input(this.browser, input.dataset.itemId, input.value, {
-      submit: true,
+    this.pendingInput = null;
+    this.lazy.Fold.input(
+      this.browser,
+      input.dataset.dialogId ?? input.dataset.itemId,
+      input.value,
+      { submit: true }
+    );
+    if (input.dataset.dialogId) {
+      setTimeout(() => this.refreshDialog(), this.dialogInterval);
+    } else {
+      this.reload();
+    }
+  },
+
+  /**
+   * A dialog the site opens from the menu, like a rename or a delete
+   * confirmation, shows as a sheet over the menu. Its fields and buttons act
+   * on the site's dialog, which stays concealed, and the sheet follows it
+   * until the site closes it.
+   *
+   * @param {object} dialog The dialog as Fold.run reads it.
+   */
+  showDialog(dialog) {
+    if (!this.dialogElement) {
+      let sheet = document.createElement("div");
+      sheet.id = "custom-fold-dialog";
+      sheet.setAttribute("role", "dialog");
+      sheet.setAttribute("aria-modal", "true");
+      sheet.setAttribute("aria-labelledby", "custom-fold-dialog-title");
+      sheet.addEventListener("click", this);
+      sheet.addEventListener("input", this);
+      this.section.append(sheet);
+      this.dialogElement = sheet;
+    }
+    let first = !this.dialog;
+    this.dialog = dialog;
+    this.menu.inert = true;
+    this.dialogElement.hidden = false;
+    let json = JSON.stringify(dialog);
+    if (json != this.dialogJSON) {
+      this.dialogJSON = json;
+      this.renderDialog();
+    }
+    if (first) {
+      this.dialogElement.querySelector("input, button:not(:disabled)")?.focus();
+    }
+    this.dialogTimer ??= setInterval(
+      () => this.refreshDialog(),
+      this.dialogInterval
+    );
+  },
+
+  async refreshDialog() {
+    let browser = this.browser;
+    if (!this.dialog || !browser) {
+      return;
+    }
+    let dialog = await this.lazy.Fold.readDialog(browser);
+    if (browser != this.browser || !this.dialog) {
+      return;
+    }
+    if (dialog) {
+      this.showDialog(dialog);
+    } else {
+      this.hideDialog();
+    }
+  },
+
+  hideDialog({ reload = true } = {}) {
+    clearInterval(this.dialogTimer);
+    this.dialogTimer = null;
+    if (!this.dialog) {
+      return;
+    }
+    let hadFocus = this.dialogElement.contains(document.activeElement);
+    this.dialog = null;
+    this.dialogJSON = null;
+    this.dialogElement.hidden = true;
+    this.dialogElement.replaceChildren();
+    this.menu.inert = false;
+    if (hadFocus) {
+      this.menu.querySelector("button, input")?.focus();
+    }
+    if (reload && this.browser) {
+      this.reload();
+    }
+  },
+
+  renderDialog() {
+    let sheet = this.dialogElement;
+    let focused = sheet.contains(document.activeElement)
+      ? document.activeElement
+      : null;
+    let focusId = focused?.dataset.dialogId;
+    let typing =
+      focused?.localName == "input"
+        ? {
+            value: focused.value,
+            start: focused.selectionStart,
+            end: focused.selectionEnd,
+          }
+        : null;
+    let title = document.createElement("h2");
+    title.id = "custom-fold-dialog-title";
+    title.className = "custom-fold-dialog-title";
+    title.textContent = this.dialog.title;
+    let parts = [title];
+    if (this.dialog.text) {
+      let text = document.createElement("p");
+      text.className = "custom-fold-dialog-text";
+      text.textContent = this.dialog.text;
+      parts.push(text);
+    }
+    let body = document.createElement("div");
+    body.className = "custom-fold-dialog-body";
+    let buttons = document.createElement("div");
+    buttons.className = "custom-fold-dialog-buttons";
+    for (let item of this.dialog.items) {
+      let control;
+      if (item.kind == "field") {
+        control = document.createElement("input");
+        control.className = "custom-fold-dialog-field";
+        control.autocomplete = "off";
+        control.value = item.value ?? "";
+        control.placeholder = item.placeholder ?? "";
+        control.setAttribute("aria-label", item.label);
+        body.append(control);
+      } else if (item.kind == "toggle") {
+        control = this.createRow({ ...item, id: "" });
+        delete control.dataset.itemId;
+        body.append(control);
+      } else {
+        control = document.createElement("button");
+        control.type = "button";
+        control.className = "custom-fold-dialog-button";
+        control.textContent = item.label;
+        buttons.append(control);
+      }
+      control.dataset.dialogId = item.id;
+      control.disabled = !!item.disabled;
+    }
+    parts.push(body, buttons);
+    sheet.replaceChildren(...parts);
+    if (focusId) {
+      let target = [...sheet.querySelectorAll("input, button")].find(
+        element => element.dataset.dialogId == focusId
+      );
+      target?.focus();
+      // What the user is typing wins over the page's value read meanwhile.
+      if (typing && target?.localName == "input") {
+        target.value = typing.value;
+        target.setSelectionRange(typing.start, typing.end);
+      }
+    }
+  },
+
+  onDialogClick(event) {
+    let target = event.target.closest("button");
+    let id = target?.dataset.dialogId;
+    if (!id || target.disabled || !this.browser) {
+      return;
+    }
+    let browser = this.browser;
+    this.flushInput();
+    this.lazy.Fold.run(browser, id).then(dialog => {
+      if (browser != this.browser) {
+        return;
+      }
+      if (dialog) {
+        this.showDialog(dialog);
+      } else {
+        this.refreshDialog();
+      }
     });
-    this.reload();
   },
 
   toggleSection(heading) {
@@ -821,16 +1024,19 @@ var CustomFoldUI = {
   },
 
   /**
-   * Opens the site's own menu behind an action and shows its items here.
+   * Opens the site's own menu behind an item or action and shows its items
+   * here, or the dialog it opens as a sheet.
    */
   async relay(id, anchor) {
     let browser = this.browser;
-    let items = await this.lazy.Fold.openPopup(browser, id);
+    let result = await this.lazy.Fold.openPopup(browser, id);
     if (browser != this.browser || !this.open) {
       return;
     }
-    if (items?.length) {
-      this.openPopup(anchor, items, "relay");
+    if (result?.dialog) {
+      this.showDialog(result.dialog);
+    } else if (result?.items?.length) {
+      this.openPopup(anchor, result.items, "relay");
     } else {
       this.reload();
     }
@@ -860,6 +1066,10 @@ var CustomFoldUI = {
   },
 
   onKeyDown(event) {
+    if (this.dialogElement?.contains(event.target)) {
+      this.onDialogKeyDown(event);
+      return;
+    }
     let field = event.target.localName == "input";
     if (field && event.key == "Enter") {
       event.preventDefault();
@@ -886,6 +1096,18 @@ var CustomFoldUI = {
     if (controls[next]) {
       event.preventDefault();
       controls[next].focus();
+    }
+  },
+
+  onDialogKeyDown(event) {
+    if (event.key == "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      this.lazy.Fold.closeDialog(this.browser);
+      setTimeout(() => this.refreshDialog(), this.dialogInterval);
+    } else if (event.key == "Enter" && event.target.localName == "input") {
+      event.preventDefault();
+      this.submitField(event.target);
     }
   },
 
@@ -1006,6 +1228,7 @@ var CustomFoldUI = {
     this.rootObserver.disconnect();
     this.cancelReload();
     clearTimeout(this.inputTimer);
+    clearInterval(this.dialogTimer);
   },
 };
 

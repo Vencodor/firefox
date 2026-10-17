@@ -30,6 +30,7 @@ JSON 형식은 `browser/components/fold/FoldCapture.sys.mjs` 첫 주석에 설�
   - `layout`: 위쪽 요소의 display와 grid 열.
   - `siblings`: 옆 요소와 위치.
 - `main`: 본문 영역의 위치.
+- `overlays`: 캡처할 때 사이드바 밖에 열려 있던 사이트 메뉴·대화상자의 DOM. 행 메뉴("...")나 대화상자 규칙을 확인하려면 사용자에게 그 메뉴를 연 채로 Capture Fold를 눌러 달라고 한다.
 
 캡처는 사용자 화면 그대로라서 로그인 상태, 창 너비, 사이트의 A/B 실험에 따라 달라진다.
 판단이 어려우면 다른 상태(로그아웃, 넓은 창)에서 한 번 더 캡처해 달라고 요청한다.
@@ -88,7 +89,10 @@ JSON 형식은 `browser/components/fold/FoldCapture.sys.mjs` 첫 주석에 설�
 - **main / groups / extras:** 상단 고정 링크는 `main`에 경로와 아이콘으로, 반복 묶음은 `groups`로, 묶음 밖의 단독 조작(검색창, 새로 만들기)은 `extras`로 읽는다.
   - `groups.heading`은 제목 글자를 가리킨다. 제목을 감싼 버튼이나 `summary`는 자동으로 접기 버튼이 되고 항목에서 빠지므로, 제목 버튼을 따로 피하는 선택자를 만들지 않는다. 그 버튼에 `aria-expanded`가 있으면 묶음을 접고 펼 수 있다.
   - `groups.items`에 버튼과 입력 요소까지 넣는다. 글자 없는 버튼은 접근성 이름(`aria-label`, `aria-labelledby`, `<label>`, `title`)으로 읽는다. 텍스트 입력은 `field`, 체크박스·스위치는 `toggle` 항목이 된다.
-  - `groups.container`로 행을 지정하면 행의 첫 링크가 항목, 나머지 버튼이 액션이 된다. `aria-haspopup`이 있는 메뉴 버튼은 누르면 사이트 메뉴를 열어 그 항목을 Mono 메뉴로 보여 준다. 켜짐 상태를 `aria-pressed`로 알리지 않는 토글은 `groups.pressed` 선택자로 알려 준다.
+  - `groups.container`로 행을 지정하면 행의 첫 링크가 항목, 나머지 버튼이 액션이 된다. 켜짐 상태를 `aria-pressed`로 알리지 않는 토글은 `groups.pressed` 선택자로 알려 준다.
+- **사이트 메뉴와 대화상자:** 버튼 자신이나 가까운 감싸는 요소(행 안, 세 단계까지)에 `aria-haspopup`이 있으면, 항목이든 액션이든 누를 때 사이트 메뉴를 열어 그 항목을 Mono 메뉴로 보여 준다. 메뉴 항목이나 버튼이 대화상자(`role="dialog"`, `alertdialog`, `<dialog>`)를 열면 그 제목, 설명, 입력창, 체크박스, 버튼을 사이드바의 Mono 시트로 보여 준다. 사이트의 메뉴·대화상자와 뒤를 어둡게 하는 배경은 감춘다.
+  - `aria-haspopup`이 없는 메뉴 버튼은 규칙의 `popups` 선택자로 지정한다(예: Gemini의 노트북 메뉴).
+  - 메뉴 항목이 다시 하위 메뉴를 여는 경우는 아직 지원하지 않는다. 그런 항목이 있으면 보고한다.
   - 항목 종류(`kind`) 기준: 커뮤니티·채널처럼 사진이나 첫 글자가 어울리는 개체는 `entity`, 만들기·관리 같은 동작은 `action`, 다른 사이트로 나가는 링크는 `link`, 나머지는 `nav`. `field`와 `toggle`은 요소 종류로 정해진다.
 - **description:** 사이트 구조와 판단 근거를 적어, 다음에 고칠 사람이 캡처 없이도 이해하게 한다.
 - **하지 않는 것:**

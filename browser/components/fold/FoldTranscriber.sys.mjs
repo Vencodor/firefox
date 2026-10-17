@@ -24,6 +24,8 @@ import {
  * without one. `actions` are the other controls of the item's row:
  * [{ id, label, icon?, pressed?, popup? }], where pressed is set for a toggle
  * like a favorite star and popup for a button that opens the site's menu.
+ * An item that opens the site's menu itself, like an overflow button, has
+ * popup too.
  *
  * Nothing on the page is changed here. The elements behind the model are
  * returned so that the actor can click them for the user.
@@ -44,6 +46,8 @@ const BADGE = /^[A-Z][A-Z0-9]{1,7}$/;
 const LABEL_LIMIT = 120;
 const VALUE_LIMIT = 500;
 const MAX_ACTIONS = 8;
+// How far up from a button aria-haspopup is looked for.
+const MENU_WRAPPERS = 3;
 const CONTROLS = [
   "a[href]",
   "button",
@@ -711,7 +715,7 @@ class Transcription {
       let actions = elements
         .filter(element => element !== primary)
         .slice(0, MAX_ACTIONS)
-        .map(element => this.action(element, item))
+        .map(element => this.action(element, item, row))
         .filter(Boolean);
       if (actions.length) {
         item.actions = actions;
@@ -831,6 +835,13 @@ class Transcription {
     if (this.isCurrent(element, container, url)) {
       item.current = true;
     }
+    if (
+      kind != "field" &&
+      kind != "toggle" &&
+      this.opensMenu(element, container)
+    ) {
+      item.popup = true;
+    }
     if (kind == "field") {
       item.value = clip(String(element.value ?? ""), VALUE_LIMIT);
       item.inputType = element.localName == "textarea" ? "text" : "search";
@@ -847,7 +858,7 @@ class Transcription {
     return item;
   }
 
-  action(element, item) {
+  action(element, item, row) {
     let { label } = this.label(element, null);
     if (!label) {
       return null;
@@ -860,8 +871,7 @@ class Transcription {
     if (pressed != null) {
       action.pressed = pressed;
     }
-    let popup = element.getAttribute("aria-haspopup");
-    if (popup && popup != "false") {
+    if (this.opensMenu(element, row)) {
       action.popup = true;
     }
     let context = { element, url: null, label, location: this.location };
@@ -875,6 +885,40 @@ class Transcription {
     this.used.add(element);
     this.elements.set(action.id, { element });
     return action;
+  }
+
+  /**
+   * Whether clicking an element opens a site menu: it, or a wrapper close
+   * around it within its row, has aria-haspopup, or matches the rule's
+   * popups selector. Sites often put aria-haspopup on a wrapper of the
+   * button that is clicked.
+   *
+   * @param {Element} element
+   * @param {?Element} row The element's row, where the search stops.
+   * @returns {boolean}
+   */
+  opensMenu(element, row) {
+    if (element.localName == "a" && element.hasAttribute("href")) {
+      return false;
+    }
+    let node = element;
+    for (let depth = 0; node && depth < MENU_WRAPPERS; depth++) {
+      if (
+        node.nodeType != node.ELEMENT_NODE ||
+        (node === row && node !== element)
+      ) {
+        break;
+      }
+      let popup = node.getAttribute("aria-haspopup");
+      if (
+        (popup && popup != "false") ||
+        (this.rule.popups && node.matches(this.rule.popups))
+      ) {
+        return true;
+      }
+      node = parentOf(node);
+    }
+    return false;
   }
 
   /**
@@ -1116,6 +1160,102 @@ export function readMenu(document, menu) {
   return { items, elements };
 }
 
+const DIALOG_CONTROLS = [
+  "input:not([type='hidden'])",
+  "textarea",
+  "button",
+  "a[href]",
+  "[role='button']",
+  "[role='checkbox']",
+  "[role='switch']",
+].join(", ");
+const DIALOG_TITLES =
+  "h1, h2, h3, [role='heading'], [mat-dialog-title], [slot='title']";
+const MAX_DIALOG_ITEMS = 20;
+const DIALOG_TEXT_LIMIT = 600;
+
+/**
+ * Reads a dialog the site opened, such as a rename or delete confirmation
+ * from a row's menu, for the Mono sidebar to show instead: its title, its
+ * text, and its fields, checkboxes and buttons in order.
+ *
+ * @param {Document} document The page.
+ * @param {Element} dialog The site's dialog element.
+ * @returns {{dialog: object, elements: Map}} The dialog as
+ *   { title, text, items: [{ id, kind, label, value?, placeholder?,
+ *   checked?, disabled? }] }, kind being field, toggle or button, and the
+ *   elements behind the items by id.
+ */
+export function readDialog(document, dialog) {
+  let reading = new Transcription(document, { root: [] });
+  let titleElement = null;
+  let labelled = dialog.getAttribute("aria-labelledby");
+  if (labelled) {
+    titleElement = dialog
+      .getRootNode()
+      .getElementById?.(labelled.split(/\s+/)[0]);
+  }
+  titleElement ??= reading.walker.query(dialog, DIALOG_TITLES);
+  let title = titleElement
+    ? textPieces(titleElement, { all: true }).join(" ")
+    : (dialog.getAttribute("aria-label") ?? "");
+
+  let found = reading.walker
+    .queryAll(dialog, DIALOG_CONTROLS)
+    .filter(element => !closest(element, "[hidden]", dialog));
+  let set = new Set(found);
+  let items = [];
+  let elements = new Map();
+  for (let element of found) {
+    if (isInside(element, set, dialog) || items.length >= MAX_DIALOG_ITEMS) {
+      continue;
+    }
+    let kind = controlKind(element) ?? "button";
+    let { label } = reading.label(element, kind == "button" ? null : kind);
+    if (!label && kind != "field") {
+      continue;
+    }
+    let item = {
+      id: reading.uniqueId("dialog", slug(label) || kind),
+      kind,
+      label: label || title,
+    };
+    if (kind == "field") {
+      item.value = clip(String(element.value ?? ""), VALUE_LIMIT);
+      let placeholder = element.getAttribute("placeholder");
+      if (placeholder) {
+        item.placeholder = clip(placeholder);
+      }
+    } else if (kind == "toggle") {
+      item.checked = isChecked(element);
+    }
+    if (element.disabled || element.getAttribute("aria-disabled") == "true") {
+      item.disabled = true;
+    }
+    items.push(item);
+    elements.set(item.id, { element });
+  }
+
+  // The text is what's left once the title and the controls are taken out.
+  let skip = new Set([title, ...items.map(item => item.label)]);
+  let described = dialog.getAttribute("aria-describedby");
+  let source =
+    (described &&
+      dialog.getRootNode().getElementById?.(described.split(/\s+/)[0])) ||
+    dialog;
+  let text = textPieces(source)
+    .filter(piece => !skip.has(piece))
+    .join(" ");
+  return {
+    dialog: {
+      title: clip(title),
+      text: clip(text, DIALOG_TEXT_LIMIT),
+      items,
+    },
+    elements,
+  };
+}
+
 /**
  * The stylesheet that conceals the site's sidebar while Fold is on. It's
  * loaded as a user sheet, so it reaches into shadow trees and wins over the
@@ -1144,12 +1284,15 @@ export function hidingStyle(rule) {
   if (rule.remove?.length) {
     style += `:is(${rule.remove.join(", ")}) { display: none !important; }\n`;
   }
-  // A site menu opened from the concealed sidebar is shown in the Mono
-  // sidebar instead.
+  // A site menu or dialog opened from the concealed sidebar, and what dims
+  // the page behind it, is shown in the Mono sidebar instead.
   style += `[data-mono-fold-relay] {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
+}
+[data-mono-fold-relay]::backdrop {
+  background: transparent !important;
 }
 `;
   return style + (rule.css ?? "");

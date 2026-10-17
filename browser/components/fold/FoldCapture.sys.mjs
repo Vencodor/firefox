@@ -27,6 +27,7 @@ import {
  *   rule: { id, read: { items, sections, missed } | null, folded } | null,
  *   candidates: [{ path, links, score, reasons, rect, position }],
  *   containers: [{ path, ancestors, layout, siblings, tree }],
+ *   overlays: [{ path, tree }],
  *   main: { path, rect } | null,
  *   truncated,
  * }
@@ -44,6 +45,8 @@ import {
  *   for an element that isn't drawn, such as a collapsed section, and so
  *   neither is what's inside it. Elements without text, links or controls
  *   below them are left out.
+ * - overlays: [{ path, tree }], menus and dialogs the site has open outside
+ *   the sidebar when capturing, such as a row's menu opened beforehand.
  * - rule: the page's current rule, what it reads and the controls it misses
  *   (`read`), and the page measured with the sidebar folded (`folded`:
  *   where main lands, and how many elements each hide and remove selector
@@ -64,6 +67,9 @@ const MAX_CONTAINERS = 2;
 const MAX_LAYOUT = 15;
 const MAX_SIBLINGS = 12;
 const MIN_LINKS = 4;
+const MAX_OVERLAYS = 3;
+const OVERLAYS =
+  "[role='menu'], [role='listbox'], [role='dialog'], [role='alertdialog'], dialog[open]";
 const SKIPPED = new Set([
   "link",
   "meta",
@@ -580,6 +586,20 @@ export function capturePage(window, rule = null) {
     });
   }
 
+  // A menu or dialog the site has open outside the sidebar, such as a row
+  // menu opened before capturing, so a rule's popups can be checked.
+  let overlays = queryAllDeep(document, OVERLAYS)
+    .filter(
+      element =>
+        element.checkVisibility() &&
+        !containers.some(container => contains(container.element, element))
+    )
+    .slice(0, MAX_OVERLAYS)
+    .map(element => ({
+      path: pathOf(element),
+      tree: serializer.element(element),
+    }));
+
   let main = document.querySelector("main, [role='main']");
   return {
     format: CAPTURE_FORMAT,
@@ -599,6 +619,7 @@ export function capturePage(window, rule = null) {
     containers: containers.map(
       ({ element: _element, ...container }) => container
     ),
+    overlays,
     main: main
       ? { path: pathOf(main), rect: round(main.getBoundingClientRect()) }
       : null,
@@ -722,6 +743,7 @@ function selectorsOf(rule) {
     ...(rule.exclude ?? []),
     ...(rule.extras ?? []).map(extra => extra.items),
     rule.currentSelector,
+    rule.popups,
     groups.each,
     groups.heading,
     groups.items,

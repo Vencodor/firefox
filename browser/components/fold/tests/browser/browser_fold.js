@@ -126,6 +126,12 @@ add_task(async function test_menu() {
     EventUtils.synthesizeKey("KEY_Enter");
     await waitForPage(browser, doc => doc.body.dataset.searched == "hello");
 
+    is(
+      document.querySelectorAll("#custom-fold-menu .custom-fold-more").length,
+      2,
+      "Both rows have a menu button, aria-haspopup on a wrapper included"
+    );
+
     // A row's actions show while it's focused, as when it's hovered.
     row("First chat").focus();
     let more = document.querySelector("#custom-fold-menu .custom-fold-more");
@@ -140,9 +146,41 @@ add_task(async function test_menu() {
     let hidden = BrowserTestUtils.waitForPopupEvent(ui.popup, "hidden");
     ui.popup.activateItem(ui.popup.children[0]);
     await hidden;
+
+    // Rename opens the site's dialog, shown as a sheet over the menu.
+    let sheet = await TestUtils.waitForCondition(
+      () => document.querySelector("#custom-fold-dialog:not([hidden])"),
+      "The site's dialog shows in the Mono sidebar"
+    );
+    is(
+      sheet.querySelector(".custom-fold-dialog-title").textContent,
+      "Rename chat",
+      "The sheet has the dialog's title"
+    );
+    let name = sheet.querySelector(".custom-fold-dialog-field");
+    is(name.value, "First chat", "The sheet has the dialog's field");
+    ok(
+      !(await SpecialPowers.spawn(browser, [], () =>
+        content.document.getElementById("rename").checkVisibility({
+          visibilityProperty: true,
+          opacityProperty: true,
+        })
+      )),
+      "The site's dialog is concealed on the page"
+    );
+    name.focus();
+    name.select();
+    EventUtils.sendString("Better name");
+    [...sheet.querySelectorAll(".custom-fold-dialog-button")]
+      .find(button => button.textContent == "Save")
+      .click();
     await waitForPage(
       browser,
-      doc => doc.body.dataset.lastAction == "rename Options for First chat"
+      doc => doc.body.dataset.lastAction == "rename First chat to Better name"
+    );
+    await TestUtils.waitForCondition(
+      () => document.getElementById("custom-fold-dialog").hidden,
+      "The sheet closes with the site's dialog"
     );
 
     document.querySelector("#custom-fold-menu .custom-fold-toggle").click();

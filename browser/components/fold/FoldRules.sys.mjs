@@ -35,6 +35,9 @@
  *   item whatever the query string.
  * - exclude: selectors of elements that are not read at all, with what's in
  *   them, such as the site's own sidebar collapse button.
+ * - popups: a selector of buttons that open a site menu without saying so
+ *   with aria-haspopup on themselves or a close wrapper. Their menu is shown
+ *   as a Mono menu, and a dialog its items open as a Mono dialog.
  * - customIcons: { name: "<svg ...>" }, icons for this site's items, named
  *   like the Mono icons. The SVG holds shapes only.
  * - siteIcons: false to not use the site's own SVG icons for items with no
@@ -324,6 +327,7 @@ const RULE_KEYS = new Set([
   "currentSelector",
   "currentIgnoresSearch",
   "exclude",
+  "popups",
   "customIcons",
   "siteIcons",
   "main",
@@ -462,6 +466,10 @@ export function validateRule(rule) {
   check(
     rule.currentSelector == undefined || isString(rule.currentSelector),
     "currentSelector must be a selector"
+  );
+  check(
+    rule.popups == undefined || isString(rule.popups),
+    "popups must be a selector"
   );
   check(
     rule.currentIgnoresSearch == undefined ||
