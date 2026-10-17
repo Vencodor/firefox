@@ -114,6 +114,9 @@ async function check(rulePath, capturePath) {
     let state = section.collapsible
       ? ` (collapsible, ${section.collapsed ? "collapsed" : "open"})`
       : "";
+    if (section.pinned) {
+      state += " (pinned under the menu)";
+    }
     console.log(`\n[${section.heading ?? section.id}]${state}`);
     for (let item of section.items) {
       let marks = [

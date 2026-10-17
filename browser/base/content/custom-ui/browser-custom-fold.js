@@ -470,8 +470,15 @@ var CustomFoldUI = {
     this.items.clear();
     let fragment = document.createDocumentFragment();
     if (this.model) {
+      let pinned = document.createElement("div");
+      pinned.className = "custom-fold-pinned";
       for (let section of this.model.sections) {
-        fragment.append(this.createSection(section));
+        (section.pinned ? pinned : fragment).append(
+          this.createSection(section)
+        );
+      }
+      if (pinned.hasChildNodes()) {
+        fragment.append(pinned);
       }
     } else {
       let message = document.createElement("p");

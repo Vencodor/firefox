@@ -40,6 +40,7 @@ JSON 형식은 `browser/components/fold/FoldCapture.sys.mjs` 첫 주석에 설�
 1. **캡처 읽기:** 사이드바 영역을 고른다. 다음을 구분한다.
    - 상단 고정 링크(홈, 인기 등) → `main`
    - 사이드바 어디에나 있는 검색창, 새로 만들기 같은 단독 조작 → `extras`
+   - 사이트가 스크롤과 상관없이 하단에 고정해 둔 계정(프로필)·설정 영역 → `extras`에 `"at": "bottom"`
    - 반복되는 묶음(제목 + 항목 목록, 대개 `details/summary`나 제목 버튼) → `groups`
    - 행마다 붙은 버튼(즐겨찾기 별, 메뉴 버튼) → `groups.container`로 행을 지정하면 그 행의 액션이 된다
 2. **규칙 작성:** `browser/components/fold/rules/<id>.json`을 쓴다.
@@ -87,6 +88,7 @@ JSON 형식은 `browser/components/fold/FoldCapture.sys.mjs` 첫 주석에 설�
   - 사이트가 표시를 늦게 바꾸거나 쓰지 않으면 `"url"`(주소만).
   - 주소는 그대로인데 화면만 바뀌는 SPA는 `"marker"`(표시만)와, 선택된 행을 나타내는 사이트의 선택자 `currentSelector`(예: `".selected"`).
 - **main / groups / extras:** 상단 고정 링크는 `main`에 경로와 아이콘으로, 반복 묶음은 `groups`로, 묶음 밖의 단독 조작(검색창, 새로 만들기)은 `extras`로 읽는다.
+  - `extras.at`은 위치다: `"start"`는 링크 앞, `"end"`(기본값)는 묶음 뒤, `"bottom"`은 메뉴 아래 고정 영역(메뉴가 스크롤돼도 보인다). 사이트가 하단에 고정해 둔 프로필·설정은 `"bottom"`으로 둔다.
   - `groups.heading`은 제목 글자를 가리킨다. 제목을 감싼 버튼이나 `summary`는 자동으로 접기 버튼이 되고 항목에서 빠지므로, 제목 버튼을 따로 피하는 선택자를 만들지 않는다. 그 버튼에 `aria-expanded`가 있으면 묶음을 접고 펼 수 있다.
   - `groups.items`에 버튼과 입력 요소까지 넣는다. 글자 없는 버튼은 접근성 이름(`aria-label`, `aria-labelledby`, `<label>`, `title`)으로 읽는다. 텍스트 입력은 `field`, 체크박스·스위치는 `toggle` 항목이 된다.
   - `groups.container`로 행을 지정하면 행의 첫 링크가 항목, 나머지 버튼이 액션이 된다. 켜짐 상태를 `aria-pressed`로 알리지 않는 토글은 `groups.pressed` 선택자로 알려 준다.

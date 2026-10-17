@@ -161,6 +161,7 @@ export function cleanModel(model) {
       collapsible: section?.collapsible === true,
       collapsed: section?.collapsed === true,
       toggleId: text(section?.toggleId),
+      pinned: section?.pinned === true,
       items,
     };
   });

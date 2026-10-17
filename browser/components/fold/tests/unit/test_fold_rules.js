@@ -90,7 +90,7 @@ add_task(function test_validation_catches_mistakes() {
     "remove must list selectors, each within one tree",
     'current must be "auto"',
     "customIcons.star must be an <svg>",
-    'extras[0].at must be "start" or "end"',
+    'extras[0].at must be "start", "end" or "bottom"',
     "ready.minItems",
     "groups.kinds[0].kind",
     "groups.kinds[0].text is not a valid regular expression",

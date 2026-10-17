@@ -1,7 +1,7 @@
 {
   "id": "fold-test",
   "name": "Fold test",
-  "description": "The test site of browser_fold.js: a search field and an icon-only button above the links, a section whose title sits in a button, rows with a menu button and a checkbox.",
+  "description": "The test site of browser_fold.js: a search field and an icon-only button above the links, a section whose title sits in a button, rows with a menu button and a checkbox, and an account link pinned under the menu.",
   "matches": [
     "https://example.com/browser/browser/components/fold/tests/browser/*"
   ],
@@ -34,5 +34,8 @@
     "items": "a[href], button, input",
     "container": ".row"
   },
-  "extras": [{ "items": ".search input, .new", "at": "start" }]
+  "extras": [
+    { "items": ".search input, .new", "at": "start" },
+    { "items": ".account a", "at": "bottom" }
+  ]
 }

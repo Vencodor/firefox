@@ -490,6 +490,9 @@ class Transcription {
       sections.push(...this.groupSections());
     }
     sections.push(...this.extraSections("end"));
+    for (let section of this.extraSections("bottom")) {
+      sections.push({ ...section, pinned: true });
+    }
     let result = {
       model: { site: { name: this.rule.name }, sections },
       elements: this.elements,

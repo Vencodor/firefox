@@ -65,7 +65,9 @@
  *     sidebar toggles it on the page.
  * - extras: [{ items, heading, at, kind }], sections of elements found
  *   anywhere in the sidebar, before ("start") or after ("end", the default)
- *   the others, such as a search field above the links.
+ *   the others, such as a search field above the links, or pinned under the
+ *   menu ("bottom") so they stay in view while it scrolls, such as the
+ *   account and settings footer.
  *
  * Icons named by a rule are Mono icons (ICON_NAMES), the rule's customIcons,
  * or "site" for the site's own icon. href, text and heading tests are regular
@@ -510,8 +512,8 @@ export function validateRule(rule) {
         `${where}.heading must be a string`
       );
       check(
-        extra.at == undefined || ["start", "end"].includes(extra.at),
-        `${where}.at must be "start" or "end"`
+        extra.at == undefined || ["start", "end", "bottom"].includes(extra.at),
+        `${where}.at must be "start", "end" or "bottom"`
       );
       check(
         extra.kind == undefined || ITEM_KINDS.includes(extra.kind),

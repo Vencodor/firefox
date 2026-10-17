@@ -103,6 +103,15 @@ add_task(async function test_menu() {
     }
     ok(!row("Recent"), "The section title isn't read as an item");
     ok(
+      row("Account")?.closest(".custom-fold-pinned"),
+      "The account link is pinned under the menu"
+    );
+    is(
+      document.querySelector("#custom-fold-menu").lastElementChild.className,
+      "custom-fold-pinned",
+      "The pinned sections come last"
+    );
+    ok(
       row("Home").classList.contains("custom-fold-current"),
       "Home is current"
     );

@@ -68,6 +68,30 @@
       padding-inline: var(--space-custom-edge);
     }
 
+    /* Pinned sections (a rule's "bottom" extras, like the account and its
+       settings) stick to the bottom of the scrolling menu, and the menu
+       scrolls under them. */
+    #custom-fold-menu {
+      display: flex;
+      flex-direction: column;
+      padding-block-end: 0;
+      scroll-padding-block-end: calc(var(--size-custom-tab) * 2);
+    }
+
+    .custom-fold-pinned {
+      position: sticky;
+      inset-block-end: 0;
+      margin-block-start: auto;
+      margin-inline: calc(-1 * var(--space-custom-edge));
+      padding: var(--space-small) var(--space-custom-edge);
+      border-block-start: var(--border-width) solid var(--custom-line);
+      background-color: var(--custom-background);
+
+      > .custom-archive-section:last-child {
+        margin-block-end: 0;
+      }
+    }
+
     /* A dialog the site opened, as a sheet over the menu. */
     #custom-fold-dialog {
       position: absolute;
@@ -417,6 +441,12 @@
     #sidebar-container:not([sidebar-launcher-expanded]) {
       :is(.custom-fold-badge, .custom-fold-action, .custom-fold-check, .custom-fold-field-row) {
         display: none;
+      }
+
+      .custom-fold-pinned > .custom-archive-section:last-child {
+        margin-block-end: 0;
+        padding-block-end: 0;
+        border-block-end: 0;
       }
     }
 
