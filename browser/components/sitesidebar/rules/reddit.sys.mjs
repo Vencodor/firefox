@@ -32,11 +32,13 @@ export default {
     }
   `,
   ready: { minItems: 3, timeoutMs: 4000 },
+  current: "url",
   currentIgnoresSearch: true,
   main: [
     { paths: ["/", "/?feed=home"], icon: "home" },
     { paths: ["/r/popular/"], icon: "trending" },
     { paths: ["/answers/"], icon: "answers" },
+    { paths: ["/news/"], icon: "news" },
     { paths: ["/explore/"], icon: "explore" },
     { paths: ["/r/all/"], icon: "all" },
   ],
@@ -61,6 +63,6 @@ export default {
       { text: /^manage\b/i, icon: "settings" },
       { text: /^see (more|less)\b/i, icon: "more" },
     ],
-    sections: [{ heading: /^resources$/i, kind: "link", collapsed: true }],
+    sections: [{ heading: /^resources$/i, kind: "link" }],
   },
 };

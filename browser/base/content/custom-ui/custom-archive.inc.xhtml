@@ -7,8 +7,8 @@
   <html:button id="custom-archive-search-clear" type="button" tabindex="-1" hidden="" data-l10n-id="custom-ui-archive-search-clear"/>
 </html:div>
 <html:section id="custom-archive" aria-labelledby="custom-archive-title" inert="">
-  <html:div id="custom-archive-tabs" role="tablist" data-l10n-id="custom-ui-archive-tabs">
-    <html:span id="custom-archive-indicator" aria-hidden="true"/>
+  <html:div id="custom-archive-tabs" class="custom-switch" role="tablist" data-l10n-id="custom-ui-archive-tabs">
+    <html:span id="custom-archive-indicator" class="custom-switch-indicator" aria-hidden="true"/>
     <html:button id="custom-archive-tab-history" class="custom-archive-tab" type="button" role="tab" aria-selected="true" aria-controls="custom-archive-history" data-view="history" data-l10n-id="custom-ui-archive-tab-history"/>
     <html:button id="custom-archive-tab-bookmarks" class="custom-archive-tab" type="button" role="tab" aria-selected="false" aria-controls="custom-archive-bookmarks" tabindex="-1" data-view="bookmarks" data-l10n-id="custom-ui-archive-tab-bookmarks"/>
     <html:button id="custom-archive-tab-downloads" class="custom-archive-tab" type="button" role="tab" aria-selected="false" aria-controls="custom-archive-downloads" tabindex="-1" data-view="downloads" data-l10n-id="custom-ui-archive-tab-downloads"/>
@@ -39,7 +39,4 @@
 </html:section>
 <html:footer id="custom-archive-footer">
   <html:button id="custom-archive-button" type="button" aria-pressed="false" aria-controls="custom-archive" data-l10n-id="custom-ui-archive-button"/>
-  <html:button id="custom-site-sidebar-button" type="button" aria-pressed="false" aria-controls="custom-site-sidebar" hidden="">
-    <html:img id="custom-site-sidebar-button-icon" alt=""/>
-  </html:button>
 </html:footer>

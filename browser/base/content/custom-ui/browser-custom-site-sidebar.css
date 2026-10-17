@@ -8,16 +8,43 @@
    transcribed sidebar looks and collapses like the rest of the sidebar. */
 
 #custom-site-sidebar,
-#custom-site-sidebar-button {
+#custom-site-switch {
   display: none;
 }
 
 @media (-moz-pref("sidebar.verticalTabs")) {
   :root[custom-ui]:not([customizing], [inDOMFullscreen], [fullscreenNavToolboxHidden]) {
-    /* Covers the tab list and notice rows like the archive; the address row
-       above stays. */
+    /* Covers the tab list and notice rows like the archive; the address and
+       the switch above stay. */
     #sidebar-container:not([hidden]) > #custom-site-sidebar {
-      grid-row: 3 / 5;
+      grid-row: 4 / 6;
+    }
+
+    /* The archive's icon-tab track, under the address. */
+    #custom-site-switch {
+      display: grid;
+      margin: 0 var(--space-custom-edge) var(--space-small);
+
+      &[hidden] {
+        display: none;
+      }
+    }
+
+    #custom-site-switch-tabs {
+      --custom-archive-tab-icon: url("chrome://browser/skin/tabs.svg");
+    }
+
+    #custom-site-switch-site {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+    }
+
+    #custom-site-switch-icon {
+      position: relative;
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
     }
 
     #sidebar-container:not([custom-site-sidebar]) > #custom-site-sidebar,
@@ -32,71 +59,6 @@
       min-width: 0;
       min-height: 0;
       padding-inline: var(--space-custom-edge);
-    }
-
-    #custom-site-sidebar-header {
-      display: flex;
-      flex: none;
-      align-items: center;
-      margin: var(--space-custom-section) 0 var(--space-xsmall);
-      padding-inline-end: var(--space-custom-padding);
-    }
-
-    #custom-site-sidebar-title {
-      flex: 1;
-      min-width: 0;
-      margin: 0;
-      padding-inline: var(--space-custom-padding) 0;
-      overflow: hidden;
-      font-size: var(--font-size-custom-title);
-      font-weight: var(--font-weight-semibold);
-      white-space: nowrap;
-      mask-image: linear-gradient(to left, transparent, black var(--size-custom-text-fade));
-
-      &:dir(rtl) {
-        mask-image: linear-gradient(to right, transparent, black var(--size-custom-text-fade));
-      }
-    }
-
-    #custom-archive-footer {
-      gap: var(--space-xsmall);
-    }
-
-    #custom-site-sidebar-button {
-      display: flex;
-      flex: none;
-      align-items: center;
-      justify-content: center;
-      width: var(--size-custom-control);
-      height: var(--size-custom-control);
-      padding: 0;
-      border: 0;
-      border-radius: var(--border-radius-custom-tab);
-      background-color: transparent;
-      appearance: none;
-
-      &[hidden] {
-        display: none;
-      }
-
-      &:hover {
-        background-color: var(--custom-hover);
-      }
-
-      &[aria-pressed="true"] {
-        background-color: var(--custom-surface);
-        box-shadow: var(--box-shadow-custom-tab);
-      }
-
-      &:focus-visible {
-        outline: var(--focus-outline);
-        outline-offset: var(--focus-outline-offset);
-      }
-    }
-
-    #custom-site-sidebar-button-icon {
-      width: var(--icon-size-small);
-      height: var(--icon-size-small);
     }
 
     /* Rows are buttons with the archive row's box. */
@@ -253,35 +215,14 @@
       }
     }
 
-    .custom-site-sidebar-restore {
-      padding-block-start: var(--space-small);
-      border-block-start: var(--border-width) solid var(--custom-line);
-    }
-
-    .custom-site-sidebar-restore-row {
-      color: var(--custom-muted);
-    }
-
     #sidebar-container:not([sidebar-launcher-expanded]) {
-      :is(#custom-site-sidebar-header, .custom-site-sidebar-badge, .custom-site-sidebar-secondary) {
+      :is(.custom-site-sidebar-badge, .custom-site-sidebar-secondary) {
         display: none;
-      }
-
-      #custom-archive-footer {
-        flex-direction: column;
-      }
-    }
-
-    @media (prefers-reduced-motion: no-preference) {
-      #custom-site-sidebar-button {
-        transition:
-          background-color 150ms ease,
-          box-shadow 200ms ease;
       }
     }
 
     @media (forced-colors: active) {
-      :is(.custom-site-sidebar-current, #custom-site-sidebar-button[aria-pressed="true"]) {
+      .custom-site-sidebar-current {
         outline: var(--outline-custom-selected);
       }
     }

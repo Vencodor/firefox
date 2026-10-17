@@ -112,6 +112,7 @@ export default [
       "browser/base/content/browser-webrtc.js",
       "browser/base/content/custom-ui/browser-custom-ui.js",
       "browser/base/content/custom-ui/browser-custom-site-sidebar.js",
+      "browser/base/content/custom-ui/browser-custom-switch.js",
       "browser/base/content/global-scripts.js",
       "browser/base/content/main-popupset.js",
       "browser/base/content/navigator-toolbox.js",

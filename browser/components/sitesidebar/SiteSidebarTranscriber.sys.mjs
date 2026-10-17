@@ -215,7 +215,7 @@ class Transcription {
   constructor(document, rule) {
     this.document = document;
     this.rule = rule;
-    this.location = new URL(document.documentURI);
+    this.location = new URL(document.URL);
     this.walker = new Walker();
     this.elements = new Map();
     this.used = new Set();
@@ -325,7 +325,10 @@ class Transcription {
         seen.add(key);
         items.push(item);
       }
-      if (!items.length) {
+      // A collapsed details element may only fill in once it's opened, so it
+      // stays as a heading that opens it.
+      let foldable = group.localName == "details" && !!headingElement;
+      if (!items.length && !(foldable && heading)) {
         continue;
       }
       let section = { id, items };
@@ -335,6 +338,11 @@ class Transcription {
       if (override.collapsed != undefined) {
         section.collapsible = true;
         section.collapsed = override.collapsed;
+      } else if (foldable) {
+        section.collapsible = true;
+        section.collapsed = !group.open;
+        section.toggleId = `${id}#toggle`;
+        this.elements.set(section.toggleId, { element: headingElement });
       }
       sections.push(section);
     }
@@ -447,7 +455,9 @@ class Transcription {
   }
 
   isCurrent(element, container, url) {
-    let marked = closest(element, "[aria-current]", parentOf(container));
+    let marked =
+      this.rule.current != "url" &&
+      closest(element, "[aria-current]", parentOf(container));
     if (marked) {
       return marked.getAttribute("aria-current") != "false";
     }

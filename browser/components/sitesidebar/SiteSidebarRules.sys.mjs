@@ -18,6 +18,8 @@ import reddit from "resource:///modules/sitesidebar/rules/reddit.sys.mjs";
  * - ready: { minItems, timeoutMs }. The site menu needs at least minItems
  *   items, waiting up to timeoutMs for the page to render them; otherwise the
  *   page is left alone.
+ * - current: "url" to find the current item by address only, for sites
+ *   whose aria-current lags behind their in-page navigation.
  * - currentIgnoresSearch: whether a link to the current path is the current
  *   item whatever the query string.
  * - main: [{ paths, icon }], top links found by address, in this order.
@@ -32,7 +34,9 @@ import reddit from "resource:///modules/sitesidebar/rules/reddit.sys.mjs";
  *     Mono icon.
  *   - sections: [{ heading, kind, collapsed }] for a section whose heading
  *     matches: every item takes `kind`, and `collapsed` makes the section
- *     collapsible, collapsed or not at first.
+ *     collapsible, collapsed or not at first. A section read from a
+ *     details element is collapsible anyway: it starts as the page shows it,
+ *     and toggling it in the sidebar clicks its summary.
  */
 export const RULES = [reddit];
 

@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* import-globals-from browser-custom-switch.js */
+
 /**
  * The sidebar archive: the bottom sidebar button slides the tab list out for
  * history (with recently closed tabs), bookmarks and downloads. Entries are
@@ -21,15 +23,9 @@ var CustomArchiveUI = {
     "bookmark-url-changed",
   ],
   slideDistance: 24,
-  swipeStep: 36,
-  swipeNudge: 6,
   searchDelay: 150,
   loadingDelay: 400,
   wideStep: 3,
-  swipeEndDelay: 120,
-  swipeReleaseRatio: 0.35,
-  swipeReleasePeak: 8,
-  inertiaGap: 120,
   switchDistance: 12,
   easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
 
@@ -48,16 +44,14 @@ var CustomArchiveUI = {
     this.archive = document.getElementById("custom-archive");
     this.button = document.getElementById("custom-archive-button");
     this.tablist = document.getElementById("custom-archive-tabs");
-    this.indicator = document.getElementById("custom-archive-indicator");
     this.title = document.getElementById("custom-archive-title");
-    this.tabs = [...this.tablist.querySelectorAll(".custom-archive-tab")];
     this.address = document.getElementById("custom-sidebar-address");
     this.search = document.getElementById("custom-archive-search");
     this.searchInput = document.getElementById("custom-archive-search-input");
     this.clearButton = document.getElementById("custom-archive-search-clear");
     this.tabLayer = [
       ...this.container.querySelectorAll(
-        ":scope > :is(#custom-sidebar-address, sidebar-main, #custom-notice-sidebar)"
+        ":scope > :is(#custom-sidebar-address, #custom-site-switch, sidebar-main, #custom-notice-sidebar)"
       ),
     ];
     this.archiveLayer = [this.search, this.archive];
@@ -73,10 +67,7 @@ var CustomArchiveUI = {
     this.button.addEventListener("click", this);
     this.button.addEventListener("pointerenter", this);
     this.button.addEventListener("focus", this);
-    this.tablist.addEventListener("click", this);
-    this.tablist.addEventListener("keydown", this);
     this.archive.addEventListener("keydown", this);
-    this.archive.addEventListener("wheel", this, { passive: false });
     this.archive.addEventListener("click", this);
     this.archive.addEventListener("auxclick", this);
     this.rowEntries = new WeakMap();
@@ -102,8 +93,11 @@ var CustomArchiveUI = {
         "sidebar-launcher-drag-active",
       ],
     });
-    this.resizeObserver = new ResizeObserver(() => this.updateIndicator());
-    this.resizeObserver.observe(this.tablist);
+    this.switch = new CustomSwitch({
+      tablist: this.tablist,
+      areas: [this.archive],
+      onSelect: index => this.setView(this.views[index]),
+    });
 
     this.bookmarksListener = () => this.loadBookmarks();
     this.downloadView = {
@@ -154,11 +148,6 @@ var CustomArchiveUI = {
         } else if (event.currentTarget === this.clearButton) {
           this.clearSearch();
           this.searchInput.focus();
-        } else if (event.currentTarget === this.tablist) {
-          let tab = event.target.closest(".custom-archive-tab");
-          if (tab) {
-            this.setView(tab.dataset.view);
-          }
         } else {
           this.onRowClick(event);
         }
@@ -175,9 +164,6 @@ var CustomArchiveUI = {
       case "keydown":
         this.onKeyDown(event);
         break;
-      case "wheel":
-        this.onWheel(event);
-        break;
       case "input":
         this.setQuery(this.searchInput.value);
         break;
@@ -188,33 +174,7 @@ var CustomArchiveUI = {
   },
 
   onKeyDown(event) {
-    if (event.currentTarget === this.tablist) {
-      let index = this.views.indexOf(this.view);
-      let rtl = this.isRTL();
-      let next;
-      switch (event.key) {
-        case "ArrowDown":
-        case rtl ? "ArrowLeft" : "ArrowRight":
-          next = (index + 1) % this.views.length;
-          break;
-        case "ArrowUp":
-        case rtl ? "ArrowRight" : "ArrowLeft":
-          next = (index - 1 + this.views.length) % this.views.length;
-          break;
-        case "Home":
-          next = 0;
-          break;
-        case "End":
-          next = this.views.length - 1;
-          break;
-        default:
-          return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      this.setView(this.views[next]);
-      this.tabs[next].focus();
-    } else if (
+    if (
       event.currentTarget === this.archive &&
       [
         "ArrowLeft",
@@ -234,95 +194,6 @@ var CustomArchiveUI = {
       } else {
         this.setOpen(false);
       }
-    }
-  },
-
-  /**
-   * A horizontal scroll picks a view with the switch, the selection surface
-   * of the icon tabs. While scrolling it grows into glass and steps one tab
-   * for every swipeStep pixels in the direction the fingers move, so one
-   * gesture can move across several tabs.
-   * The view under it is shown once the gesture ends.
-   */
-  onWheel(event) {
-    if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) {
-      return;
-    }
-    event.preventDefault();
-    let rtl = this.isRTL();
-    let raw =
-      event.deltaMode == WheelEvent.DOM_DELTA_PIXEL
-        ? event.deltaX
-        : event.deltaX * this.swipeStep;
-    let speed = Math.abs(raw);
-    let now = event.timeStamp;
-    // The touchpad keeps sending decaying scroll events after the fingers
-    // lift. They are ignored until they stop or speed up again, which means
-    // a new gesture.
-    let inertia = this.inertia;
-    if (inertia) {
-      if (now - inertia.time < this.inertiaGap && speed <= inertia.speed + 1) {
-        inertia.time = now;
-        inertia.speed = speed;
-        return;
-      }
-      this.inertia = null;
-    }
-    if (!this.swipe) {
-      this.swipe = { index: this.views.indexOf(this.view), delta: 0, peak: 0 };
-      this.tablist.toggleAttribute("swiping", true);
-    }
-    let swipe = this.swipe;
-    // A sharp drop from the gesture's peak speed is taken as the fingers
-    // lifting, so the view switches at once instead of after the inertia.
-    swipe.peak = Math.max(swipe.peak, speed);
-    if (
-      swipe.peak >= this.swipeReleasePeak &&
-      speed < swipe.peak * this.swipeReleaseRatio
-    ) {
-      this.inertia = { time: now, speed };
-      this.endSwipe();
-      return;
-    }
-    let delta = raw * (rtl ? 1 : -1);
-    let last = this.views.length - 1;
-    swipe.delta += delta;
-    while (swipe.delta >= this.swipeStep && swipe.index < last) {
-      swipe.index++;
-      swipe.delta -= this.swipeStep;
-    }
-    while (swipe.delta <= -this.swipeStep && swipe.index > 0) {
-      swipe.index--;
-      swipe.delta += this.swipeStep;
-    }
-    swipe.delta = Math.max(
-      -this.swipeStep,
-      Math.min(this.swipeStep, swipe.delta)
-    );
-    this.tabs.forEach((tab, i) =>
-      tab.toggleAttribute("candidate", i == swipe.index)
-    );
-    this.updateIndicator(
-      true,
-      swipe.index,
-      (swipe.delta / this.swipeStep) * this.swipeNudge * (rtl ? -1 : 1)
-    );
-    clearTimeout(this.swipeTimer);
-    this.swipeTimer = setTimeout(() => this.endSwipe(), this.swipeEndDelay);
-  },
-
-  endSwipe() {
-    clearTimeout(this.swipeTimer);
-    let view = this.views[this.swipe.index];
-    this.swipe = null;
-    this.tablist.removeAttribute("swiping");
-    for (let tab of this.tabs) {
-      tab.removeAttribute("candidate");
-    }
-    if (view == this.view) {
-      this.updateIndicator(true);
-    } else {
-      this.setView(view);
     }
   },
 
@@ -557,7 +428,7 @@ var CustomArchiveUI = {
     if (open) {
       this.ensureData();
       this.renderIfDirty(this.view);
-      this.updateIndicator();
+      this.switch.updateIndicator();
     } else {
       if (hadFocus) {
         this.button.focus();
@@ -674,11 +545,7 @@ var CustomArchiveUI = {
     let direction =
       this.views.indexOf(view) > this.views.indexOf(this.view) ? 1 : -1;
     this.view = view;
-    for (let tab of this.tabs) {
-      let selected = tab.dataset.view == view;
-      tab.setAttribute("aria-selected", String(selected));
-      tab.tabIndex = selected ? 0 : -1;
-    }
+    this.switch.select(this.views.indexOf(view));
     let panel;
     for (let name of this.views) {
       let element = document.getElementById(`custom-archive-${name}`);
@@ -693,7 +560,6 @@ var CustomArchiveUI = {
       `custom-ui-archive-search-${view}`
     );
     this.renderIfDirty(view);
-    this.updateIndicator(true);
     if (!this.reducedMotion.matches) {
       let shift = direction * this.switchDistance * (this.isRTL() ? -1 : 1);
       panel.animate(
@@ -707,28 +573,6 @@ var CustomArchiveUI = {
         duration: 180,
         easing: "ease-out",
       });
-    }
-  },
-
-  /**
-   * Moves the selection surface under the selected icon tab. It follows the
-   * tab's box, so it also works when the collapsed sidebar stacks the tabs.
-   */
-  updateIndicator(
-    animate = false,
-    index = this.views.indexOf(this.view),
-    nudge = 0
-  ) {
-    let tab = this.tabs[index];
-    let style = this.indicator.style;
-    this.indicator.toggleAttribute("instant", !animate);
-    style.width = `${tab.offsetWidth}px`;
-    style.height = `${tab.offsetHeight}px`;
-    style.translate = `${tab.offsetLeft + nudge}px ${tab.offsetTop}px`;
-    if (!animate) {
-      // Flush the position before transitions are allowed again.
-      this.indicator.getBoundingClientRect();
-      this.indicator.removeAttribute("instant");
     }
   },
 
@@ -1240,7 +1084,6 @@ var CustomArchiveUI = {
     this.unloaded = true;
     Services.prefs.removeObserver("sidebar.verticalTabs", this);
     this.rootObserver.disconnect();
-    this.resizeObserver.disconnect();
     if (this.dataRequested) {
       Services.obs.removeObserver(this, "sessionstore-closed-objects-changed");
       PlacesUtils.observers.removeListener(

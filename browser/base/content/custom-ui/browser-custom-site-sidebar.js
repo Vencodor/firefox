@@ -2,11 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* import-globals-from browser-custom-switch.js */
+
 /**
- * The sidebar's site menu: on a page with a site rule, the site button next
- * to the archive button swaps the tab list for the page's own sidebar,
- * transcribed into Mono rows, and hides that sidebar on the page. The page
- * reads and clicks its elements through the SiteSidebar actor.
+ * The sidebar's site menu: on a page with a site rule, the switch under the
+ * address swaps the tab list for the page's own sidebar, transcribed into
+ * Mono rows, and hides that sidebar on the page. The page reads and clicks
+ * its elements through the SiteSidebar actor.
  */
 var CustomSiteSidebarUI = {
   pref: "browser.customUI.siteSidebar.enabled",
@@ -22,6 +24,7 @@ var CustomSiteSidebarUI = {
     "home",
     "link",
     "more",
+    "news",
     "settings",
     "trending",
   ]),
@@ -36,12 +39,10 @@ var CustomSiteSidebarUI = {
     this.root = document.documentElement;
     this.container = document.getElementById("sidebar-container");
     this.section = document.getElementById("custom-site-sidebar");
-    this.title = document.getElementById("custom-site-sidebar-title");
     this.menu = document.getElementById("custom-site-sidebar-menu");
-    this.button = document.getElementById("custom-site-sidebar-button");
-    this.buttonIcon = document.getElementById(
-      "custom-site-sidebar-button-icon"
-    );
+    this.switchElement = document.getElementById("custom-site-switch");
+    this.siteTab = document.getElementById("custom-site-switch-site");
+    this.siteIcon = document.getElementById("custom-site-switch-icon");
     this.tabLayer = [
       ...this.container.querySelectorAll(
         ":scope > :is(sidebar-main, #custom-notice-sidebar)"
@@ -56,7 +57,15 @@ var CustomSiteSidebarUI = {
     this.slideAnimations = [];
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    this.button.addEventListener("click", this);
+    this.switch = new CustomSwitch({
+      tablist: this.switchElement,
+      areas: [
+        this.switchElement,
+        this.section,
+        this.container.querySelector(":scope > sidebar-main"),
+      ],
+      onSelect: index => this.setOpen(index == 1),
+    });
     this.menu.addEventListener("click", this);
     this.menu.addEventListener("auxclick", this);
     this.section.addEventListener("keydown", this);
@@ -82,7 +91,7 @@ var CustomSiteSidebarUI = {
     });
 
     this.lazy.SiteSidebar.ensureRegistered();
-    this.updateButton();
+    this.updateSwitch();
   },
 
   get available() {
@@ -97,7 +106,7 @@ var CustomSiteSidebarUI = {
   },
 
   updateAvailable() {
-    this.updateButton();
+    this.updateSwitch();
     if (this.open && !this.available) {
       this.setOpen(false, { animate: false });
     }
@@ -108,29 +117,29 @@ var CustomSiteSidebarUI = {
   },
 
   /**
-   * Shows the site button while the selected page has a site rule.
+   * Shows the switch while the selected page has a site rule.
    */
-  updateButton() {
+  updateSwitch() {
     let rule = this.available
       ? this.lazy.SiteSidebar.ruleFor(gBrowser.selectedBrowser.currentURI)
       : null;
     this.rule = rule;
-    this.button.hidden = !rule;
+    this.switchElement.hidden = !rule;
     if (!rule) {
       return;
     }
     let args = { site: rule.name };
     document.l10n.setAttributes(
-      this.button,
-      "custom-ui-site-sidebar-button",
+      this.siteTab,
+      "custom-ui-site-switch-site",
       args
     );
     document.l10n.setAttributes(this.menu, "custom-ui-site-sidebar-menu", args);
-    this.updateButtonIcon();
+    this.updateSiteIcon();
   },
 
-  updateButtonIcon() {
-    this.buttonIcon.src =
+  updateSiteIcon() {
+    this.siteIcon.src =
       gBrowser.selectedTab.getAttribute("image") ||
       "chrome://global/skin/icons/defaultFavicon.svg";
   },
@@ -138,11 +147,7 @@ var CustomSiteSidebarUI = {
   handleEvent(event) {
     switch (event.type) {
       case "click":
-        if (event.currentTarget === this.button) {
-          this.setOpen(!this.open);
-        } else {
-          this.onMenuClick(event);
-        }
+        this.onMenuClick(event);
         break;
       case "auxclick":
         if (event.button == 1) {
@@ -161,7 +166,7 @@ var CustomSiteSidebarUI = {
           event.detail.changed.includes("image") &&
           this.rule
         ) {
-          this.updateButtonIcon();
+          this.updateSiteIcon();
         }
         break;
       case "unload":
@@ -173,6 +178,7 @@ var CustomSiteSidebarUI = {
   setOpen(open, { animate = true } = {}) {
     open = open && !!this.rule && this.available;
     if (open == this.open) {
+      this.switch.select(open ? 1 : 0, { animate });
       return;
     }
     if (open && window.CustomArchiveUI?.open) {
@@ -185,13 +191,13 @@ var CustomSiteSidebarUI = {
       element.inert = open;
     }
     this.section.inert = !open;
-    this.button.setAttribute("aria-pressed", String(open));
+    this.switch.select(open ? 1 : 0, { animate });
     if (open) {
       this.connect(gBrowser.selectedBrowser);
     } else {
       this.disconnect();
-      if (hadFocus) {
-        this.button.focus();
+      if (hadFocus && !this.switchElement.hidden) {
+        this.siteTab.focus();
       }
     }
     if (animate) {
@@ -202,23 +208,18 @@ var CustomSiteSidebarUI = {
   },
 
   /**
-   * Asks the page to hand its sidebar over. A menu already shown for the same
-   * site stays until the new one arrives, so moving between the site's pages
-   * doesn't blank it.
+   * Asks the page to hand its sidebar over. While the site menu stays open,
+   * a page loaded later in the same tab hands it over by itself.
    */
   connect(browser) {
     let generation = ++this.generation;
-    let keep = this.model && this.model.ruleId == this.rule?.id;
     this.browser = browser;
-    if (!keep) {
-      this.model = null;
-      this.render();
-    }
+    this.model = null;
+    this.render();
     this.lazy.SiteSidebar.activate(browser).then(model => {
-      if (generation != this.generation) {
-        return;
+      if (generation == this.generation) {
+        this.show(model);
       }
-      this.show(model);
     });
   },
 
@@ -232,15 +233,13 @@ var CustomSiteSidebarUI = {
   },
 
   show(model) {
-    if (model) {
-      model.ruleId = this.rule?.id;
-    }
     this.model = model;
     this.render({ failed: !model });
   },
 
   /**
-   * A change of the site menu reported by the page.
+   * A change of the site menu reported by the page, including the menu of a
+   * page newly loaded in the tab.
    */
   onUpdate(browser, model) {
     if (this.open && browser == this.browser) {
@@ -249,7 +248,7 @@ var CustomSiteSidebarUI = {
   },
 
   onTabSelect() {
-    this.updateButton();
+    this.updateSwitch();
     if (!this.open || gBrowser.selectedBrowser == this.browser) {
       return;
     }
@@ -266,27 +265,22 @@ var CustomSiteSidebarUI = {
       return;
     }
     let ruleId = this.rule?.id;
-    this.updateButton();
+    this.updateSwitch();
     if (!this.open) {
       return;
     }
-    if (!this.rule) {
+    if (this.rule?.id != ruleId) {
       this.setOpen(false);
     } else if (
-      flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT &&
-      this.rule.id == ruleId
+      flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT
     ) {
       this.lazy.SiteSidebar.refresh(browser);
-    } else {
-      this.generation++;
-      this.connect(browser);
     }
   },
 
   render({ failed = false } = {}) {
     let focused = document.activeElement;
     let focusKey = this.menu.contains(focused) ? this.keyOf(focused) : null;
-    this.title.textContent = this.model?.site.name ?? this.rule?.name ?? "";
     this.items.clear();
     let fragment = document.createDocumentFragment();
     if (this.model) {
@@ -304,7 +298,6 @@ var CustomSiteSidebarUI = {
       );
       fragment.append(message);
     }
-    fragment.append(this.createRestoreSection());
     this.menu.replaceChildren(fragment);
     if (focusKey) {
       let target = [...this.menu.querySelectorAll("button")].find(
@@ -321,15 +314,17 @@ var CustomSiteSidebarUI = {
     if (element.dataset.section) {
       return `section|${element.dataset.section}`;
     }
-    if (element.classList.contains("custom-site-sidebar-restore-row")) {
-      return "restore";
-    }
     let part = element.classList.contains("custom-site-sidebar-secondary")
       ? "secondary"
       : "row";
     return `${part}|${element.dataset.itemId ?? ""}`;
   },
 
+  /**
+   * A collapsible section starts as the site shows it. Toggling it here also
+   * toggles it on the page, so the site loads what it holds and keeps the
+   * choice as its own.
+   */
   createSection(section) {
     let element = document.createElement("section");
     element.className = "custom-archive-section";
@@ -344,6 +339,9 @@ var CustomSiteSidebarUI = {
         heading.type = "button";
         heading.className = "custom-archive-heading custom-site-sidebar-toggle";
         heading.dataset.section = key;
+        if (section.toggleId) {
+          heading.dataset.toggleId = section.toggleId;
+        }
         heading.setAttribute("aria-expanded", String(!collapsed));
         list.hidden = collapsed;
       } else {
@@ -429,25 +427,6 @@ var CustomSiteSidebarUI = {
     return img;
   },
 
-  createRestoreSection() {
-    let section = document.createElement("section");
-    section.className = "custom-archive-section custom-site-sidebar-restore";
-    let row = document.createElement("button");
-    row.type = "button";
-    row.className =
-      "custom-archive-row custom-site-sidebar-row custom-site-sidebar-restore-row";
-    let icon = document.createElement("img");
-    icon.className = "custom-archive-icon";
-    icon.alt = "";
-    icon.src = `${this.iconBase}sidebar.svg`;
-    let label = document.createElement("span");
-    label.className = "custom-archive-label";
-    document.l10n.setAttributes(label, "custom-ui-site-sidebar-restore");
-    row.append(icon, label);
-    section.append(row);
-    return section;
-  },
-
   /**
    * A plain click acts on the page element, so the site handles it as its
    * own; a modified or middle click on a link opens it where Firefox would.
@@ -460,12 +439,6 @@ var CustomSiteSidebarUI = {
     if (target.classList.contains("custom-site-sidebar-toggle")) {
       if (event.button == 0) {
         this.toggleSection(target);
-      }
-      return;
-    }
-    if (target.classList.contains("custom-site-sidebar-restore-row")) {
-      if (event.button == 0) {
-        this.setOpen(false);
       }
       return;
     }
@@ -495,6 +468,9 @@ var CustomSiteSidebarUI = {
     heading.setAttribute("aria-expanded", String(expanded));
     heading.nextElementSibling.hidden = !expanded;
     this.collapsed.set(heading.dataset.section, !expanded);
+    if (heading.dataset.toggleId && this.browser) {
+      this.lazy.SiteSidebar.run(this.browser, heading.dataset.toggleId);
+    }
   },
 
   onKeyDown(event) {
@@ -502,7 +478,6 @@ var CustomSiteSidebarUI = {
       event.preventDefault();
       event.stopPropagation();
       this.setOpen(false);
-      this.button.focus();
       return;
     }
     if (event.key != "ArrowDown" && event.key != "ArrowUp") {
@@ -535,7 +510,7 @@ var CustomSiteSidebarUI = {
 
   /**
    * Pushes the tab list and the site menu past each other like the archive
-   * does. The address row stays in place.
+   * does. The address row and the switch stay in place.
    */
   slide(open) {
     this.cancelSlide();

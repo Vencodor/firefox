@@ -12,6 +12,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
 const ACTOR = "SiteSidebar";
 
 let registered = false;
+// The browsers whose tab shows the site menu, so that a page loaded there
+// later hands its sidebar over too.
+let wanted = new WeakSet();
 
 function getActor(browser, { report = false } = {}) {
   try {
@@ -40,7 +43,11 @@ export const SiteSidebar = {
       },
       child: {
         esModuleURI: "resource:///actors/SiteSidebarChild.sys.mjs",
-        events: { pagehide: { createActor: false } },
+        events: {
+          DOMContentLoaded: {},
+          pageshow: { createActor: false },
+          pagehide: { createActor: false },
+        },
       },
       matches: lazy.allMatches(),
       messageManagerGroups: ["browsers"],
@@ -69,6 +76,7 @@ export const SiteSidebar = {
    *   sidebar couldn't be read and was left as it is.
    */
   async activate(browser) {
+    wanted.add(browser);
     let actor = getActor(browser, { report: true });
     if (!actor) {
       return null;
@@ -83,7 +91,16 @@ export const SiteSidebar = {
   },
 
   deactivate(browser) {
+    wanted.delete(browser);
     this.send(browser, "SiteSidebar:Deactivate");
+  },
+
+  /**
+   * @param {Element} browser
+   * @returns {boolean} Whether the browser's tab shows the site menu.
+   */
+  isWanted(browser) {
+    return wanted.has(browser);
   },
 
   refresh(browser) {

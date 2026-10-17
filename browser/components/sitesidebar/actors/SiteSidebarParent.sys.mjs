@@ -2,18 +2,29 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  SiteSidebar: "resource:///modules/sitesidebar/SiteSidebar.sys.mjs",
+});
+
 /**
- * Passes changes of a page's site menu to the window showing that page.
+ * Passes a page's site menu to the window showing that page, and tells a
+ * newly loaded page whether its tab shows the site menu.
  */
 export class SiteSidebarParent extends JSWindowActorParent {
   receiveMessage({ name, data }) {
-    if (name != "SiteSidebar:Update") {
-      return;
-    }
     let browser = this.browsingContext.top.embedderElement;
-    browser?.ownerGlobal?.CustomSiteSidebarUI?.onUpdate(
-      browser,
-      data?.model ?? null
-    );
+    switch (name) {
+      case "SiteSidebar:Wanted":
+        return !!browser && lazy.SiteSidebar.isWanted(browser);
+      case "SiteSidebar:Update":
+        browser?.ownerGlobal?.CustomSiteSidebarUI?.onUpdate(
+          browser,
+          data?.model ?? null
+        );
+        break;
+    }
+    return null;
   }
 }

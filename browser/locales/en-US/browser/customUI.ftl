@@ -360,7 +360,14 @@ custom-ui-archive-remove-bookmark =
 ## Variables:
 ##   $site (String) - The site name, such as "Reddit".
 
-custom-ui-site-sidebar-button =
+custom-ui-site-switch =
+    .aria-label = 사이드바 보기
+
+custom-ui-site-switch-tabs =
+    .aria-label = 탭
+    .title = 탭
+
+custom-ui-site-switch-site =
     .aria-label = { $site } 메뉴
     .title = { $site } 메뉴
 
@@ -370,5 +377,3 @@ custom-ui-site-sidebar-menu =
 custom-ui-site-sidebar-loading = 메뉴를 읽는 중…
 
 custom-ui-site-sidebar-unavailable = 이 페이지의 메뉴를 가져오지 못했어요
-
-custom-ui-site-sidebar-restore = 사이트 사이드바로 보기

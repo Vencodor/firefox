@@ -14,6 +14,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 const READY_INTERVAL = 200;
 const UPDATE_DELAY = 150;
+// Sites often change the current item and the sidebar some time after their
+// in-page navigation changes the address, so it's read again a few times.
+const REFRESH_DELAYS = [0, 300, 1000];
 const WATCHED_ATTRIBUTES = [
   "aria-current",
   "aria-expanded",
@@ -40,6 +43,8 @@ export class SiteSidebarChild extends JSWindowActorChild {
   #observer = null;
   #sheet = null;
   #timer = null;
+  #refreshTimers = [];
+  #pending = null;
   #sent = "";
 
   receiveMessage({ name, data }) {
@@ -53,19 +58,47 @@ export class SiteSidebarChild extends JSWindowActorChild {
         this.#run(data);
         break;
       case "SiteSidebar:Refresh":
-        if (this.#active) {
-          this.#scheduleUpdate(0);
-        }
+        this.#refresh();
         break;
     }
     return null;
   }
 
   handleEvent(event) {
-    // A page kept for back/forward navigation comes back as it was before the
-    // site menu took its sidebar; the sidebar asks again if it's still shown.
-    if (event.type == "pagehide") {
-      this.#deactivate();
+    if (event.target != this.document) {
+      return;
+    }
+    switch (event.type) {
+      // A page kept for back/forward navigation comes back as it was before
+      // the site menu took its sidebar.
+      case "pagehide":
+        this.#deactivate();
+        break;
+      // A page loaded, or brought back, while its tab shows the site menu
+      // hands its sidebar over by itself.
+      case "DOMContentLoaded":
+      case "pageshow":
+        this.#offer();
+        break;
+    }
+  }
+
+  async #offer() {
+    if (this.#active) {
+      return;
+    }
+    let wanted = false;
+    try {
+      wanted = await this.sendQuery("SiteSidebar:Wanted");
+    } catch {
+      return;
+    }
+    if (!wanted || this.#active || this.#destroyed) {
+      return;
+    }
+    let result = await this.#activate();
+    if (!this.#destroyed) {
+      this.sendAsyncMessage("SiteSidebar:Update", result);
     }
   }
 
@@ -74,9 +107,19 @@ export class SiteSidebarChild extends JSWindowActorChild {
     this.#stop();
   }
 
-  async #activate() {
+  /**
+   * Reads the sidebar and hides it on the page. A page loading while its tab
+   * shows the site menu may be asked by both the sidebar and its own load, so
+   * one reading answers both.
+   */
+  #activate() {
+    this.#pending ??= this.#start().finally(() => (this.#pending = null));
+    return this.#pending;
+  }
+
+  async #start() {
     let generation = ++this.#generation;
-    let rule = lazy.findRule(this.document.documentURI);
+    let rule = lazy.findRule(this.document.URL);
     if (!rule) {
       return { model: null };
     }
@@ -133,6 +176,7 @@ export class SiteSidebarChild extends JSWindowActorChild {
     this.#active = false;
     clearTimeout(this.#timer);
     this.#timer = null;
+    this.#clearRefresh();
     this.#observer?.disconnect();
     this.#elements = new Map();
     this.#removeSheet();
@@ -194,6 +238,23 @@ export class SiteSidebarChild extends JSWindowActorChild {
     }
   }
 
+  #refresh() {
+    if (!this.#active) {
+      return;
+    }
+    this.#clearRefresh();
+    this.#refreshTimers = REFRESH_DELAYS.map(delay =>
+      setTimeout(() => this.#update(), delay)
+    );
+  }
+
+  #clearRefresh() {
+    for (let timer of this.#refreshTimers) {
+      clearTimeout(timer);
+    }
+    this.#refreshTimers = [];
+  }
+
   #scheduleUpdate(delay = UPDATE_DELAY) {
     clearTimeout(this.#timer);
     this.#timer = setTimeout(() => this.#update(), delay);
@@ -231,6 +292,6 @@ export class SiteSidebarChild extends JSWindowActorChild {
       return;
     }
     element.click();
-    this.#scheduleUpdate();
+    this.#refresh();
   }
 }
