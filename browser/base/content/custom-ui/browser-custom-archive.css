@@ -1,0 +1,562 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* stylelint-disable stylelint-plugin-mozilla/use-design-tokens -- Mono custom tokens are defined in design-tokens.css. */
+
+#custom-archive-search,
+#custom-archive,
+#custom-archive-footer {
+  display: none;
+}
+
+@media (-moz-pref("sidebar.verticalTabs")) {
+  :root[custom-ui]:not([customizing], [inDOMFullscreen], [fullscreenNavToolboxHidden]) {
+    --size-custom-archive-tab: 34px;
+    --size-custom-archive-download: 48px;
+    --space-custom-archive-track: 3px;
+    --custom-archive-time-delay: 500ms;
+
+    /* The search box takes the address row and the archive covers the tab
+       list and notice rows, so both layers keep their place while one slides
+       over the other. */
+    #sidebar-container:not([hidden]) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+
+      > * {
+        grid-column: 1;
+      }
+
+      > #custom-sidebar-header {
+        grid-row: 1;
+      }
+
+      > #custom-sidebar-address {
+        grid-row: 2;
+      }
+
+      > sidebar-main {
+        grid-row: 3;
+      }
+
+      > #custom-notice-sidebar {
+        grid-row: 4;
+      }
+
+      > #custom-archive-search {
+        grid-row: 2;
+      }
+
+      > #custom-archive {
+        grid-row: 3 / 5;
+      }
+
+      > #custom-archive-footer {
+        grid-row: 5;
+      }
+    }
+
+    #sidebar-container:not([custom-archive]) > :is(#custom-archive-search, #custom-archive),
+    #sidebar-container[custom-archive] > :is(#custom-sidebar-address, sidebar-main, #custom-notice-sidebar) {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Same box as #custom-sidebar-address, so the address turns into the
+       search field in place. */
+    #custom-archive-search {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      min-height: var(--size-custom-tab);
+      margin-inline: var(--space-custom-edge);
+      margin-block-end: var(--space-small);
+      padding-inline-end: var(--space-small);
+      border: var(--border-width) solid transparent;
+      border-radius: var(--border-radius-custom-tab);
+      background-color: var(--custom-pin-background);
+
+      &:hover,
+      &:focus-within {
+        background-color: var(--custom-hover);
+      }
+    }
+
+    #custom-archive-search-input {
+      appearance: none;
+      align-self: stretch;
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding: var(--space-custom-inset) var(--space-custom-padding);
+      border: 0;
+      border-radius: inherit;
+      background: transparent;
+      color: var(--custom-ink);
+      font: inherit;
+      font-size: var(--font-size-custom-label);
+      outline: none;
+
+      &::placeholder {
+        color: var(--custom-muted);
+        opacity: 1;
+      }
+
+      &::-moz-search-clear-button {
+        display: none;
+      }
+    }
+
+    #custom-archive-search-clear {
+      flex: none;
+      width: var(--size-custom-navigation-control);
+      height: var(--size-custom-navigation-control);
+      padding: 0;
+      border: 0;
+      border-radius: var(--border-radius-custom-tab);
+      background: url("chrome://global/skin/icons/close.svg") center / var(--icon-size-small) no-repeat;
+      color: var(--custom-muted);
+      -moz-context-properties: fill;
+      fill: currentColor;
+
+      &:hover {
+        color: var(--custom-ink);
+      }
+
+      &[hidden] {
+        display: none;
+      }
+    }
+
+    #custom-archive {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding-inline: var(--space-custom-edge);
+    }
+
+    #custom-archive-tabs {
+      position: relative;
+      display: grid;
+      flex: none;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+      gap: var(--space-xxsmall);
+      padding: var(--space-custom-archive-track);
+      border-radius: var(--border-radius-custom-pin);
+      background-color: var(--custom-pin-background);
+    }
+
+    /* Positioned from the selected tab's offsets, which are physical. */
+    #custom-archive-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: calc(var(--border-radius-custom-pin) - var(--space-custom-archive-track));
+      background-color: var(--custom-surface);
+      box-shadow: var(--box-shadow-custom-tab);
+      pointer-events: none;
+    }
+
+    .custom-archive-tab {
+      position: relative;
+      min-width: 0;
+      height: var(--size-custom-archive-tab);
+      padding: 0;
+      border: 0;
+      border-radius: calc(var(--border-radius-custom-pin) - var(--space-custom-archive-track));
+      background: var(--custom-archive-tab-icon) center / var(--icon-size-small) no-repeat;
+      color: var(--custom-muted);
+      -moz-context-properties: fill;
+      fill: currentColor;
+
+      &:hover {
+        color: var(--custom-ink);
+      }
+
+      &[aria-selected="true"] {
+        color: var(--custom-ink);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-inset);
+      }
+    }
+
+    #custom-archive-tab-history {
+      --custom-archive-tab-icon: url("chrome://browser/skin/history.svg");
+    }
+
+    #custom-archive-tab-bookmarks {
+      --custom-archive-tab-icon: url("chrome://browser/skin/bookmark-hollow.svg");
+    }
+
+    #custom-archive-tab-downloads {
+      --custom-archive-tab-icon: url("chrome://browser/skin/downloads/downloads.svg");
+    }
+
+    #custom-archive-header {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: var(--space-small);
+      margin: var(--space-custom-section) 0 var(--space-xsmall);
+      padding-inline-end: var(--space-custom-padding);
+    }
+
+    #custom-archive-title {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding-inline: var(--space-custom-padding) 0;
+      overflow: hidden;
+      font-size: var(--font-size-custom-title);
+      font-weight: var(--font-weight-semibold);
+      white-space: nowrap;
+    }
+
+    /* Sits just below the last result while the full history search runs. */
+    .custom-archive-loading {
+      box-sizing: border-box;
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+      margin: var(--space-small) auto var(--space-medium);
+      border: 2px solid var(--custom-line-strong);
+      border-block-start-color: var(--custom-muted);
+      border-radius: var(--border-radius-circle);
+      animation: custom-archive-spin 800ms linear infinite;
+
+      &[hidden] {
+        display: none;
+      }
+    }
+
+    /* The panel bleeds into the sidebar edge so rows keep the tab inset and
+       their hover surface isn't clipped by the scroll box. */
+    .custom-archive-panel {
+      flex: 1;
+      min-height: 0;
+      margin-inline: calc(-1 * var(--space-custom-edge));
+      padding: 0 var(--space-custom-edge) var(--space-small);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      border-radius: var(--border-radius-custom-tab);
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-inset);
+      }
+    }
+
+    .custom-archive-section {
+      margin-block-end: var(--space-custom-groups);
+    }
+
+    .custom-archive-heading {
+      margin: 0;
+      padding: var(--space-xsmall) var(--space-custom-padding);
+      overflow: hidden;
+      color: var(--custom-muted);
+      font-size: var(--font-size-custom-small);
+      font-weight: var(--font-weight-custom-medium);
+      white-space: nowrap;
+    }
+
+    /* Text that doesn't fit fades out at its end instead of an ellipsis. */
+    :is(#custom-archive-title, .custom-archive-label, .custom-archive-status) {
+      mask-image: linear-gradient(to left, transparent, black var(--size-custom-text-fade));
+
+      &:dir(rtl) {
+        mask-image: linear-gradient(to right, transparent, black var(--size-custom-text-fade));
+      }
+    }
+
+    .custom-archive-heading {
+      mask-image: linear-gradient(to left, transparent var(--space-custom-padding), black calc(var(--space-custom-padding) + var(--size-custom-text-fade)));
+
+      &:dir(rtl) {
+        mask-image: linear-gradient(to right, transparent var(--space-custom-padding), black calc(var(--space-custom-padding) + var(--size-custom-text-fade)));
+      }
+    }
+
+    .custom-archive-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .custom-archive-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: var(--space-custom-gap);
+      min-width: 0;
+      min-height: var(--size-custom-tab);
+      padding-inline: var(--space-custom-padding);
+      border-radius: var(--border-radius-custom-tab);
+      font-size: var(--font-size-custom-label);
+
+      &:hover {
+        background-color: var(--custom-hover);
+      }
+    }
+
+    .custom-archive-icon {
+      flex: none;
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+      color: var(--custom-muted);
+      -moz-context-properties: fill;
+      fill: currentColor;
+    }
+
+    :is(.custom-archive-label, .custom-archive-status) {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .custom-archive-label {
+      flex: 1;
+    }
+
+    .custom-archive-meta {
+      flex: none;
+      color: var(--custom-muted);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: var(--font-size-custom-shortcut);
+    }
+
+    /* Like the tab close button, the time sits at the row end and shows
+       once the pointer rests on the row. */
+    .custom-archive-time {
+      position: absolute;
+      inset-inline-end: var(--space-custom-inset);
+      inset-block-start: 50%;
+      padding: var(--space-xxsmall) var(--space-small);
+      border: var(--border-width) solid var(--custom-line);
+      border-radius: var(--border-radius-circle);
+      background-color: var(--custom-surface);
+      box-shadow: var(--box-shadow-custom-tab);
+      color: var(--custom-muted);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: var(--font-size-custom-shortcut);
+      line-height: 1.4;
+      white-space: nowrap;
+      opacity: 0;
+      translate: 0 -50%;
+      pointer-events: none;
+    }
+
+    .custom-archive-row:hover > .custom-archive-time {
+      opacity: 1;
+      transition: opacity 0s linear var(--custom-archive-time-delay);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .custom-archive-time {
+        scale: 0.94;
+        transition:
+          opacity 120ms ease,
+          scale 120ms ease;
+      }
+
+      .custom-archive-row:hover > .custom-archive-time {
+        scale: 1;
+        transition:
+          opacity 160ms ease var(--custom-archive-time-delay),
+          scale 220ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--custom-archive-time-delay);
+      }
+    }
+
+    .custom-archive-download {
+      min-height: var(--size-custom-archive-download);
+
+      &:is([data-state="canceled"], [data-state="missing"]) > :is(.custom-archive-icon, .custom-archive-text) {
+        opacity: 0.6;
+      }
+    }
+
+    .custom-archive-text {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: var(--space-xxsmall);
+      min-width: 0;
+    }
+
+    .custom-archive-status {
+      color: var(--custom-muted);
+      font-size: var(--font-size-custom-shortcut);
+    }
+
+    .custom-archive-progress {
+      display: none;
+      position: absolute;
+      inset-inline: calc(var(--space-custom-padding) + var(--icon-size-small) + var(--space-custom-gap)) var(--space-custom-padding);
+      inset-block-end: var(--space-xsmall);
+      height: 2px;
+      overflow: hidden;
+      border-radius: 1px;
+      background-color: var(--custom-line);
+    }
+
+    .custom-archive-download:is([data-state="progress"], [data-state="paused"]) .custom-archive-progress {
+      display: block;
+    }
+
+    .custom-archive-progress-bar {
+      display: block;
+      width: var(--custom-archive-progress, 0%);
+      height: 100%;
+      border-radius: inherit;
+      background-color: var(--custom-accent);
+    }
+
+    .custom-archive-progress[indeterminate] .custom-archive-progress-bar {
+      width: 30%;
+    }
+
+    .custom-archive-empty {
+      margin: var(--space-xxlarge) var(--space-custom-padding);
+      color: var(--custom-muted);
+      font-size: var(--font-size-custom-small);
+      text-align: center;
+    }
+
+    #custom-archive-footer {
+      display: flex;
+      align-items: center;
+      padding: var(--space-small) calc(var(--space-custom-edge) + var(--space-xxsmall)) var(--space-xxsmall);
+    }
+
+    #custom-archive-button {
+      flex: none;
+      width: var(--size-custom-control);
+      height: var(--size-custom-control);
+      padding: 0;
+      border: 0;
+      border-radius: var(--border-radius-custom-tab);
+      background: url("chrome://browser/skin/library.svg") center / var(--icon-size-small) no-repeat;
+      color: var(--custom-muted);
+      -moz-context-properties: fill;
+      fill: currentColor;
+
+      &:hover {
+        background-color: var(--custom-hover);
+        color: var(--custom-ink);
+      }
+
+      &[aria-pressed="true"] {
+        background-color: var(--custom-surface);
+        color: var(--custom-ink);
+        box-shadow: var(--box-shadow-custom-tab);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-offset);
+      }
+    }
+
+    #sidebar-container:not([sidebar-launcher-expanded]) {
+      #custom-archive-tabs {
+        grid-auto-flow: row;
+      }
+
+      :is(
+        #custom-archive-search,
+        #custom-archive-header,
+        .custom-archive-heading,
+        .custom-archive-text,
+        .custom-archive-label,
+        .custom-archive-meta,
+        .custom-archive-time,
+        .custom-archive-progress
+      ) {
+        display: none;
+      }
+
+      .custom-archive-row {
+        justify-content: center;
+        padding-inline: 0;
+      }
+
+      .custom-archive-section {
+        margin-block-end: var(--space-small);
+        padding-block-end: var(--space-small);
+        border-block-end: var(--border-width) solid var(--custom-line);
+      }
+
+      .custom-archive-panel {
+        margin-block-start: var(--space-small);
+      }
+
+      #custom-archive-footer {
+        justify-content: center;
+      }
+    }
+
+    @media (forced-colors: active) {
+      #custom-archive-indicator {
+        outline: var(--outline-custom-selected);
+      }
+
+      #custom-archive-button[aria-pressed="true"] {
+        outline: var(--outline-custom-selected);
+      }
+    }
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[custom-ui] {
+    #sidebar-container[custom-archive-resizing] {
+      transition: width 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    #custom-archive-indicator:not([instant]) {
+      transition:
+        translate 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        width 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        height 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    :is(.custom-archive-tab, #custom-archive-button, .custom-archive-row) {
+      transition:
+        background-color 150ms ease,
+        color 150ms ease,
+        box-shadow 200ms ease;
+    }
+
+    .custom-archive-progress-bar {
+      transition: width 200ms ease;
+    }
+
+    .custom-archive-progress[indeterminate] .custom-archive-progress-bar {
+      animation: custom-archive-indeterminate 1200ms ease-in-out infinite;
+    }
+  }
+}
+
+/* The spinner is a progress indicator, so it keeps turning with reduced motion. */
+@keyframes custom-archive-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+@keyframes custom-archive-indeterminate {
+  from {
+    translate: -100% 0;
+  }
+
+  to {
+    translate: 340% 0;
+  }
+}

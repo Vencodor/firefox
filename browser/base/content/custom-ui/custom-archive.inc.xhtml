@@ -1,0 +1,42 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<html:div id="custom-archive-search" role="search" inert="">
+  <html:input id="custom-archive-search-input" type="search" autocomplete="off" spellcheck="false" aria-controls="custom-archive" data-l10n-id="custom-ui-archive-search-history"/>
+  <html:button id="custom-archive-search-clear" type="button" tabindex="-1" hidden="" data-l10n-id="custom-ui-archive-search-clear"/>
+</html:div>
+<html:section id="custom-archive" aria-labelledby="custom-archive-title" inert="">
+  <html:div id="custom-archive-tabs" role="tablist" data-l10n-id="custom-ui-archive-tabs">
+    <html:span id="custom-archive-indicator" aria-hidden="true"/>
+    <html:button id="custom-archive-tab-history" class="custom-archive-tab" type="button" role="tab" aria-selected="true" aria-controls="custom-archive-history" data-view="history" data-l10n-id="custom-ui-archive-tab-history"/>
+    <html:button id="custom-archive-tab-bookmarks" class="custom-archive-tab" type="button" role="tab" aria-selected="false" aria-controls="custom-archive-bookmarks" tabindex="-1" data-view="bookmarks" data-l10n-id="custom-ui-archive-tab-bookmarks"/>
+    <html:button id="custom-archive-tab-downloads" class="custom-archive-tab" type="button" role="tab" aria-selected="false" aria-controls="custom-archive-downloads" tabindex="-1" data-view="downloads" data-l10n-id="custom-ui-archive-tab-downloads"/>
+  </html:div>
+  <html:div id="custom-archive-header">
+    <html:h2 id="custom-archive-title" data-l10n-id="custom-ui-archive-title-history"/>
+  </html:div>
+  <html:div id="custom-archive-history" class="custom-archive-panel" role="tabpanel" aria-labelledby="custom-archive-tab-history" tabindex="0">
+    <html:section id="custom-archive-closed" class="custom-archive-section" aria-labelledby="custom-archive-closed-title" hidden="">
+      <html:h3 id="custom-archive-closed-title" class="custom-archive-heading" data-l10n-id="custom-ui-archive-closed-tabs"/>
+      <html:ul class="custom-archive-list"/>
+    </html:section>
+    <html:div class="custom-archive-sections"/>
+    <html:div class="custom-archive-loading" role="status" data-l10n-id="custom-ui-archive-searching" hidden=""/>
+    <html:p class="custom-archive-empty" data-l10n-id="custom-ui-archive-history-empty" hidden=""/>
+    <html:p class="custom-archive-no-results" data-l10n-id="custom-ui-archive-search-empty" hidden=""/>
+  </html:div>
+  <html:div id="custom-archive-bookmarks" class="custom-archive-panel" role="tabpanel" aria-labelledby="custom-archive-tab-bookmarks" tabindex="0" hidden="">
+    <html:div class="custom-archive-sections"/>
+    <html:p class="custom-archive-empty" data-l10n-id="custom-ui-archive-bookmarks-empty" hidden=""/>
+    <html:p class="custom-archive-no-results" data-l10n-id="custom-ui-archive-search-empty" hidden=""/>
+  </html:div>
+  <html:div id="custom-archive-downloads" class="custom-archive-panel" role="tabpanel" aria-labelledby="custom-archive-tab-downloads" tabindex="0" hidden="">
+    <html:ul class="custom-archive-list"/>
+    <html:p class="custom-archive-empty" data-l10n-id="custom-ui-archive-downloads-empty" hidden=""/>
+    <html:p class="custom-archive-no-results" data-l10n-id="custom-ui-archive-search-empty" hidden=""/>
+  </html:div>
+</html:section>
+<html:footer id="custom-archive-footer">
+  <html:button id="custom-archive-button" type="button" aria-pressed="false" aria-controls="custom-archive" data-l10n-id="custom-ui-archive-button"/>
+</html:footer>

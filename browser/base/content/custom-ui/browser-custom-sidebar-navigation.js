@@ -434,4 +434,72 @@ var CustomSidebarNavigation = {
   },
 };
 
-delayedStartupPromise.then(() => CustomSidebarNavigation.init());
+var CustomSidebarResize = {
+  step: 42,
+  minWidth: 168,
+  collapseBelow: 100,
+  collapsedWidth: 50,
+
+  init() {
+    this.container = document.getElementById("sidebar-container");
+    this.splitter = document.getElementById("sidebar-launcher-splitter");
+    this.dragged = false;
+    this.observer = new MutationObserver(() => this.onResize());
+    this.observer.observe(this.container, {
+      attributes: true,
+      attributeFilter: ["width"],
+    });
+    this.splitter.addEventListener("command", this, true);
+    window.addEventListener("mouseup", this, true);
+    window.addEventListener("unload", () => this.observer.disconnect(), {
+      once: true,
+    });
+  },
+
+  snap(width) {
+    if (width < this.collapseBelow) {
+      return this.collapsedWidth;
+    }
+    return Math.max(this.minWidth, Math.round(width / this.step) * this.step);
+  },
+
+  apply() {
+    let width = parseFloat(this.container.getAttribute("width"));
+    if (Number.isFinite(width)) {
+      this.container.style.width = `${this.snap(width)}px`;
+    }
+  },
+
+  setResizing(resizing) {
+    this.container.toggleAttribute("custom-step-resizing", resizing);
+    document.documentElement.toggleAttribute(
+      "custom-sidebar-resizing",
+      resizing
+    );
+  },
+
+  onResize() {
+    if (
+      document.documentElement.hasAttribute("custom-ui") &&
+      this.splitter.getAttribute("state") === "dragging"
+    ) {
+      this.dragged = true;
+      this.setResizing(true);
+      this.apply();
+    }
+  },
+
+  handleEvent() {
+    this.setResizing(false);
+    if (this.dragged) {
+      this.dragged = false;
+      this.apply();
+      this.container.getBoundingClientRect();
+    }
+  },
+};
+
+delayedStartupPromise.then(() => {
+  CustomSidebarNavigation.init();
+  CustomSidebarResize.init();
+});

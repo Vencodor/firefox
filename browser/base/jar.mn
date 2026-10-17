@@ -52,6 +52,8 @@ browser.jar:
         content/browser/custom-ui/browser-custom-observation.css (content/custom-ui/browser-custom-observation.css)
         content/browser/custom-ui/browser-custom-notice.js (content/custom-ui/browser-custom-notice.js)
         content/browser/custom-ui/browser-custom-notice.css (content/custom-ui/browser-custom-notice.css)
+        content/browser/custom-ui/browser-custom-archive.js (content/custom-ui/browser-custom-archive.js)
+        content/browser/custom-ui/browser-custom-archive.css (content/custom-ui/browser-custom-archive.css)
         content/browser/custom-ui/browser-custom-settings-window.css (content/custom-ui/browser-custom-settings-window.css)
         content/browser/custom-ui/browser-custom-settings-window.js (content/custom-ui/browser-custom-settings-window.js)
         content/browser/custom-ui/CustomSettingsWindow.sys.mjs (content/custom-ui/CustomSettingsWindow.sys.mjs)

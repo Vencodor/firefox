@@ -269,3 +269,77 @@ custom-ui-notice-label = 새 기능
 custom-ui-notice-close =
     .aria-label = 알림 닫기
     .title = 닫기
+
+custom-ui-archive-button =
+    .aria-label = 보관함
+    .title = 보관함
+
+custom-ui-archive-tabs =
+    .aria-label = 보관함
+
+custom-ui-archive-tab-history =
+    .aria-label = 방문 기록
+    .title = 방문 기록
+
+custom-ui-archive-tab-bookmarks =
+    .aria-label = 북마크
+    .title = 북마크
+
+custom-ui-archive-tab-downloads =
+    .aria-label = 다운로드
+    .title = 다운로드
+
+custom-ui-archive-title-history = 방문 기록
+
+custom-ui-archive-title-bookmarks = 북마크
+
+custom-ui-archive-title-downloads = 다운로드
+
+custom-ui-archive-closed-tabs = 최근 닫은 탭
+
+custom-ui-archive-history-empty = 아직 방문 기록이 없어요
+
+custom-ui-archive-bookmarks-empty = 저장한 북마크가 없어요
+
+custom-ui-archive-downloads-empty = 다운로드한 파일이 없어요
+
+custom-ui-archive-folder-toolbar = 북마크 도구 모음
+
+custom-ui-archive-folder-menu = 북마크 메뉴
+
+custom-ui-archive-folder-other = 기타 북마크
+
+custom-ui-archive-folder-mobile = 모바일 북마크
+
+custom-ui-archive-download-starting = 시작하는 중…
+
+custom-ui-archive-download-paused = 일시 정지됨
+
+custom-ui-archive-download-canceled = 취소됨
+
+custom-ui-archive-download-failed = 실패
+
+custom-ui-archive-download-blocked = 차단됨
+
+custom-ui-archive-download-missing = 파일이 삭제됨
+
+custom-ui-archive-search-history =
+    .placeholder = 방문 기록 검색
+    .aria-label = 방문 기록 검색
+
+custom-ui-archive-search-bookmarks =
+    .placeholder = 북마크 검색
+    .aria-label = 북마크 검색
+
+custom-ui-archive-search-downloads =
+    .placeholder = 다운로드 검색
+    .aria-label = 다운로드 검색
+
+custom-ui-archive-search-clear =
+    .aria-label = 검색어 지우기
+    .title = 지우기
+
+custom-ui-archive-search-empty = 검색 결과가 없어요
+
+custom-ui-archive-searching =
+    .aria-label = 검색하는 중

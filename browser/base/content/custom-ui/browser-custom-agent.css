@@ -500,8 +500,12 @@
     display: block;
     max-width: 100%;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
+    mask-image: linear-gradient(to left, transparent, black var(--size-custom-text-fade));
+
+    &:dir(rtl) {
+      mask-image: linear-gradient(to right, transparent, black var(--size-custom-text-fade));
+    }
   }
 
   .custom-agent-title {

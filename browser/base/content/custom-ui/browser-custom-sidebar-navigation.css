@@ -110,12 +110,13 @@
   }
 
   #custom-sidebar-domain {
+    --custom-domain-end: var(--space-custom-padding);
     appearance: none;
     align-self: stretch;
     flex: 1;
     min-width: 0;
     margin: 0;
-    padding: var(--space-custom-inset) var(--space-custom-padding);
+    padding: var(--space-custom-inset) var(--custom-domain-end) var(--space-custom-inset) var(--space-custom-padding);
     overflow: hidden;
     border: 0;
     border-radius: inherit;
@@ -124,9 +125,16 @@
     font: inherit;
     font-size: var(--font-size-custom-label);
     text-align: start;
-    text-overflow: ellipsis;
     white-space: nowrap;
     -moz-window-dragging: no-drag;
+
+    &:not(:focus-visible) {
+      mask-image: linear-gradient(to left, transparent var(--custom-domain-end), black calc(var(--custom-domain-end) + var(--size-custom-text-fade)));
+
+      &:dir(rtl) {
+        mask-image: linear-gradient(to right, transparent var(--custom-domain-end), black calc(var(--custom-domain-end) + var(--size-custom-text-fade)));
+      }
+    }
 
     &:focus-visible {
       outline: var(--focus-outline);
@@ -141,6 +149,26 @@
 
   #custom-sidebar-address:is(:hover, :focus-within) #custom-page-settings-button {
     opacity: 1;
+  }
+
+  /* The hidden settings button overlays the address end, so the domain uses
+     that room until the button appears. */
+  #sidebar-container[sidebar-launcher-expanded] {
+    #custom-sidebar-address {
+      position: relative;
+      padding-inline-end: 0;
+    }
+
+    #custom-page-settings-button {
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: var(--space-small);
+      margin-block: auto;
+    }
+
+    #custom-sidebar-address:is(:hover, :focus-within) #custom-sidebar-domain {
+      --custom-domain-end: calc(var(--size-custom-navigation-control) + var(--space-small) * 2);
+    }
   }
 
   #sidebar-container:not([sidebar-launcher-expanded]) {

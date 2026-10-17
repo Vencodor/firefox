@@ -125,8 +125,8 @@
     min-width: 0;
     margin: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
+    mask-image: linear-gradient(to left, transparent, black var(--size-custom-text-fade));
     font-family: "Pretendard", "Inter", "Segoe UI Variable", "Segoe UI", sans-serif;
     font-size: var(--font-size-custom-title, var(--font-size-small));
     font-weight: 300;
@@ -212,6 +212,11 @@
       font-size: var(--font-size-custom-label, var(--font-size-small));
     }
 
+    /* Titles that don't fit fade out over a wider stretch than Firefox's 1em. */
+    .tab-label-container {
+      --tab-label-mask-size: var(--size-custom-text-fade);
+    }
+
     .tab-label-container[selected] {
       font-weight: var(--font-weight-semibold);
     }
@@ -289,6 +294,26 @@
         color: var(--custom-ink, var(--text-color));
         text-align: start;
         font-size: var(--font-size-custom-label, var(--font-size-small));
+        text-overflow: clip;
+      }
+
+      /* The label fades out before the summary at its end. The hover surface
+         moves to the highlight box so the mask doesn't fade it, and focus
+         drops the mask so the outline isn't clipped. */
+      .tab-group-label:not(:focus-visible) {
+        mask-image: linear-gradient(
+          to left,
+          transparent var(--custom-group-summary-space, var(--space-xxlarge)),
+          black calc(var(--custom-group-summary-space, var(--space-xxlarge)) + var(--size-custom-text-fade))
+        );
+      }
+
+      .tab-group-label:not(:focus-visible):dir(rtl) {
+        mask-image: linear-gradient(
+          to right,
+          transparent var(--custom-group-summary-space, var(--space-xxlarge)),
+          black calc(var(--custom-group-summary-space, var(--space-xxlarge)) + var(--size-custom-text-fade))
+        );
       }
 
       .tab-group-label::before {
@@ -319,8 +344,12 @@
         pointer-events: none;
       }
 
-      .tab-group-label:hover {
+      .tab-group-label-hover-highlight:hover {
         background-color: var(--custom-hover, var(--background-color-list-item-hover));
+        color: var(--text-color-list-item-hover);
+      }
+
+      .tab-group-label:hover {
         color: var(--text-color-list-item-hover);
       }
 
@@ -899,7 +928,7 @@
         position: relative;
         align-items: flex-start;
         padding-block: var(--space-custom-search-inset, var(--space-medium)) 0;
-        padding-inline: var(--space-custom-search-inset, var(--space-medium));
+        padding-inline: calc(var(--space-custom-search-inset, var(--space-medium)) + var(--space-small)) var(--space-custom-search-inset, var(--space-medium));
       }
 
       #urlbar[open] .urlbar-input-container::after {
@@ -1147,5 +1176,45 @@
     opacity: 0;
     translate: 0 8px;
     scale: 0.98;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[custom-ui] #sidebar-container[custom-step-resizing] {
+    transition: width 140ms ease-out;
+  }
+}
+
+:root[custom-ui] #tabbrowser-tabbox {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: color-mix(in srgb, var(--custom-surface) 45%, transparent);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+:root[custom-ui][custom-sidebar-resizing] #tabbrowser-tabbox::after {
+  opacity: 1;
+  backdrop-filter: blur(6px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[custom-ui] #tabbrowser-tabbox::after {
+    transition:
+      opacity 140ms ease-out,
+      backdrop-filter 140ms ease-out;
+  }
+}
+
+@media (forced-colors) {
+  :root[custom-ui] #tabbrowser-tabbox::after {
+    display: none;
   }
 }

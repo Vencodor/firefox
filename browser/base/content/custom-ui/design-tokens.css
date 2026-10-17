@@ -35,6 +35,7 @@
   --font-size-custom-shortcut: 11px;
   --font-size-custom-small: 12px;
   --font-size-custom-title: 14px;
+  --size-custom-text-fade: 24px;
   --custom-pin-background: color-mix(in srgb, var(--custom-ink) 5%, transparent);
   --outline-custom-selected: var(--border-width) solid Highlight;
   --box-shadow-custom-tab: 0 1px 2px light-dark(rgb(27 29 33 / 8%), rgb(0 0 0 / 20%)), 0 4px 12px light-dark(rgb(27 29 33 / 6%), rgb(0 0 0 / 14%));

@@ -14,12 +14,13 @@
 | `design-tokens.css` | 브라우저와 설정에서 공유하는 색상·간격·모서리·그림자 |
 | `browser-custom-ui.css`, `browser-custom-ui.js` | 사이드바·탭·페이지 배치와 사용자 지정 UI 상태 |
 | `browser-custom-navigation.css` | 네이티브 주소 입력·탐색·검색 제안의 사용자 지정 외형 |
-| `browser-custom-sidebar-navigation.js`, `browser-custom-sidebar-navigation.css`, `custom-navigation-overlays.inc.xhtml` | 사이드바 도메인·탐색, 중앙 주소 편집, 호버 창 제어. 기존 주소창과 탐색 명령 유지 |
+| `browser-custom-sidebar-navigation.js`, `browser-custom-sidebar-navigation.css`, `custom-navigation-overlays.inc.xhtml` | 사이드바 도메인·탐색, 중앙 주소 편집, 호버 창 제어, 사이드바 폭 단계 조절(42px 단위로 부드럽게 이동, 최소 168px, 100px 미만으로 끌면 접힘, 조절 중 콘텐츠 영역 블러). 기존 주소창과 탐색 명령 유지 |
 | `browser-custom-site-settings.js` | 기존 Firefox 사이트 정보·권한 패널을 중앙에 표시하고 페이지 정보로 연결 |
 | `browser-custom-popups.css` | 네이티브 메뉴·하위 보기·브라우저 팝업의 사용자 지정 외형 |
 | `browser-custom-agent.js`, `browser-custom-agent.css`, `custom-agent-hud.inc.xhtml` | 에이전트 상태 표시: 사이드바 탭 행, 오른쪽 아래 오브·말풍선, '다음 클릭' 표시. 에이전트는 `CustomAgentUI.connect()`로 연결하고 상태는 `setState()`로 알린다 |
 | `custom-urlbar-run.sys.mjs` | 주소창 검색 제안의 ‘Chat’ 행. 기존 동적 제안 선택 경로에서 채팅 명령을 실행 |
 | `browser-custom-chat.js`, `agent-chat.html`, `agent-chat.js`, `agent-chat.css` | Mono 메뉴의 ‘Chat with Agent’에서 여는 독립 채팅 탭. 질문 초안, 대화 표시, 스트리밍 응답과 중지 처리 |
+| `browser-custom-archive.js`, `browser-custom-archive.css`, `custom-archive.inc.xhtml` | 사이드바 하단 보관함 버튼과 방문 기록(최근 닫은 탭 포함)·북마크·다운로드 화면. 기존 `PlacesQuery`, 북마크 트리, `SessionStore`, `Downloads` 데이터를 읽어 표시한다. 항목 클릭 동작은 아직 연결하지 않았다 |
 | `browser-custom-notice.js`, `browser-custom-notice.css`, `custom-notice-sidebar.inc.xhtml` | 새 기능 알림 카드(새 탭 검색 상자 아래, 사이드바 아래쪽). 내용은 `browser.customUI.notice`, 닫은 알림은 `browser.customUI.noticeDismissed`에 기록 |
 | `browser-custom-observation.js`, `browser-custom-observation.css`, `custom-observation-panel.inc.xhtml` | 앱 메뉴 More Tools의 ‘Observe Page’ 항목과 도구 모음 버튼에서 여는 오른쪽 페이지 관찰 패널. 후보 요소를 표시하고 선택 항목을 페이지에서 강조 |
 | `CustomSettingsWindow.sys.mjs`, `browser-custom-settings-window.js`, `browser-custom-settings-window.css`, `custom-settings-titlebar.inc.xhtml` | 설정 전용 창의 생성·재사용, Mono 헤더·창 제어 및 일반 창과의 분리 |
