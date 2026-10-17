@@ -355,3 +355,20 @@ custom-ui-archive-remove-closed =
 custom-ui-archive-remove-bookmark =
     .aria-label = 북마크 삭제
     .title = 북마크 삭제
+
+## Site menu: a page's own sidebar shown in the tab sidebar.
+## Variables:
+##   $site (String) - The site name, such as "Reddit".
+
+custom-ui-site-sidebar-button =
+    .aria-label = { $site } 메뉴
+    .title = { $site } 메뉴
+
+custom-ui-site-sidebar-menu =
+    .aria-label = { $site } 메뉴
+
+custom-ui-site-sidebar-loading = 메뉴를 읽는 중…
+
+custom-ui-site-sidebar-unavailable = 이 페이지의 메뉴를 가져오지 못했어요
+
+custom-ui-site-sidebar-restore = 사이트 사이드바로 보기

@@ -2351,6 +2351,9 @@ pref("browser.customUI.agentMock", false);
 pref("browser.customUI.notice", "");
 // A JSON array of the notice ids the user has closed.
 pref("browser.customUI.noticeDismissed", "[]");
+// Offers the site menu, a page's own sidebar shown in the tab sidebar, on
+// sites with a site rule (browser/components/sitesidebar/rules).
+pref("browser.customUI.siteSidebar.enabled", true);
 pref("browser.newtabpage.enabled", false);
 pref("sidebar.verticalTabs", true);
 pref("sidebar.verticalTabs.dragToPinPromo.dismissed", false);

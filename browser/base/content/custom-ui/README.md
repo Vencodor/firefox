@@ -21,6 +21,7 @@
 | `custom-urlbar-run.sys.mjs` | 주소창 검색 제안의 ‘Chat’ 행. 기존 동적 제안 선택 경로에서 채팅 명령을 실행 |
 | `browser-custom-chat.js`, `agent-chat.html`, `agent-chat.js`, `agent-chat.css` | Mono 메뉴의 ‘Chat with Agent’에서 여는 독립 채팅 탭. 질문 초안, 대화 표시, 스트리밍 응답과 중지 처리 |
 | `browser-custom-archive.js`, `browser-custom-archive.css`, `custom-archive.inc.xhtml` | 사이드바 하단 보관함 버튼과 방문 기록(최근 닫은 탭 포함)·북마크·다운로드 화면. 기존 `PlacesQuery`, 북마크 트리, `SessionStore`, `Downloads` 데이터를 읽어 표시한다. 항목 클릭 동작은 아직 연결하지 않았다 |
+| `browser-custom-site-sidebar.js`, `browser-custom-site-sidebar.css`, `custom-site-sidebar.inc.xhtml` | 사이드바 하단의 사이트 메뉴 버튼과 사이트 메뉴 화면. 웹페이지의 사이드바를 숨기고 `browser/components/sitesidebar/`의 전사 결과를 보관함 행·묶음 제목 스타일로 표시한다. 항목을 누르면 웹페이지의 원래 요소를 대신 클릭한다 |
 | `browser-custom-notice.js`, `browser-custom-notice.css`, `custom-notice-sidebar.inc.xhtml` | 새 기능 알림 카드(새 탭 검색 상자 아래, 사이드바 아래쪽). 내용은 `browser.customUI.notice`, 닫은 알림은 `browser.customUI.noticeDismissed`에 기록 |
 | `browser-custom-observation.js`, `browser-custom-observation.css`, `custom-observation-panel.inc.xhtml` | 앱 메뉴 More Tools의 ‘Observe Page’ 항목과 도구 모음 버튼에서 여는 오른쪽 페이지 관찰 패널. 후보 요소를 표시하고 선택 항목을 페이지에서 강조 |
 | `CustomSettingsWindow.sys.mjs`, `browser-custom-settings-window.js`, `browser-custom-settings-window.css`, `custom-settings-titlebar.inc.xhtml` | 설정 전용 창의 생성·재사용, Mono 헤더·창 제어 및 일반 창과의 분리 |
@@ -39,6 +40,7 @@
 | 사이드바 탐색·주소창·검색 제안 | 도메인 표시, 전체 주소 중앙 편집, 기존 탐색·검색 제안 연결. 비활성 탐색 버튼은 자리를 유지하며 연하게 표시 |
 | 에이전트 탭 상태·오브와 말풍선·'다음 클릭' 표시 | 화면과 연결 지점 구현. 새 탭의 Run 버튼은 제거했고 `CustomAgentUI.run()` 연결 지점은 유지. 모든 상태는 `browser.customUI.agentMock`으로 확인 |
 | 에이전트 채팅 탭 | 홈 검색 추천의 대화 명령에서 질문을 새 네이티브 탭으로 전달하는 전환은 확정. 채팅 UI 배치는 잠정적. 연결되어 있으면 첫 질문을 한 번 보내고, 미연결이면 초안으로 보존. 메뉴와 ‘새 대화’는 빈 새 탭을 연다 |
+| 사이트 메뉴(사이트 사이드바 전사) | Reddit 규칙과 공통 전사 엔진 구현. 하단 버튼으로 켜고 끈다. 페이지 접속 시 자동으로 켜는 동작은 이후 작업 |
 | 기능 알림 카드 | 새 탭·사이드바 카드 구현(일러스트는 임시 그림). 오류 페이지 카드는 이전 대기 |
 | 프로필 메뉴·에이전트 현황 패널의 작업 목록 | 보류 |
 | 앱 메뉴·설정 드롭다운·메뉴 하위 보기 | 사용자 지정 외형, 기존 명령 연결 |

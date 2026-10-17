@@ -543,6 +543,9 @@ var CustomArchiveUI = {
     if (open == this.open) {
       return;
     }
+    if (open) {
+      window.CustomSiteSidebarUI?.setOpen(false, { animate: false });
+    }
     this.open = open;
     let hadFocus = this.archiveLayer.some(element =>
       element.contains(document.activeElement)

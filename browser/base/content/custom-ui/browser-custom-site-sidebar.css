@@ -1,0 +1,289 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* stylelint-disable stylelint-plugin-mozilla/use-design-tokens -- Mono custom tokens are defined in design-tokens.css. */
+
+/* The site menu reuses the archive's sections, headings and rows, so a
+   transcribed sidebar looks and collapses like the rest of the sidebar. */
+
+#custom-site-sidebar,
+#custom-site-sidebar-button {
+  display: none;
+}
+
+@media (-moz-pref("sidebar.verticalTabs")) {
+  :root[custom-ui]:not([customizing], [inDOMFullscreen], [fullscreenNavToolboxHidden]) {
+    /* Covers the tab list and notice rows like the archive; the address row
+       above stays. */
+    #sidebar-container:not([hidden]) > #custom-site-sidebar {
+      grid-row: 3 / 5;
+    }
+
+    #sidebar-container:not([custom-site-sidebar]) > #custom-site-sidebar,
+    #sidebar-container[custom-site-sidebar] > :is(sidebar-main, #custom-notice-sidebar) {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #custom-site-sidebar {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding-inline: var(--space-custom-edge);
+    }
+
+    #custom-site-sidebar-header {
+      display: flex;
+      flex: none;
+      align-items: center;
+      margin: var(--space-custom-section) 0 var(--space-xsmall);
+      padding-inline-end: var(--space-custom-padding);
+    }
+
+    #custom-site-sidebar-title {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding-inline: var(--space-custom-padding) 0;
+      overflow: hidden;
+      font-size: var(--font-size-custom-title);
+      font-weight: var(--font-weight-semibold);
+      white-space: nowrap;
+      mask-image: linear-gradient(to left, transparent, black var(--size-custom-text-fade));
+
+      &:dir(rtl) {
+        mask-image: linear-gradient(to right, transparent, black var(--size-custom-text-fade));
+      }
+    }
+
+    #custom-archive-footer {
+      gap: var(--space-xsmall);
+    }
+
+    #custom-site-sidebar-button {
+      display: flex;
+      flex: none;
+      align-items: center;
+      justify-content: center;
+      width: var(--size-custom-control);
+      height: var(--size-custom-control);
+      padding: 0;
+      border: 0;
+      border-radius: var(--border-radius-custom-tab);
+      background-color: transparent;
+      appearance: none;
+
+      &[hidden] {
+        display: none;
+      }
+
+      &:hover {
+        background-color: var(--custom-hover);
+      }
+
+      &[aria-pressed="true"] {
+        background-color: var(--custom-surface);
+        box-shadow: var(--box-shadow-custom-tab);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-offset);
+      }
+    }
+
+    #custom-site-sidebar-button-icon {
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+    }
+
+    /* Rows are buttons with the archive row's box. */
+    .custom-site-sidebar-row {
+      width: 100%;
+      margin: 0;
+      padding-block: 0;
+      border: 0;
+      background-color: transparent;
+      color: inherit;
+      font-family: inherit;
+      text-align: start;
+      appearance: none;
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-inset);
+      }
+    }
+
+    /* The current page reads like the selected tab. */
+    .custom-site-sidebar-current {
+      background-color: var(--custom-surface);
+      box-shadow: var(--box-shadow-custom-tab);
+
+      &:hover {
+        background-color: var(--custom-surface);
+      }
+
+      > .custom-archive-label {
+        font-weight: var(--font-weight-semibold);
+      }
+
+      > .custom-archive-icon {
+        color: var(--custom-ink);
+      }
+    }
+
+    .custom-site-sidebar-avatar {
+      border-radius: var(--border-radius-circle);
+    }
+
+    .custom-site-sidebar-letter {
+      display: flex;
+      flex: none;
+      align-items: center;
+      justify-content: center;
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+      border-radius: var(--border-radius-circle);
+      background-color: var(--custom-accent-subtle);
+      color: var(--custom-ink);
+      font-size: var(--font-size-custom-shortcut);
+      font-weight: var(--font-weight-semibold);
+      line-height: 1;
+    }
+
+    /* Same pill as the archive's time. */
+    .custom-site-sidebar-badge {
+      flex: none;
+      padding: 0 var(--space-small);
+      border: var(--border-width) solid var(--custom-line);
+      border-radius: var(--border-radius-circle);
+      color: var(--custom-muted);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: var(--font-size-custom-shortcut);
+      line-height: 1.4;
+    }
+
+    .custom-site-sidebar-item {
+      position: relative;
+    }
+
+    /* Matches the tab close button: shown at the row end while the row is
+       hovered or focused, or always while it's on. */
+    .custom-site-sidebar-secondary {
+      display: none;
+      position: absolute;
+      inset-inline-end: calc(var(--space-custom-padding) - var(--tab-content-button-padding) / 2);
+      inset-block-start: 50%;
+      box-sizing: border-box;
+      width: var(--tab-content-button-size);
+      height: var(--tab-content-button-size);
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: calc(var(--border-radius-custom-tab) - 3px);
+      background: var(--button-background-color-ghost) url("chrome://browser/content/custom-ui/resources/site-sidebar/star.svg") center / 12px no-repeat;
+      color: var(--button-text-color-ghost);
+      -moz-context-properties: fill;
+      fill: currentColor;
+      appearance: none;
+      translate: 0 -50%;
+
+      &:hover {
+        background-color: var(--button-background-color-ghost-hover);
+        color: var(--button-text-color-ghost-hover);
+      }
+
+      &[aria-pressed="true"] {
+        display: block;
+        background-image: url("chrome://browser/content/custom-ui/resources/site-sidebar/star-filled.svg");
+        color: var(--custom-ink);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-inset);
+      }
+    }
+
+    .custom-site-sidebar-item:is(:hover, :focus-within) > .custom-site-sidebar-secondary {
+      display: block;
+    }
+
+    .custom-site-sidebar-has-secondary:is(:hover, :focus-within, .custom-site-sidebar-pressed) > .custom-site-sidebar-row {
+      padding-inline-end: calc(var(--space-custom-padding) + var(--tab-content-button-size));
+    }
+
+    .custom-site-sidebar-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xsmall);
+      width: 100%;
+      margin: 0;
+      border: 0;
+      border-radius: var(--border-radius-custom-tab);
+      background: none;
+      font-family: inherit;
+      text-align: start;
+      appearance: none;
+
+      &::after {
+        content: "";
+        flex: none;
+        width: 12px;
+        height: 12px;
+        background: url("chrome://global/skin/icons/arrow-down-12.svg") center no-repeat;
+        -moz-context-properties: fill;
+        fill: currentColor;
+      }
+
+      &[aria-expanded="true"]::after {
+        rotate: 180deg;
+      }
+
+      &:hover {
+        color: var(--custom-ink);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-inset);
+      }
+    }
+
+    .custom-site-sidebar-restore {
+      padding-block-start: var(--space-small);
+      border-block-start: var(--border-width) solid var(--custom-line);
+    }
+
+    .custom-site-sidebar-restore-row {
+      color: var(--custom-muted);
+    }
+
+    #sidebar-container:not([sidebar-launcher-expanded]) {
+      :is(#custom-site-sidebar-header, .custom-site-sidebar-badge, .custom-site-sidebar-secondary) {
+        display: none;
+      }
+
+      #custom-archive-footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      #custom-site-sidebar-button {
+        transition:
+          background-color 150ms ease,
+          box-shadow 200ms ease;
+      }
+    }
+
+    @media (forced-colors: active) {
+      :is(.custom-site-sidebar-current, #custom-site-sidebar-button[aria-pressed="true"]) {
+        outline: var(--outline-custom-selected);
+      }
+    }
+  }
+}
