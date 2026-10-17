@@ -2356,6 +2356,9 @@ pref("browser.customUI.noticeDismissed", "[]");
 pref("browser.customUI.fold.enabled", true);
 // A JSON array of the site rule ids Fold is turned off for.
 pref("browser.customUI.fold.disabledSites", "[]");
+// How much the pages' Fold actor logs: "Warn", or "Debug" to follow its
+// decisions in the Browser Console.
+pref("browser.customUI.fold.loglevel", "Warn");
 pref("browser.newtabpage.enabled", false);
 pref("sidebar.verticalTabs", true);
 pref("sidebar.verticalTabs.dragToPinPromo.dismissed", false);

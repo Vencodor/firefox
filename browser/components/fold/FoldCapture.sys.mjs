@@ -4,10 +4,14 @@
 
 import {
   compileRule,
+  isSafeIcon,
   validateRule,
 } from "resource:///modules/fold/FoldRules.sys.mjs";
 import {
   parentOf,
+  queryAllDeep,
+  queryDeep,
+  serializeIcon,
   shadowOf,
   transcribe,
 } from "resource:///modules/fold/FoldTranscriber.sys.mjs";
@@ -20,7 +24,7 @@ import {
  *
  * {
  *   format, version, url, title, viewport: { width, height },
- *   rule: { id, read: { items, sections } | null } | null,
+ *   rule: { id, read: { items, sections, missed } | null, folded } | null,
  *   candidates: [{ path, links, score, reasons, rect, position }],
  *   containers: [{ path, ancestors, layout, siblings, tree }],
  *   main: { path, rect } | null,
@@ -34,12 +38,16 @@ import {
  *   element to hide. `ancestors` lists the elements above it as { tag, attrs }
  *   and "#shadow-root", `layout` the display of each ancestor from the
  *   nearest, and `siblings` the elements next to it.
- * - tree: { tag, attrs?, kids?, shadow?, shown?, svg? }, where kids and
- *   shadow hold child elements and text strings in order, and shown is false
+ * - tree: { tag, attrs?, kids?, shadow?, shown?, svg?, icon? }, where kids
+ *   and shadow hold child elements and text strings in order, icon is an SVG
+ *   icon's markup with shapes only, and shown is false
  *   for an element that isn't drawn, such as a collapsed section, and so
  *   neither is what's inside it. Elements without text, links or controls
  *   below them are left out.
- * - rule: the page's current rule and what it reads, for fixing a rule.
+ * - rule: the page's current rule, what it reads and the controls it misses
+ *   (`read`), and the page measured with the sidebar folded (`folded`:
+ *   where main lands, and how many elements each hide and remove selector
+ *   finds and leaves drawn), for fixing a rule.
  */
 
 export const CAPTURE_FORMAT = "mono-fold-capture";
@@ -371,9 +379,13 @@ class Serializer {
       data.attrs = attrs;
     }
     if (element.namespaceURI == SVG_NS) {
-      // Icons: their attributes may name them, their shapes don't matter.
+      // Icons, kept as markup with shapes only, since items may show them.
       data.svg = true;
-      if (attrs) {
+      let icon = element.localName == "svg" && serializeIcon(element);
+      if (icon) {
+        data.icon = icon;
+      }
+      if (attrs || icon) {
         return data;
       }
       this.nodes--;
@@ -463,19 +475,53 @@ function readRule(document, rule) {
   }
   let entry = { id: rule.id, read: null };
   try {
-    let result = transcribe(document, rule);
+    let result = transcribe(document, rule, { coverage: true });
     if (result) {
       entry.read = {
         items: result.count,
         sections: result.model.sections.map(
           section => section.heading ?? section.id
         ),
+        missed: result.missed,
       };
     }
   } catch (e) {
     entry.error = String(e);
   }
   return entry;
+}
+
+/**
+ * Measures a page with its rule's stylesheet applied: where the main content
+ * ends up, and how many elements each hide and remove selector finds and
+ * leaves drawn. Run in the page's process while it's folded.
+ *
+ * @param {Window} window The page.
+ * @param {object} rule The page's compiled rule.
+ * @returns {object}
+ */
+export function measureFold(window, rule) {
+  let document = window.document;
+  let report = selectors =>
+    selectors.map(selector => {
+      let found = queryAllDeep(document, selector);
+      return {
+        selector,
+        found: found.length,
+        drawn: found.filter(element =>
+          element.checkVisibility({
+            visibilityProperty: true,
+            opacityProperty: true,
+          })
+        ).length,
+      };
+    });
+  let main = document.querySelector("main, [role='main']");
+  return {
+    main: main ? round(main.getBoundingClientRect()) : null,
+    hide: report(rule.hide),
+    remove: report(rule.remove ?? []),
+  };
 }
 
 /**
@@ -611,6 +657,21 @@ function build(document, data) {
     return document.createTextNode(data);
   }
   let element = create(document, data.tag, data.svg);
+  if (data.svg && isSafeIcon(data.icon)) {
+    let [, open = "", inner = ""] =
+      /^<svg([^>]*)>([\s\S]*)<\/svg>$/.exec(data.icon) ?? [];
+    for (let [, name, value] of open.matchAll(/([\w:-]+)="([^"]*)"/g)) {
+      if (name != "xmlns") {
+        element.setAttribute(
+          name,
+          value.replace(/&quot;/g, '"').replace(/&amp;/g, "&")
+        );
+      }
+    }
+    // Shapes only, as isSafeIcon checks; captures are rebuilt for checks.
+    // eslint-disable-next-line no-unsanitized/property
+    element.innerHTML = inner;
+  }
   setAttributes(element, data.attrs);
   for (let kid of data.kids ?? []) {
     element.append(build(document, kid));
@@ -657,10 +718,15 @@ function selectorsOf(rule) {
   return [
     ...rule.root,
     ...rule.hide,
+    ...(rule.remove ?? []),
+    ...(rule.exclude ?? []),
+    ...(rule.extras ?? []).map(extra => extra.items),
+    rule.currentSelector,
     groups.each,
     groups.heading,
     groups.items,
     groups.container,
+    groups.pressed,
     groups.secondary?.selector,
     groups.secondary?.pressed,
   ].filter(Boolean);
@@ -668,9 +734,11 @@ function selectorsOf(rule) {
 
 /**
  * Checks a rule against a capture of its site: the rule is valid, covers
- * the captured address and reads the captured sidebar. A capture may carry
- * `expect: { minItems, sections, current }`, the item count, section
- * headings and current item label the rule should read from it.
+ * the captured address and reads every control of the captured sidebar
+ * that it doesn't exclude. A capture may carry
+ * `expect: { minItems, sections, labels, current }`: the item count,
+ * section headings, item or action labels and current item label the rule
+ * should read from it.
  *
  * @param {object} rule The rule as written.
  * @param {object} capture
@@ -701,16 +769,26 @@ export function checkCapture(rule, capture, document) {
   }
 
   rebuildCapture(document, capture);
-  let result = transcribe(document, compileRule(rule), { url: capture.url });
+  let result = transcribe(document, compileRule(rule), {
+    url: capture.url,
+    coverage: true,
+  });
   if (!result) {
     problems.push("none of the root selectors finds the sidebar");
     return { problems, warnings, model: null };
   }
-  let { model, count } = result;
+  let { model, count, missed } = result;
   let minItems = rule.ready?.minItems ?? 1;
   if (count < minItems) {
     problems.push(
       `reads ${count} items, fewer than ready.minItems ${minItems}`
+    );
+  }
+  // Fold carries every function of the sidebar over: what isn't read has
+  // to be read or excluded on purpose.
+  if (missed.length) {
+    problems.push(
+      `${missed.length} controls aren't read or excluded: ${missed.join(", ")}`
     );
   }
   let items = model.sections.flatMap(section => section.items);
@@ -718,7 +796,7 @@ export function checkCapture(rule, capture, document) {
   if (!current.length) {
     warnings.push("no item is current at the captured address");
   }
-  if (!rule.hide.some(selector => document.querySelector(selector))) {
+  if (!rule.hide.some(selector => queryDeep(document, selector))) {
     warnings.push(
       "no hide selector matches the captured elements; check them on the page"
     );
@@ -732,6 +810,17 @@ export function checkCapture(rule, capture, document) {
   for (let heading of expect.sections ?? []) {
     if (!headings.includes(heading)) {
       problems.push(`no section "${heading}"; read ${headings.join(", ")}`);
+    }
+  }
+  let labels = new Set(
+    items.flatMap(item => [
+      item.label,
+      ...(item.actions ?? []).map(action => action.label),
+    ])
+  );
+  for (let label of expect.labels ?? []) {
+    if (!labels.has(label)) {
+      problems.push(`nothing reads "${label}"`);
     }
   }
   if (expect.current != undefined && !current.includes(expect.current)) {

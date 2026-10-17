@@ -11,16 +11,32 @@ ChromeUtils.defineESModuleGetters(lazy, {
   findRule: "resource:///modules/fold/FoldRules.sys.mjs",
   isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
   hidingStyle: "resource:///modules/fold/FoldTranscriber.sys.mjs",
+  readMenu: "resource:///modules/fold/FoldTranscriber.sys.mjs",
   transcribe: "resource:///modules/fold/FoldTranscriber.sys.mjs",
 });
 
+ChromeUtils.defineLazyGetter(lazy, "log", () =>
+  console.createInstance({
+    prefix: "Fold",
+    maxLogLevelPref: "browser.customUI.fold.loglevel",
+  })
+);
+
 const READY_INTERVAL = 200;
 const UPDATE_DELAY = 150;
+const POPUP_INTERVAL = 50;
+const POPUP_TIMEOUT = 1500;
+const POPUPS =
+  "[role='menu'], [role='listbox'], [role='dialog'], dialog[open], [popover]";
 const WATCHED_ATTRIBUTES = [
+  "aria-checked",
   "aria-current",
   "aria-expanded",
   "aria-label",
   "aria-pressed",
+  "aria-selected",
+  "class",
+  "checked",
   "hidden",
   "href",
   "icon-name",
@@ -31,11 +47,14 @@ const WATCHED_ATTRIBUTES = [
 /**
  * Folds a page's sidebar away and reads it for the Fold menu.
  *
- * With Fold on for the site, the sidebar is hidden as soon as the document
+ * With Fold on for the site, the sidebar is concealed as soon as the document
  * starts, before anything is drawn, and is shown again if it can't be read.
- * It stays in the document, hidden by a stylesheet, so the site's scripts keep
- * working and its elements can be clicked for the user. While the Mono
- * sidebar shows the Fold menu, changes to the page's sidebar are sent to it.
+ * The browser also asks every page of a Fold site to fold when it's loaded
+ * or selected, in case the document started before Fold was ready. The
+ * sidebar stays in the document, concealed by a user stylesheet, so the
+ * site's scripts keep working and its elements can be used for the user.
+ * While the Mono sidebar shows the Fold menu, changes to the page's sidebar
+ * are sent to it.
  */
 export class FoldChild extends JSWindowActorChild {
   #rule = undefined;
@@ -49,6 +68,7 @@ export class FoldChild extends JSWindowActorChild {
   #sheet = null;
   #timer = null;
   #pending = null;
+  #popup = null;
   #sent = "";
 
   receiveMessage({ name, data }) {
@@ -58,38 +78,52 @@ export class FoldChild extends JSWindowActorChild {
       case "Fold:Deactivate":
         this.#deactivate();
         break;
+      case "Fold:Sync":
+        this.#sync(data);
+        break;
       case "Fold:Run":
         this.#run(data);
+        break;
+      case "Fold:Input":
+        this.#input(data);
+        break;
+      case "Fold:OpenPopup":
+        return this.#openPopup(data);
+      case "Fold:ClosePopup":
+        this.#closePopup();
         break;
     }
     return null;
   }
 
   handleEvent(event) {
-    if (event.target != this.document) {
-      return;
-    }
     switch (event.type) {
-      case "DOMDocElementInserted":
-        if (lazy.isFoldEnabled(this.#getRule())) {
+      case "DOMDocElementInserted": {
+        let rule = this.#getRule();
+        let enabled = lazy.isFoldEnabled(rule);
+        lazy.log.debug(`${rule?.id} at ${this.document.URL}: on ${enabled}`);
+        if (enabled) {
           this.#fold();
         }
         break;
+      }
       case "DOMContentLoaded":
-        if (this.#folded) {
+        if (event.target == this.document && this.#folded) {
           this.#check();
         }
         break;
       // A page brought back from back/forward navigation follows the current
       // setting.
       case "pageshow":
-        if (event.persisted) {
+        if (event.target == this.document && event.persisted) {
           this.#syncFold();
         }
         break;
       case "pagehide":
-        this.#generation++;
-        this.#stopWatching();
+        if (event.target == this.document) {
+          this.#generation++;
+          this.#stopWatching();
+        }
         break;
     }
   }
@@ -114,11 +148,11 @@ export class FoldChild extends JSWindowActorChild {
     return this.#rule;
   }
 
-  #syncFold() {
-    if (this.#destroyed) {
+  #syncFold(enabled = lazy.isFoldEnabled(this.#getRule())) {
+    if (this.#destroyed || !this.#getRule()) {
       return;
     }
-    if (lazy.isFoldEnabled(this.#getRule())) {
+    if (enabled) {
       if (!this.#folded) {
         this.#fold();
         if (this.document.readyState != "loading") {
@@ -128,6 +162,17 @@ export class FoldChild extends JSWindowActorChild {
     } else {
       this.#unfold();
     }
+  }
+
+  /**
+   * Follows the browser's Fold setting for the page, which knows it even
+   * when this document started before Fold was ready.
+   *
+   * @param {{enabled: boolean}} data
+   */
+  #sync({ enabled }) {
+    lazy.log.debug(`sync ${this.#getRule()?.id}: on ${enabled}`);
+    this.#syncFold(!!enabled);
   }
 
   #fold() {
@@ -167,21 +212,31 @@ export class FoldChild extends JSWindowActorChild {
   }
 
   /**
-   * Shows the page's own sidebar while a function runs, for Capture Fold to
-   * measure it. Nothing is drawn in between.
+   * Shows or conceals the page's own sidebar while a function runs, for
+   * Capture Fold to measure the page both ways. Nothing is drawn in between.
    *
+   * @param {boolean} folded
    * @param {Function} callback
    * @returns {*} What the function returns.
    */
-  withSidebarShown(callback) {
-    if (!this.#sheet) {
+  withSheet(folded, callback) {
+    let had = !!this.#sheet;
+    if (had == folded || !this.#getRule()) {
       return callback();
     }
-    this.#removeSheet();
+    if (folded) {
+      this.#applySheet(this.#rule);
+    } else {
+      this.#removeSheet();
+    }
     try {
       return callback();
     } finally {
-      this.#applySheet(this.#rule);
+      if (had) {
+        this.#applySheet(this.#rule);
+      } else {
+        this.#removeSheet();
+      }
     }
   }
 
@@ -241,19 +296,26 @@ export class FoldChild extends JSWindowActorChild {
     try {
       result = lazy.transcribe(this.document, rule);
     } catch (e) {
-      console.error(`Fold: reading ${rule.id} failed`, e);
+      lazy.log.error(`reading ${rule.id} failed`, e);
       return null;
     }
     let minItems = rule.ready?.minItems ?? 1;
     if (!result || result.count < minItems) {
       if (report) {
-        console.warn(
+        lazy.log.warn(
           result
-            ? `Fold: ${rule.id} found ${result.count} of ${minItems} items`
-            : `Fold: ${rule.id} found no sidebar root`
+            ? `${rule.id} found ${result.count} of ${minItems} items; showing the page's sidebar`
+            : `${rule.id} found no sidebar root; showing the page's sidebar`
         );
       }
       return null;
+    }
+    // A reading replaces the element map; the open menu's items stay.
+    for (let id of this.#popup?.ids ?? []) {
+      let entry = this.#elements.get(id);
+      if (entry) {
+        result.elements.set(id, entry);
+      }
     }
     this.#elements = result.elements;
     return result;
@@ -265,6 +327,7 @@ export class FoldChild extends JSWindowActorChild {
    */
   #deactivate() {
     this.#generation++;
+    this.#closePopup();
     this.#stopWatching();
     if (!lazy.isFoldEnabled(this.#getRule())) {
       this.#unfold();
@@ -289,11 +352,11 @@ export class FoldChild extends JSWindowActorChild {
     try {
       this.contentWindow.windowUtils.loadSheetUsingURIString(
         uri,
-        Ci.nsIDOMWindowUtils.AUTHOR_SHEET
+        Ci.nsIDOMWindowUtils.USER_SHEET
       );
       this.#sheet = uri;
     } catch (e) {
-      console.error(e);
+      lazy.log.error("concealing the sidebar failed", e);
     }
   }
 
@@ -306,7 +369,7 @@ export class FoldChild extends JSWindowActorChild {
     try {
       this.contentWindow?.windowUtils.removeSheetUsingURIString(
         uri,
-        Ci.nsIDOMWindowUtils.AUTHOR_SHEET
+        Ci.nsIDOMWindowUtils.USER_SHEET
       );
     } catch {
       // The document is already gone.
@@ -363,19 +426,171 @@ export class FoldChild extends JSWindowActorChild {
     }
   }
 
-  #run({ id, part }) {
-    if (!this.#active) {
-      return;
-    }
-    let entry = this.#elements.get(id);
-    let element = part == "secondary" ? entry?.secondary : entry?.element;
-    if (!element?.isConnected) {
+  #element(id) {
+    let element = this.#active ? this.#elements.get(id)?.element : null;
+    if (element && !element.isConnected) {
       this.#scheduleUpdate(0);
+      return null;
+    }
+    return element;
+  }
+
+  /**
+   * Clicks the page element behind an item, action, section title or menu
+   * item, as the user would.
+   *
+   * @param {{id: string}} data
+   */
+  #run({ id }) {
+    let element = this.#element(id);
+    if (!element) {
       return;
     }
     // The user clicked in the Mono sidebar, so the page may act as on its
     // own click, such as opening a new window.
     this.document.notifyUserGestureActivation();
     element.click();
+    if (id.startsWith("popup/")) {
+      this.#closePopup({ dismiss: false });
+    }
+  }
+
+  /**
+   * Types into the page's text field behind a field item, and submits it
+   * like pressing Enter there.
+   *
+   * @param {{id: string, value: string, submit: boolean}} data
+   */
+  #input({ id, value, submit }) {
+    let element = this.#element(id);
+    if (!element || !("value" in element)) {
+      return;
+    }
+    let win = this.contentWindow;
+    if (typeof value == "string" && element.value != value) {
+      if (element.setUserInput) {
+        element.setUserInput(value);
+      } else {
+        element.value = value;
+        element.dispatchEvent(new win.Event("input", { bubbles: true }));
+      }
+    }
+    if (!submit) {
+      return;
+    }
+    this.document.notifyUserGestureActivation();
+    let init = {
+      key: "Enter",
+      code: "Enter",
+      keyCode: 13,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    };
+    let proceed = element.dispatchEvent(new win.KeyboardEvent("keydown", init));
+    element.dispatchEvent(new win.KeyboardEvent("keyup", init));
+    if (proceed && element.form) {
+      element.form.requestSubmit();
+    }
+  }
+
+  #openPopups(trigger) {
+    let found = new Set();
+    for (let root of new Set([this.document, trigger.getRootNode()])) {
+      for (let element of root.querySelectorAll(POPUPS)) {
+        if (element.checkVisibility()) {
+          found.add(element);
+        }
+      }
+    }
+    let controlled = trigger.getAttribute("aria-controls");
+    let target =
+      controlled &&
+      (trigger.getRootNode().getElementById?.(controlled) ??
+        this.document.getElementById(controlled));
+    if (target?.checkVisibility()) {
+      found.add(target);
+    }
+    return found;
+  }
+
+  /**
+   * Clicks a button that opens the site's menu and reads that menu, which
+   * the Mono sidebar shows in its place. The site's menu stays concealed
+   * while it's open.
+   *
+   * @param {{id: string}} data
+   * @returns {Promise<?{items: object[]}>} null when no menu opened.
+   */
+  async #openPopup({ id }) {
+    let trigger = this.#element(id);
+    if (!trigger) {
+      return null;
+    }
+    this.#closePopup();
+    let before = this.#openPopups(trigger);
+    this.document.notifyUserGestureActivation();
+    trigger.click();
+    let popup = null;
+    let deadline = Date.now() + POPUP_TIMEOUT;
+    while (!popup && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, POPUP_INTERVAL));
+      if (this.#destroyed || !this.#active) {
+        return null;
+      }
+      popup =
+        [...this.#openPopups(trigger)].find(element => !before.has(element)) ??
+        null;
+    }
+    if (!popup) {
+      lazy.log.debug(`no menu opened from ${id}`);
+      return null;
+    }
+    popup.setAttribute("data-mono-fold-relay", "");
+    let { items, elements } = lazy.readMenu(this.document, popup);
+    for (let [itemId, entry] of elements) {
+      this.#elements.set(itemId, entry);
+    }
+    this.#popup = { popup, trigger, ids: [...elements.keys()] };
+    return { items };
+  }
+
+  /**
+   * Closes the site's menu opened by #openPopup.
+   *
+   * @param {object} [options]
+   * @param {boolean} [options.dismiss] False when choosing one of its items
+   *   already closed it.
+   */
+  #closePopup({ dismiss = true } = {}) {
+    let relay = this.#popup;
+    if (!relay) {
+      return;
+    }
+    this.#popup = null;
+    for (let id of relay.ids) {
+      this.#elements.delete(id);
+    }
+    let { popup, trigger } = relay;
+    if (dismiss && popup.isConnected && popup.checkVisibility()) {
+      popup.dispatchEvent(
+        new this.contentWindow.KeyboardEvent("keydown", {
+          key: "Escape",
+          code: "Escape",
+          keyCode: 27,
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+        })
+      );
+      if (
+        popup.checkVisibility() &&
+        trigger.getAttribute("aria-expanded") == "true"
+      ) {
+        trigger.click();
+      }
+    }
+    // Shown again only once the site has closed it.
+    setTimeout(() => popup.removeAttribute("data-mono-fold-relay"), 500);
   }
 }

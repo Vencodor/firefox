@@ -378,6 +378,13 @@ custom-ui-fold-loading = 메뉴를 읽는 중…
 
 custom-ui-fold-unavailable = 이 페이지의 메뉴를 가져오지 못했어요
 
+# A button at the end of a menu row that lists the row's other actions.
+# Variables:
+#   $item (String) - The row's label, such as "r/firefox".
+custom-ui-fold-more =
+    .aria-label = { $item } 더 보기
+    .title = { $item } 더 보기
+
 custom-ui-page-fold = 이 사이트에서 Fold 사용
 
 ## Capture Fold: copies the selected page's navigation for an AI to write

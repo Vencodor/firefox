@@ -20,6 +20,7 @@ var CustomFoldUI = {
   // Sites update their sidebar a moment after a click or a navigation, and a
   // newly loaded page takes a moment to draw it.
   reloadDelays: [0, 400, 1200],
+  inputDelay: 250,
   iconBase: "chrome://browser/content/custom-ui/resources/fold/",
 
   lazy: {},
@@ -64,6 +65,7 @@ var CustomFoldUI = {
     });
     this.menu.addEventListener("click", this);
     this.menu.addEventListener("auxclick", this);
+    this.menu.addEventListener("input", this);
     PanelUI.panel.addEventListener("ViewShowing", this);
     this.section.addEventListener("keydown", this);
     gBrowser.tabContainer.addEventListener("TabSelect", this);
@@ -90,6 +92,8 @@ var CustomFoldUI = {
 
     this.lazy.Fold.ensureRegistered();
     this.updateSwitch({ animate: false });
+    // Pages loaded before Fold was ready, such as restored tabs.
+    this.syncAll();
   },
 
   get available() {
@@ -103,6 +107,7 @@ var CustomFoldUI = {
   },
 
   updateAvailable() {
+    this.syncAll();
     this.updateSwitch();
     if (this.open && (!this.available || !this.rule)) {
       this.setOpen(false, { animate: false });
@@ -228,9 +233,21 @@ var CustomFoldUI = {
           this.addCaptureItem(event.target);
         }
         break;
+      case "input":
+        this.onInput(event);
+        break;
       case "command":
-        PanelUI.hide();
-        this.capture();
+        if (event.target.closest("#custom-fold-popup")) {
+          this.onPopupCommand(event);
+        } else {
+          PanelUI.hide();
+          this.capture();
+        }
+        break;
+      case "popuphidden":
+        if (event.target == this._popup) {
+          this.onPopupHidden();
+        }
         break;
       case "TabSelect":
         this.onTabSelect();
@@ -353,14 +370,13 @@ var CustomFoldUI = {
   },
 
   /**
-   * Clicks the page element behind an item, then reads the menu again for
-   * what the click changed.
+   * Clicks the page element behind an item, an action or a section title,
+   * then reads the menu again for what the click changed.
    *
-   * @param {string} id The item id.
-   * @param {string} [part] "secondary" for the item's toggle.
+   * @param {string} id
    */
-  run(id, part) {
-    this.lazy.Fold.run(this.browser, id, part);
+  run(id) {
+    this.lazy.Fold.run(this.browser, id);
     this.reload();
   },
 
@@ -373,7 +389,27 @@ var CustomFoldUI = {
     }
   },
 
+  /**
+   * Has a page fold or unfold its sidebar as Fold is set for its site, also
+   * while the switch shows the tab list.
+   *
+   * @param {Element} browser
+   */
+  syncFold(browser) {
+    let rule = this.lazy.Fold.ruleFor(browser.currentURI);
+    if (rule) {
+      this.lazy.Fold.sync(browser, this.lazy.Fold.isEnabledFor(rule.id));
+    }
+  },
+
+  syncAll() {
+    for (let browser of gBrowser.browsers) {
+      this.syncFold(browser);
+    }
+  },
+
   onTabSelect() {
+    this.syncFold(gBrowser.selectedBrowser);
     this.updateSwitch();
     if (!this.open || gBrowser.selectedBrowser == this.browser) {
       return;
@@ -387,7 +423,11 @@ var CustomFoldUI = {
   },
 
   onLocationChange(browser, webProgress) {
-    if (!webProgress.isTopLevel || browser != gBrowser.selectedBrowser) {
+    if (!webProgress.isTopLevel) {
+      return;
+    }
+    this.syncFold(browser);
+    if (browser != gBrowser.selectedBrowser) {
       return;
     }
     let ruleId = this.rule?.id;
@@ -405,6 +445,14 @@ var CustomFoldUI = {
   render({ failed = false } = {}) {
     let focused = document.activeElement;
     let focusKey = this.menu.contains(focused) ? this.keyOf(focused) : null;
+    let typing =
+      focused?.localName == "input" && this.menu.contains(focused)
+        ? {
+            value: focused.value,
+            start: focused.selectionStart,
+            end: focused.selectionEnd,
+          }
+        : null;
     this.items.clear();
     let fragment = document.createDocumentFragment();
     if (this.model) {
@@ -422,23 +470,34 @@ var CustomFoldUI = {
     }
     this.menu.replaceChildren(fragment);
     if (focusKey) {
-      let target = [...this.menu.querySelectorAll("button")].find(
-        button => this.keyOf(button) == focusKey
+      let target = [...this.menu.querySelectorAll("button, input")].find(
+        element => this.keyOf(element) == focusKey
       );
-      (target ?? this.menu.querySelector("button"))?.focus();
+      (target ?? this.menu.querySelector("button, input"))?.focus();
+      // What the user is typing wins over the page's value read meanwhile.
+      if (typing && target?.localName == "input") {
+        target.value = typing.value;
+        target.setSelectionRange(typing.start, typing.end);
+      }
     }
   },
 
   /**
-   * Identifies a menu button across renders, so focus stays on it.
+   * Identifies a menu control across renders, so focus stays on it.
    */
   keyOf(element) {
     if (element.dataset.section) {
       return `section|${element.dataset.section}`;
     }
-    let part = element.classList.contains("custom-fold-secondary")
-      ? "secondary"
-      : "row";
+    if (element.dataset.actionId) {
+      return `action|${element.dataset.actionId}`;
+    }
+    let part = "row";
+    if (element.classList.contains("custom-fold-more")) {
+      part = "more";
+    } else if (element.localName == "input") {
+      part = "field";
+    }
     return `${part}|${element.dataset.itemId ?? ""}`;
   },
 
@@ -483,6 +542,17 @@ var CustomFoldUI = {
   createItem(item) {
     let entry = document.createElement("li");
     entry.className = "custom-fold-item";
+    entry.append(
+      item.kind == "field" ? this.createField(item) : this.createRow(item)
+    );
+    if (item.actions?.length) {
+      entry.append(this.createActions(item, entry));
+    }
+    this.items.set(item.id, item);
+    return entry;
+  },
+
+  createRow(item) {
     let row = document.createElement("button");
     row.type = "button";
     row.className = "custom-archive-row custom-fold-row";
@@ -492,36 +562,100 @@ var CustomFoldUI = {
       row.classList.add("custom-fold-current");
       row.setAttribute("aria-current", "page");
     }
+    if (item.kind == "toggle") {
+      row.setAttribute("role", "switch");
+      row.setAttribute("aria-checked", String(!!item.checked));
+    }
     let label = document.createElement("span");
     label.className = "custom-archive-label";
     label.textContent = item.label;
-    row.append(this.createIcon(item), label);
+    row.append(this.createIcon(item.icon, item), label);
     if (item.badge) {
       let badge = document.createElement("span");
       badge.className = "custom-fold-badge";
       badge.textContent = item.badge;
       row.append(badge);
     }
-    entry.append(row);
-    if (item.secondary) {
-      let toggle = document.createElement("button");
-      toggle.type = "button";
-      toggle.className = "custom-fold-secondary";
-      toggle.dataset.itemId = item.id;
-      toggle.setAttribute("aria-pressed", String(!!item.secondary.pressed));
-      toggle.setAttribute("aria-label", item.secondary.label);
-      toggle.title = item.secondary.label;
-      entry.classList.add("custom-fold-has-secondary");
-      entry.classList.toggle("custom-fold-pressed", !!item.secondary.pressed);
-      entry.append(toggle);
+    if (item.kind == "toggle") {
+      let check = document.createElement("span");
+      check.className = "custom-fold-check";
+      check.setAttribute("aria-hidden", "true");
+      row.append(check);
     }
-    this.items.set(item.id, item);
-    return entry;
+    return row;
   },
 
-  createIcon(item) {
-    let { icon = {} } = item;
-    let image = icon.image && URL.parse(icon.image);
+  /**
+   * A text field typed into in the Mono sidebar types into the page's own
+   * field, and Enter submits it there.
+   */
+  createField(item) {
+    let row = document.createElement("div");
+    row.className = "custom-archive-row custom-fold-field-row";
+    let icon = document.createElement("span");
+    icon.className = "custom-archive-icon custom-fold-search-icon";
+    icon.setAttribute("aria-hidden", "true");
+    let input = document.createElement("input");
+    input.className = "custom-fold-field";
+    input.type = item.inputType == "text" ? "text" : "search";
+    input.autocomplete = "off";
+    input.dataset.itemId = item.id;
+    input.value = item.value ?? "";
+    input.placeholder = item.placeholder ?? item.label;
+    input.setAttribute("aria-label", item.label);
+    row.append(icon, input);
+    return row;
+  },
+
+  /**
+   * The other controls of an item's row: a single one shows at the row end
+   * like the tab close button, several, or one that opens the site's menu,
+   * behind a menu button.
+   */
+  createActions(item, entry) {
+    let [first] = item.actions;
+    let button = document.createElement("button");
+    button.type = "button";
+    button.className = "custom-fold-action";
+    button.dataset.itemId = item.id;
+    entry.classList.add("custom-fold-has-action");
+    if (item.actions.length == 1 && !first.popup) {
+      button.dataset.actionId = first.id;
+      button.setAttribute("aria-label", first.label);
+      button.title = first.label;
+      if (first.pressed != undefined) {
+        button.setAttribute("aria-pressed", String(first.pressed));
+        entry.classList.toggle("custom-fold-pressed", first.pressed);
+      }
+      if (first.icon && Object.values(first.icon).some(Boolean)) {
+        button.classList.add("custom-fold-action-icon");
+        button.append(this.createIcon(first.icon, first));
+      }
+    } else {
+      button.classList.add("custom-fold-more");
+      button.setAttribute("aria-haspopup", "menu");
+      document.l10n.setAttributes(button, "custom-ui-fold-more", {
+        item: item.label,
+      });
+    }
+    return button;
+  },
+
+  /**
+   * @param {?object} icon The model's icon.
+   * @param {object} owner The item or action it belongs to.
+   * @returns {Element}
+   */
+  createIcon(icon, owner) {
+    if (icon?.svg) {
+      // The site's or the rule's icon, drawn in the Mono text color.
+      let span = document.createElement("span");
+      span.className = "custom-archive-icon custom-fold-svg";
+      span.setAttribute("aria-hidden", "true");
+      span.style.maskImage = `url("data:image/svg+xml,${encodeURIComponent(icon.svg)}")`;
+      return span;
+    }
+    let image = icon?.image && URL.parse(icon.image);
     if (image && /^https?:$/.test(image.protocol)) {
       let img = document.createElement("img");
       img.className = "custom-archive-icon custom-fold-avatar";
@@ -531,12 +665,18 @@ var CustomFoldUI = {
       });
       return img;
     }
-    if (icon.letter != undefined || item.kind == "entity") {
+    if (icon?.letter || owner.kind == "entity") {
       let letter = document.createElement("span");
       letter.className = "custom-fold-letter";
       letter.setAttribute("aria-hidden", "true");
-      letter.textContent = (icon.letter ?? item.label.charAt(0)).slice(0, 1);
+      letter.textContent = (icon?.letter || owner.label.charAt(0)).slice(0, 1);
       return letter;
+    }
+    if (!icon?.name) {
+      let space = document.createElement("span");
+      space.className = "custom-archive-icon";
+      space.setAttribute("aria-hidden", "true");
+      return space;
     }
     let img = document.createElement("img");
     img.className = "custom-archive-icon";
@@ -565,9 +705,15 @@ var CustomFoldUI = {
     if (!item || !this.browser) {
       return;
     }
-    if (target.classList.contains("custom-fold-secondary")) {
+    if (target.classList.contains("custom-fold-more")) {
       if (event.button == 0) {
-        this.run(item.id, "secondary");
+        this.showActions(item, target);
+      }
+      return;
+    }
+    if (target.dataset.actionId) {
+      if (event.button == 0) {
+        this.run(target.dataset.actionId);
       }
       return;
     }
@@ -582,6 +728,27 @@ var CustomFoldUI = {
     }
   },
 
+  onInput(event) {
+    let input = event.target;
+    if (input.localName != "input" || !this.browser) {
+      return;
+    }
+    clearTimeout(this.inputTimer);
+    this.inputTimer = setTimeout(
+      () =>
+        this.lazy.Fold.input(this.browser, input.dataset.itemId, input.value),
+      this.inputDelay
+    );
+  },
+
+  submitField(input) {
+    clearTimeout(this.inputTimer);
+    this.lazy.Fold.input(this.browser, input.dataset.itemId, input.value, {
+      submit: true,
+    });
+    this.reload();
+  },
+
   toggleSection(heading) {
     let expanded = heading.getAttribute("aria-expanded") != "true";
     heading.setAttribute("aria-expanded", String(expanded));
@@ -592,7 +759,113 @@ var CustomFoldUI = {
     }
   },
 
+  /**
+   * The popup that lists a row's actions, or the items of a menu the site
+   * opened, in the Mono sidebar.
+   */
+  get popup() {
+    if (!this._popup) {
+      let popup = document.createXULElement("menupopup");
+      popup.id = "custom-fold-popup";
+      popup.addEventListener("command", this);
+      popup.addEventListener("popuphidden", this);
+      document.getElementById("mainPopupSet").append(popup);
+      this._popup = popup;
+    }
+    return this._popup;
+  },
+
+  async openPopup(anchor, entries, kind) {
+    let popup = this.popup;
+    if (popup.state != "closed") {
+      let hidden = new Promise(resolve =>
+        popup.addEventListener("popuphidden", resolve, { once: true })
+      );
+      popup.hidePopup();
+      await hidden;
+    }
+    popup.replaceChildren(
+      ...entries.map(entry => {
+        let menuitem = document.createXULElement("menuitem");
+        menuitem.setAttribute("label", entry.label);
+        menuitem.dataset.id = entry.id;
+        menuitem.dataset.kind = kind;
+        if (entry.popup) {
+          menuitem.dataset.popup = "true";
+        }
+        let checked = entry.pressed ?? entry.checked;
+        if (checked != undefined) {
+          menuitem.setAttribute("type", "checkbox");
+          if (checked) {
+            menuitem.setAttribute("checked", "true");
+          }
+        }
+        if (entry.disabled) {
+          menuitem.setAttribute("disabled", "true");
+        }
+        return menuitem;
+      })
+    );
+    this.relaying = kind == "relay";
+    this.relayChosen = false;
+    popup.openPopup(anchor, "after_end");
+  },
+
+  showActions(item, anchor) {
+    let actions = item.actions ?? [];
+    if (actions.length == 1 && actions[0].popup) {
+      this.relay(actions[0].id, anchor);
+    } else {
+      this.openPopup(anchor, actions, "action");
+    }
+  },
+
+  /**
+   * Opens the site's own menu behind an action and shows its items here.
+   */
+  async relay(id, anchor) {
+    let browser = this.browser;
+    let items = await this.lazy.Fold.openPopup(browser, id);
+    if (browser != this.browser || !this.open) {
+      return;
+    }
+    if (items?.length) {
+      this.openPopup(anchor, items, "relay");
+    } else {
+      this.reload();
+    }
+  },
+
+  onPopupCommand(event) {
+    let { id, kind, popup } = event.target.dataset;
+    if (!id || !this.browser) {
+      return;
+    }
+    if (kind == "relay") {
+      this.relayChosen = true;
+      this.run(id);
+    } else if (popup) {
+      this.relay(id, this.popup.anchorNode);
+    } else {
+      this.run(id);
+    }
+  },
+
+  onPopupHidden() {
+    if (this.relaying && !this.relayChosen && this.browser) {
+      this.lazy.Fold.closePopup(this.browser);
+      this.reload();
+    }
+    this.relaying = false;
+  },
+
   onKeyDown(event) {
+    let field = event.target.localName == "input";
+    if (field && event.key == "Enter") {
+      event.preventDefault();
+      this.submitField(event.target);
+      return;
+    }
     if (event.key == "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -602,17 +875,17 @@ var CustomFoldUI = {
     if (event.key != "ArrowDown" && event.key != "ArrowUp") {
       return;
     }
-    let buttons = [...this.menu.querySelectorAll("button")].filter(button =>
-      button.checkVisibility()
+    let controls = [...this.menu.querySelectorAll("button, input")].filter(
+      control => control.checkVisibility()
     );
-    let index = buttons.indexOf(document.activeElement);
+    let index = controls.indexOf(document.activeElement);
     let next =
       event.key == "ArrowDown"
-        ? Math.min(index + 1, buttons.length - 1)
+        ? Math.min(index + 1, controls.length - 1)
         : Math.max(index - 1, 0);
-    if (buttons[next]) {
+    if (controls[next]) {
       event.preventDefault();
-      buttons[next].focus();
+      controls[next].focus();
     }
   },
 
@@ -732,6 +1005,7 @@ var CustomFoldUI = {
     PanelUI.panel.removeEventListener("ViewShowing", this);
     this.rootObserver.disconnect();
     this.cancelReload();
+    clearTimeout(this.inputTimer);
   },
 };
 
