@@ -31,7 +31,7 @@ var CustomSiteSidebarUI = {
   init() {
     ChromeUtils.defineESModuleGetters(this.lazy, {
       SiteSidebar: "resource:///modules/sitesidebar/SiteSidebar.sys.mjs",
-      getMozRemoteImageURL: "resource://gre/modules/FaviconUtils.sys.mjs",
+      getMozRemoteImageURL: "moz-src:///toolkit/modules/FaviconUtils.sys.mjs",
     });
     this.root = document.documentElement;
     this.container = document.getElementById("sidebar-container");
