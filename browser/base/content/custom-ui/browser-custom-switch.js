@@ -45,10 +45,25 @@ class CustomSwitch {
     tablist.addEventListener("click", this);
     tablist.addEventListener("keydown", this);
     for (let area of areas) {
-      area.addEventListener("wheel", this, { passive: false });
+      this.addArea(area);
     }
     this.resizeObserver = new ResizeObserver(() => this.updateIndicator());
     this.resizeObserver.observe(tablist);
+  }
+
+  /**
+   * Lets a horizontal scroll over an element move the switch. The listener
+   * makes scrolling there wait for the window's script, so it's best only
+   * added while the switch is in use.
+   *
+   * @param {Element} area
+   */
+  addArea(area) {
+    area.addEventListener("wheel", this, { passive: false });
+  }
+
+  removeArea(area) {
+    area.removeEventListener("wheel", this);
   }
 
   handleEvent(event) {

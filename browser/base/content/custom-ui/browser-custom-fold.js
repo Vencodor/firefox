@@ -48,10 +48,10 @@ var CustomFoldUI = {
     this.switchElement = document.getElementById("custom-fold-switch");
     this.siteTab = document.getElementById("custom-fold-switch-site");
     this.siteIcon = document.getElementById("custom-fold-switch-icon");
+    this.tabList = this.container.querySelector(":scope > sidebar-main");
     this.tabLayer = [
-      ...this.container.querySelectorAll(
-        ":scope > :is(sidebar-main, #custom-notice-sidebar)"
-      ),
+      this.tabList,
+      ...this.container.querySelectorAll(":scope > #custom-notice-sidebar"),
     ];
     this.rule = null;
     this.browser = null;
@@ -67,13 +67,10 @@ var CustomFoldUI = {
     this.switchAnimation = null;
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+    // The tab list joins the swipe areas while the switch shows.
     this.switch = new CustomSwitch({
       tablist: this.switchElement,
-      areas: [
-        this.switchElement,
-        this.section,
-        this.container.querySelector(":scope > sidebar-main"),
-      ],
+      areas: [this.switchElement, this.section],
       onSelect: index => this.setOpen(index == 1),
     });
     this.menu.addEventListener("click", this);
@@ -111,8 +108,7 @@ var CustomFoldUI = {
       !this.root.hasAttribute("customizing") &&
       !this.root.hasAttribute("inDOMFullscreen") &&
       !this.root.hasAttribute("fullscreenNavToolboxHidden") &&
-      Services.prefs.getBoolPref("sidebar.verticalTabs", false) &&
-      Services.prefs.getBoolPref(this.pref, false)
+      this.lazy.Fold.isAvailable()
     );
   },
 
@@ -142,18 +138,21 @@ var CustomFoldUI = {
    */
   updateSwitch({ animate = true } = {}) {
     let rule = this.available ? this.selectedRule : null;
+    let changed = rule?.id != this.rule?.id;
     this.rule = rule;
     this.setSwitchVisible(!!rule, { animate });
     if (!rule) {
       return;
     }
-    let args = { site: rule.name };
-    document.l10n.setAttributes(
-      this.siteTab,
-      "custom-ui-fold-switch-site",
-      args
-    );
-    document.l10n.setAttributes(this.menu, "custom-ui-fold-menu", args);
+    if (changed) {
+      let args = { site: rule.name };
+      document.l10n.setAttributes(
+        this.siteTab,
+        "custom-ui-fold-switch-site",
+        args
+      );
+      document.l10n.setAttributes(this.menu, "custom-ui-fold-menu", args);
+    }
     this.updateSiteIcon();
   },
 
@@ -166,6 +165,11 @@ var CustomFoldUI = {
       return;
     }
     this.switchVisible = visible;
+    if (visible) {
+      this.switch.addArea(this.tabList);
+    } else {
+      this.switch.removeArea(this.tabList);
+    }
     let element = this.switchElement;
     let from = element.hidden ? null : this.switchFrame();
     this.switchAnimation?.cancel();
@@ -663,11 +667,11 @@ var CustomFoldUI = {
   /**
    * The Fold state of the selected page's site, for the page settings panel.
    *
-   * @returns {?{id: string, enabled: boolean}} null when Fold is off or the
-   *   site has no rule.
+   * @returns {?{id: string, enabled: boolean}} null when Fold is off or
+   *   can't show here, or the site has no rule.
    */
   getSiteState() {
-    if (!Services.prefs.getBoolPref(this.pref, false)) {
+    if (!this.lazy.Fold.isAvailable()) {
       return null;
     }
     let rule = this.lazy.Fold.ruleFor(gBrowser.selectedBrowser.currentURI);

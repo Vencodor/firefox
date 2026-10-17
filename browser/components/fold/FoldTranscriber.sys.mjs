@@ -224,13 +224,7 @@ class Transcription {
   }
 
   run() {
-    let root = null;
-    for (let selector of this.rule.root) {
-      root = this.walker.query(this.document, selector);
-      if (root) {
-        break;
-      }
-    }
+    let root = this.findRoot();
     if (!root) {
       return null;
     }
@@ -249,6 +243,26 @@ class Transcription {
       watched: [root, ...this.walker.shadowRoots],
       count: this.count,
     };
+  }
+
+  /**
+   * The sidebar element. It's looked up with a walker of its own, so the
+   * shadow trees passed on the way to it, the page header's say, aren't
+   * watched.
+   *
+   * @returns {?Element}
+   */
+  findRoot() {
+    let finder = new Walker();
+    for (let selector of this.rule.root) {
+      let root =
+        this.document.querySelector(selector) ??
+        finder.query(this.document, selector);
+      if (root) {
+        return root;
+      }
+    }
+    return null;
   }
 
   mainSection() {

@@ -3,7 +3,8 @@
 웹페이지의 사이드바를 Mono 사이드바로 접어 넣는다(Fold). 켜진 사이트에 접속하면 페이지가 그려지기 전에
 사이트 사이드바를 숨기고, 주소 영역 아래 토글로 그 메뉴를 Mono 사이드바에 보여 준다.
 기본으로 켜져 있으며(`browser.customUI.fold.enabled`), 페이지 설정 패널에서 사이트별로 끈다
-(`browser.customUI.fold.disabledSites`, 규칙 id 목록).
+(`browser.customUI.fold.disabledSites`, 규칙 id 목록). 메뉴를 받을 Mono UI(`browser.customUI.enabled`)와
+세로 탭(`sidebar.verticalTabs`)이 꺼져 있으면 사이트 사이드바를 숨기지 않는다.
 사이트마다 다른 사이드바를 같은 Mono 디자인으로 조작하게 하는 것이 목적이다.
 화면 쪽은 `browser/base/content/custom-ui/browser-custom-fold.js`에 있다.
 

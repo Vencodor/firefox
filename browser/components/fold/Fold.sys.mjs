@@ -5,13 +5,19 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  ITEM_KINDS: "resource:///modules/fold/FoldTranscriber.sys.mjs",
   allMatches: "resource:///modules/fold/FoldRules.sys.mjs",
   findRule: "resource:///modules/fold/FoldRules.sys.mjs",
+  isFoldAvailable: "resource:///modules/fold/FoldRules.sys.mjs",
   isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
   setFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
 });
 
 const ACTOR = "Fold";
+const MAX_SECTIONS = 50;
+const MAX_ITEMS = 500;
+const MAX_TEXT = 200;
+const MAX_URL = 4096;
 
 let registered = false;
 
@@ -25,6 +31,67 @@ function getActor(browser, { report = false } = {}) {
     }
     return null;
   }
+}
+
+function text(value, limit = MAX_TEXT) {
+  return typeof value == "string" && value ? value.slice(0, limit) : undefined;
+}
+
+function cleanItem(item) {
+  let label = text(item?.label);
+  if (!label) {
+    return null;
+  }
+  let icon = item.icon ?? {};
+  let clean = {
+    id: text(item.id) ?? "",
+    kind: lazy.ITEM_KINDS.includes(item.kind) ? item.kind : "nav",
+    label,
+    href: text(item.href, MAX_URL),
+    icon: {
+      name: text(icon.name),
+      image: text(icon.image, MAX_URL),
+      letter: text(icon.letter, 1),
+    },
+    badge: text(item.badge),
+    current: item.current === true,
+  };
+  if (item.secondary) {
+    clean.secondary = {
+      label: text(item.secondary.label) ?? "",
+      pressed: item.secondary.pressed === true,
+    };
+  }
+  return clean;
+}
+
+/**
+ * Keeps only what the sidebar draws from a site menu model, as strings and
+ * flags of bounded size. The model comes from a web content process, so the
+ * window must not trust its shape.
+ *
+ * @param {*} model
+ * @returns {?object}
+ */
+export function cleanModel(model) {
+  if (!Array.isArray(model?.sections)) {
+    return null;
+  }
+  let left = MAX_ITEMS;
+  let sections = model.sections.slice(0, MAX_SECTIONS).map(section => {
+    let items = Array.isArray(section?.items) ? section.items : [];
+    items = items.slice(0, Math.max(left, 0)).map(cleanItem).filter(Boolean);
+    left -= items.length;
+    return {
+      id: text(section?.id) ?? "",
+      heading: text(section?.heading),
+      collapsible: section?.collapsible === true,
+      collapsed: section?.collapsed === true,
+      toggleId: text(section?.toggleId),
+      items,
+    };
+  });
+  return { site: { name: text(model.site?.name) ?? "" }, sections };
 }
 
 /**
@@ -76,6 +143,13 @@ export const Fold = {
   },
 
   /**
+   * @returns {boolean} Whether Fold is on and the sidebar it needs is in use.
+   */
+  isAvailable() {
+    return lazy.isFoldAvailable();
+  },
+
+  /**
    * Turns Fold on or off for a site. Its open pages fold or unfold at once.
    *
    * @param {string} id A rule's id.
@@ -100,7 +174,7 @@ export const Fold = {
     }
     try {
       let result = await actor.sendQuery("Fold:Activate");
-      return result?.model ?? null;
+      return cleanModel(result?.model);
     } catch (e) {
       // A page left while it was being read is not an error.
       if (e.name != "AbortError") {

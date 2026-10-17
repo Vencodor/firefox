@@ -65,13 +65,26 @@ export function findRule(url) {
   return null;
 }
 
-const ENABLED_PREF = "browser.customUI.fold.enabled";
+// The menu shows in the Mono UI's vertical tab sidebar, so a sidebar is only
+// folded away while that sidebar is there to take it.
+const REQUIRED_PREFS = [
+  "browser.customUI.enabled",
+  "sidebar.verticalTabs",
+  "browser.customUI.fold.enabled",
+];
 const DISABLED_SITES_PREF = "browser.customUI.fold.disabledSites";
 
 /**
  * The prefs that decide whether Fold is on for a site.
  */
-export const FOLD_PREFS = [ENABLED_PREF, DISABLED_SITES_PREF];
+export const FOLD_PREFS = [...REQUIRED_PREFS, DISABLED_SITES_PREF];
+
+/**
+ * @returns {boolean} Whether Fold is on and the sidebar it needs is in use.
+ */
+export function isFoldAvailable() {
+  return REQUIRED_PREFS.every(pref => Services.prefs.getBoolPref(pref, false));
+}
 
 /**
  * @returns {string[]} The ids of the rules the user turned Fold off for.
@@ -92,11 +105,7 @@ export function disabledSites() {
  * @returns {boolean} Whether Fold folds the sidebar of the rule's site.
  */
 export function isFoldEnabled(rule) {
-  return (
-    !!rule &&
-    Services.prefs.getBoolPref(ENABLED_PREF, false) &&
-    !disabledSites().includes(rule.id)
-  );
+  return !!rule && isFoldAvailable() && !disabledSites().includes(rule.id);
 }
 
 /**

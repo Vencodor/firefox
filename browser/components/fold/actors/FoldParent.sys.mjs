@@ -2,6 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  cleanModel: "resource:///modules/fold/Fold.sys.mjs",
+});
+
 /**
  * Passes changes of a page's site menu to the window showing that page.
  */
@@ -11,7 +17,7 @@ export class FoldParent extends JSWindowActorParent {
       let browser = this.browsingContext.top.embedderElement;
       browser?.ownerGlobal?.CustomFoldUI?.onUpdate(
         browser,
-        data?.model ?? null
+        lazy.cleanModel(data?.model)
       );
     }
     return null;

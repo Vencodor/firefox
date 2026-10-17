@@ -186,6 +186,10 @@ export class FoldChild extends JSWindowActorChild {
     return this.#pending;
   }
 
+  /**
+   * @returns {Promise<?{model: ?object}>} null when a newer reading, closing
+   *   the menu or leaving the page replaced this one.
+   */
   async #start() {
     let generation = ++this.#generation;
     let rule = this.#getRule();
@@ -197,7 +201,7 @@ export class FoldChild extends JSWindowActorChild {
     while (!result && Date.now() < deadline) {
       await new Promise(resolve => setTimeout(resolve, READY_INTERVAL));
       if (this.#destroyed || generation != this.#generation) {
-        return { model: null };
+        return null;
       }
       result = this.#read(rule);
     }
@@ -317,18 +321,19 @@ export class FoldChild extends JSWindowActorChild {
     this.#timer = setTimeout(() => this.#update(), delay);
   }
 
-  #update() {
+  async #update() {
     this.#timer = null;
     if (!this.#active || this.#destroyed) {
       return;
     }
     let result = this.#read(this.#rule);
     if (!result) {
-      // The sidebar is gone or no longer readable: give the page its own
-      // sidebar back.
-      this.#generation++;
-      this.#unfold();
-      this.sendAsyncMessage("Fold:Update", { model: null });
+      // The site may be drawing its sidebar again. Wait for it as on load,
+      // and give the page its own sidebar back only if it doesn't come.
+      let answer = await this.#activate();
+      if (answer && !this.#destroyed) {
+        this.sendAsyncMessage("Fold:Update", answer);
+      }
       return;
     }
     this.#watch(result.watched);
@@ -349,6 +354,9 @@ export class FoldChild extends JSWindowActorChild {
       this.#scheduleUpdate(0);
       return;
     }
+    // The user clicked in the Mono sidebar, so the page may act as on its
+    // own click, such as opening a new window.
+    this.document.notifyUserGestureActivation();
     element.click();
   }
 }
