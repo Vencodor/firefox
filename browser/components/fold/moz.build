@@ -4,13 +4,19 @@
 
 EXTRA_JS_MODULES.fold += [
     "Fold.sys.mjs",
+    "FoldCapture.sys.mjs",
     "FoldRules.sys.mjs",
     "FoldTranscriber.sys.mjs",
 ]
+# Every rule in rules/ is packaged; rules/index.json lists the ones in use.
 EXTRA_JS_MODULES.fold.rules += [
-    "rules/reddit.sys.mjs",
+    "rules/*.json",
 ]
 FINAL_TARGET_FILES.actors += [
+    "actors/FoldCaptureChild.sys.mjs",
+    "actors/FoldCaptureParent.sys.mjs",
     "actors/FoldChild.sys.mjs",
     "actors/FoldParent.sys.mjs",
 ]
+
+XPCSHELL_TESTS_MANIFESTS += ["tests/unit/xpcshell.toml"]

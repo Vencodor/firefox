@@ -21,24 +21,13 @@ var CustomFoldUI = {
   // newly loaded page takes a moment to draw it.
   reloadDelays: [0, 400, 1200],
   iconBase: "chrome://browser/content/custom-ui/resources/fold/",
-  iconNames: new Set([
-    "add",
-    "all",
-    "answers",
-    "explore",
-    "home",
-    "link",
-    "more",
-    "news",
-    "settings",
-    "trending",
-  ]),
 
   lazy: {},
 
   init() {
     ChromeUtils.defineESModuleGetters(this.lazy, {
       Fold: "resource:///modules/fold/Fold.sys.mjs",
+      ICON_NAMES: "resource:///modules/fold/FoldRules.sys.mjs",
       getMozRemoteImageURL: "moz-src:///toolkit/modules/FaviconUtils.sys.mjs",
     });
     this.root = document.documentElement;
@@ -75,6 +64,7 @@ var CustomFoldUI = {
     });
     this.menu.addEventListener("click", this);
     this.menu.addEventListener("auxclick", this);
+    PanelUI.panel.addEventListener("ViewShowing", this);
     this.section.addEventListener("keydown", this);
     gBrowser.tabContainer.addEventListener("TabSelect", this);
     gBrowser.tabContainer.addEventListener("TabAttrModified", this);
@@ -232,6 +222,15 @@ var CustomFoldUI = {
         break;
       case "keydown":
         this.onKeyDown(event);
+        break;
+      case "ViewShowing":
+        if (event.target.id == "appmenu-moreTools") {
+          this.addCaptureItem(event.target);
+        }
+        break;
+      case "command":
+        PanelUI.hide();
+        this.capture();
         break;
       case "TabSelect":
         this.onTabSelect();
@@ -542,7 +541,7 @@ var CustomFoldUI = {
     let img = document.createElement("img");
     img.className = "custom-archive-icon";
     img.alt = "";
-    let name = this.iconNames.has(icon.name) ? icon.name : "link";
+    let name = this.lazy.ICON_NAMES.includes(icon.name) ? icon.name : "link";
     img.src = `${this.iconBase}${name}.svg`;
     return img;
   },
@@ -665,6 +664,45 @@ var CustomFoldUI = {
   },
 
   /**
+   * Adds Capture Fold to the app menu's More Tools view the first time it
+   * opens.
+   *
+   * @param {Element} view
+   */
+  addCaptureItem(view) {
+    if (view.querySelector("#custom-fold-capture-button")) {
+      return;
+    }
+    let item = document.createXULElement("toolbarbutton");
+    item.id = "custom-fold-capture-button";
+    item.className = "subviewbutton";
+    document.l10n.setAttributes(item, "custom-ui-fold-capture");
+    item.addEventListener("command", this);
+    let body = view.querySelector(".panel-subview-body");
+    body.querySelector(":scope > toolbarseparator").before(item);
+  },
+
+  /**
+   * Copies the selected page's navigation, for an AI to write or fix the
+   * site's Fold rule (see mono/skills/fold-site).
+   */
+  async capture() {
+    let text = await this.lazy.Fold.capture(gBrowser.selectedBrowser);
+    let brand = document.getElementById("custom-brand-button");
+    let anchor = brand?.checkVisibility() ? brand : PanelUI.menuButton;
+    if (!text) {
+      ConfirmationHint.show(anchor, "custom-ui-fold-capture-failed", {
+        hideCheckmark: true,
+      });
+      return;
+    }
+    Cc["@mozilla.org/widget/clipboardhelper;1"]
+      .getService(Ci.nsIClipboardHelper)
+      .copyString(text);
+    ConfirmationHint.show(anchor, "custom-ui-fold-capture-copied");
+  },
+
+  /**
    * The Fold state of the selected page's site, for the page settings panel.
    *
    * @returns {?{id: string, enabled: boolean}} null when Fold is off or
@@ -691,6 +729,7 @@ var CustomFoldUI = {
     gBrowser.tabContainer.removeEventListener("TabSelect", this);
     gBrowser.tabContainer.removeEventListener("TabAttrModified", this);
     gBrowser.removeTabsProgressListener(this.progressListener);
+    PanelUI.panel.removeEventListener("ViewShowing", this);
     this.rootObserver.disconnect();
     this.cancelReload();
   },

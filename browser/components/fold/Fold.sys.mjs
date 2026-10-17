@@ -5,29 +5,33 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  ITEM_KINDS: "resource:///modules/fold/FoldTranscriber.sys.mjs",
+  ITEM_KINDS: "resource:///modules/fold/FoldRules.sys.mjs",
   allMatches: "resource:///modules/fold/FoldRules.sys.mjs",
   findRule: "resource:///modules/fold/FoldRules.sys.mjs",
+  formatCapture: "resource:///modules/fold/FoldCapture.sys.mjs",
   isFoldAvailable: "resource:///modules/fold/FoldRules.sys.mjs",
   isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
   setFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
+  shareRules: "resource:///modules/fold/FoldRules.sys.mjs",
 });
 
 const ACTOR = "Fold";
+const CAPTURE_ACTOR = "FoldCapture";
 const MAX_SECTIONS = 50;
 const MAX_ITEMS = 500;
 const MAX_TEXT = 200;
 const MAX_URL = 4096;
 
 let registered = false;
+let captureRegistered = false;
 
-function getActor(browser, { report = false } = {}) {
+function getActor(browser, { name = ACTOR, report = false } = {}) {
   try {
-    return browser?.browsingContext?.currentWindowGlobal?.getActor(ACTOR);
+    return browser?.browsingContext?.currentWindowGlobal?.getActor(name);
   } catch (e) {
-    // The page doesn't match any site rule, or it's being torn down.
+    // The page doesn't match the actor, or it's being torn down.
     if (report) {
-      console.warn("Fold: no actor for the page", e);
+      console.warn(`Fold: no ${name} actor for the page`, e);
     }
     return null;
   }
@@ -103,6 +107,12 @@ export const Fold = {
     if (registered) {
       return;
     }
+    let matches = lazy.allMatches();
+    if (!matches.length) {
+      // Without matches the actor would run on every page.
+      return;
+    }
+    lazy.shareRules();
     ChromeUtils.registerWindowActor(ACTOR, {
       parent: {
         esModuleURI: "resource:///actors/FoldParent.sys.mjs",
@@ -116,7 +126,7 @@ export const Fold = {
           pagehide: { createActor: false },
         },
       },
-      matches: lazy.allMatches(),
+      matches,
       messageManagerGroups: ["browsers"],
       // Sites run in web content processes. Whatever the page sends is only
       // drawn as text by the sidebar, and links are checked before opening.
@@ -197,6 +207,44 @@ export const Fold = {
    */
   run(browser, id, part) {
     this.send(browser, "Fold:Run", { id, part });
+  },
+
+  /**
+   * Reads the navigation of the selected page for writing or fixing its
+   * site rule, see mono/skills/fold-site.
+   *
+   * @param {Element} browser
+   * @returns {Promise<?string>} The capture as text to hand to an AI, or null
+   *   when the page can't be captured.
+   */
+  async capture(browser) {
+    if (!captureRegistered) {
+      // Registered on first use and without events, so it's only created
+      // for the page being captured.
+      ChromeUtils.registerWindowActor(CAPTURE_ACTOR, {
+        parent: {
+          esModuleURI: "resource:///actors/FoldCaptureParent.sys.mjs",
+        },
+        child: {
+          esModuleURI: "resource:///actors/FoldCaptureChild.sys.mjs",
+        },
+        matches: ["*://*/*"],
+        messageManagerGroups: ["browsers"],
+        safeForUntrustedWebProcess: true,
+      });
+      captureRegistered = true;
+    }
+    let actor = getActor(browser, { name: CAPTURE_ACTOR });
+    if (!actor) {
+      return null;
+    }
+    try {
+      let capture = await actor.sendQuery("FoldCapture:Capture");
+      return capture ? lazy.formatCapture(capture) : null;
+    } catch (e) {
+      console.error("Fold: capturing the page failed", e);
+      return null;
+    }
   },
 
   send(browser, name, data) {

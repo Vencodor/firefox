@@ -1,0 +1,8 @@
+[DEFAULT]
+run-if = [
+  "os != 'android'",
+]
+firefox-appdir = "browser"
+support-files = ["captures/**"]
+
+["test_fold_rules.js"]

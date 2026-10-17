@@ -1,0 +1,497 @@
+{
+  "format": "mono-fold-capture",
+  "version": 1,
+  "url": "https://www.reddit.com/",
+  "title": "Reddit - The heart of the internet",
+  "note": "A hand-made page with the structure of Reddit's left navigation (2026-10), not a capture of a live session.",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "rule": null,
+  "candidates": [
+    {
+      "path": "div.grid-container > flex-left-nav-container#left-sidebar-container > reddit-sidebar-nav#left-sidebar > nav",
+      "links": 14,
+      "score": 7.7,
+      "reasons": ["left column", "nav", "name", "14 links"],
+      "rect": {
+        "x": 8,
+        "y": 24,
+        "width": 272,
+        "height": 914
+      },
+      "position": "static"
+    }
+  ],
+  "containers": [
+    {
+      "path": "div.grid-container > flex-left-nav-container#left-sidebar-container",
+      "ancestors": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "grid-container"
+          }
+        }
+      ],
+      "layout": [
+        {
+          "node": "div.grid-container",
+          "display": "grid",
+          "position": "static",
+          "width": 1264,
+          "columns": "272px 992px"
+        },
+        {
+          "node": "body",
+          "display": "block",
+          "position": "static",
+          "width": 1264
+        }
+      ],
+      "siblings": [
+        {
+          "node": "flex-left-nav-container#left-sidebar-container",
+          "rect": {
+            "x": 8,
+            "y": 8,
+            "width": 272,
+            "height": 930
+          },
+          "self": true
+        },
+        {
+          "node": "main#main",
+          "rect": {
+            "x": 280,
+            "y": 8,
+            "width": 992,
+            "height": 930
+          }
+        }
+      ],
+      "tree": {
+        "tag": "flex-left-nav-container",
+        "attrs": {
+          "id": "left-sidebar-container"
+        },
+        "kids": [
+          {
+            "tag": "reddit-sidebar-nav",
+            "attrs": {
+              "id": "left-sidebar"
+            },
+            "kids": [
+              {
+                "tag": "nav",
+                "kids": [
+                  {
+                    "tag": "ul",
+                    "kids": [
+                      {
+                        "tag": "li",
+                        "kids": [
+                          {
+                            "tag": "a",
+                            "attrs": {
+                              "href": "/?feed=home"
+                            },
+                            "kids": [
+                              {
+                                "tag": "span",
+                                "kids": [
+                                  {
+                                    "tag": "svg",
+                                    "attrs": {
+                                      "icon-name": "home-outline"
+                                    },
+                                    "svg": true
+                                  }
+                                ]
+                              },
+                              {
+                                "tag": "span",
+                                "kids": [
+                                  {
+                                    "tag": "span",
+                                    "attrs": {
+                                      "class": "text-14"
+                                    },
+                                    "kids": ["Home"]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "li",
+                        "kids": [
+                          {
+                            "tag": "a",
+                            "attrs": {
+                              "href": "/r/popular/"
+                            },
+                            "kids": [
+                              {
+                                "tag": "span",
+                                "attrs": {
+                                  "class": "text-14"
+                                },
+                                "kids": ["Popular"]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "li",
+                        "kids": [
+                          {
+                            "tag": "a",
+                            "attrs": {
+                              "href": "/answers/"
+                            },
+                            "kids": [
+                              {
+                                "tag": "span",
+                                "attrs": {
+                                  "class": "text-14"
+                                },
+                                "kids": ["Answers"]
+                              },
+                              {
+                                "tag": "span",
+                                "attrs": {
+                                  "class": "badge"
+                                },
+                                "kids": ["BETA"]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "li",
+                        "kids": [
+                          {
+                            "tag": "a",
+                            "attrs": {
+                              "href": "/explore/"
+                            },
+                            "kids": ["Explore"]
+                          }
+                        ]
+                      },
+                      {
+                        "tag": "li",
+                        "kids": [
+                          {
+                            "tag": "a",
+                            "attrs": {
+                              "href": "/r/all/"
+                            },
+                            "kids": ["All"]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "faceplate-expandable-section-helper",
+                    "kids": [
+                      {
+                        "tag": "details",
+                        "attrs": {
+                          "open": ""
+                        },
+                        "kids": [
+                          {
+                            "tag": "summary",
+                            "attrs": {
+                              "aria-expanded": "true"
+                            },
+                            "kids": [
+                              {
+                                "tag": "span",
+                                "attrs": {
+                                  "class": "uppercase"
+                                },
+                                "kids": ["Custom Feeds"]
+                              }
+                            ]
+                          },
+                          {
+                            "tag": "div",
+                            "kids": [
+                              {
+                                "tag": "button",
+                                "attrs": {
+                                  "type": "button"
+                                },
+                                "kids": ["Create a custom feed"]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "details",
+                    "kids": [
+                      {
+                        "tag": "summary",
+                        "kids": ["RECENT"]
+                      },
+                      {
+                        "tag": "reddit-recent-pages",
+                        "shadow": [
+                          {
+                            "tag": "ul",
+                            "kids": [
+                              {
+                                "tag": "li",
+                                "kids": [
+                                  {
+                                    "tag": "a",
+                                    "attrs": {
+                                      "href": "/r/linux/"
+                                    },
+                                    "kids": [
+                                      {
+                                        "tag": "img",
+                                        "attrs": {
+                                          "src": "https://a.thumbs.redditmedia.com/l.png"
+                                        }
+                                      },
+                                      {
+                                        "tag": "span",
+                                        "kids": ["r/linux"]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "tag": "li",
+                                "kids": [
+                                  {
+                                    "tag": "a",
+                                    "attrs": {
+                                      "href": "/r/mozilla/comments/abc/hello/"
+                                    },
+                                    "kids": [
+                                      {
+                                        "tag": "span",
+                                        "kids": ["Hello post"]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "shown": false
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "details",
+                    "attrs": {
+                      "open": ""
+                    },
+                    "kids": [
+                      {
+                        "tag": "summary",
+                        "kids": ["COMMUNITIES"]
+                      },
+                      {
+                        "tag": "div",
+                        "kids": [
+                          {
+                            "tag": "button",
+                            "attrs": {
+                              "type": "button"
+                            },
+                            "kids": ["Create a community"]
+                          },
+                          {
+                            "tag": "a",
+                            "attrs": {
+                              "href": "/communities/manage/"
+                            },
+                            "kids": ["Manage communities"]
+                          },
+                          {
+                            "tag": "left-nav-community-item",
+                            "attrs": {
+                              "prefixedname": "r/firefox"
+                            },
+                            "kids": [
+                              {
+                                "tag": "a",
+                                "attrs": {
+                                  "href": "/r/firefox/"
+                                },
+                                "kids": [
+                                  {
+                                    "tag": "img",
+                                    "attrs": {
+                                      "src": "https://styles.redditmedia.com/x.png"
+                                    }
+                                  },
+                                  {
+                                    "tag": "span",
+                                    "kids": ["r/firefox"]
+                                  }
+                                ]
+                              },
+                              {
+                                "tag": "button",
+                                "attrs": {
+                                  "aria-label": "Favorite r/firefox",
+                                  "aria-pressed": "true"
+                                },
+                                "kids": [
+                                  {
+                                    "tag": "svg",
+                                    "attrs": {
+                                      "icon-name": "star-fill"
+                                    },
+                                    "svg": true
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "tag": "left-nav-community-item",
+                            "attrs": {
+                              "prefixedname": "r/webdev"
+                            },
+                            "kids": [
+                              {
+                                "tag": "a",
+                                "attrs": {
+                                  "href": "/r/webdev/"
+                                },
+                                "kids": [
+                                  {
+                                    "tag": "span",
+                                    "kids": ["r/webdev"]
+                                  }
+                                ]
+                              },
+                              {
+                                "tag": "button",
+                                "attrs": {
+                                  "aria-label": "Favorite r/webdev"
+                                },
+                                "kids": [
+                                  {
+                                    "tag": "svg",
+                                    "attrs": {
+                                      "icon-name": "star"
+                                    },
+                                    "svg": true
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "tag": "button",
+                            "attrs": {
+                              "type": "button",
+                              "hidden": ""
+                            },
+                            "kids": ["Hidden thing"],
+                            "shown": false
+                          },
+                          {
+                            "tag": "button",
+                            "attrs": {
+                              "type": "button"
+                            },
+                            "kids": ["See more"]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "details",
+                    "kids": [
+                      {
+                        "tag": "summary",
+                        "kids": ["RESOURCES"]
+                      },
+                      {
+                        "tag": "a",
+                        "attrs": {
+                          "href": "https://redditinc.com"
+                        },
+                        "kids": ["About Reddit"],
+                        "shown": false
+                      },
+                      {
+                        "tag": "a",
+                        "attrs": {
+                          "href": "https://ads.reddit.com"
+                        },
+                        "kids": ["Advertise"],
+                        "shown": false
+                      },
+                      {
+                        "tag": "a",
+                        "attrs": {
+                          "href": "/best/communities/1/"
+                        },
+                        "kids": ["Best of Reddit"],
+                        "shown": false
+                      },
+                      {
+                        "tag": "a",
+                        "attrs": {
+                          "href": "https://www.redditinc.com/policies/user-agreement"
+                        },
+                        "kids": ["User Agreement"],
+                        "shown": false
+                      },
+                      {
+                        "tag": "button",
+                        "attrs": {
+                          "aria-label": "Collapse"
+                        },
+                        "shown": false
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "main": {
+    "path": "div.grid-container > main#main",
+    "rect": {
+      "x": 280,
+      "y": 8,
+      "width": 992,
+      "height": 930
+    }
+  },
+  "truncated": false,
+  "expect": {
+    "minItems": 15,
+    "sections": ["Custom Feeds", "Recent", "Communities", "Resources"],
+    "current": "Home"
+  }
+}

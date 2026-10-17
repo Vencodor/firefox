@@ -166,6 +166,25 @@ export class FoldChild extends JSWindowActorChild {
     }
   }
 
+  /**
+   * Shows the page's own sidebar while a function runs, for Capture Fold to
+   * measure it. Nothing is drawn in between.
+   *
+   * @param {Function} callback
+   * @returns {*} What the function returns.
+   */
+  withSidebarShown(callback) {
+    if (!this.#sheet) {
+      return callback();
+    }
+    this.#removeSheet();
+    try {
+      return callback();
+    } finally {
+      this.#applySheet(this.#rule);
+    }
+  }
+
   didDestroy() {
     this.#destroyed = true;
     this.#stopWatching();

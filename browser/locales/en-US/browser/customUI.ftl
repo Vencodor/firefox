@@ -379,3 +379,13 @@ custom-ui-fold-loading = 메뉴를 읽는 중…
 custom-ui-fold-unavailable = 이 페이지의 메뉴를 가져오지 못했어요
 
 custom-ui-page-fold = 이 사이트에서 Fold 사용
+
+## Capture Fold: copies the selected page's navigation for an AI to write
+## its Fold rule. Shown in the app menu's More Tools view.
+
+custom-ui-fold-capture =
+    .label = Capture Fold
+
+custom-ui-fold-capture-copied = Fold 캡처를 복사했어요
+
+custom-ui-fold-capture-failed = 이 페이지는 캡처할 수 없어요

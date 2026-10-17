@@ -4,14 +4,15 @@
 
 /**
  * Reads a site's own sidebar into the site menu model, following the site's
- * rule (see rules/). The model only carries what the Mono sidebar draws:
+ * rule (see FoldRules). The model only carries what the Mono sidebar draws:
  *
  *   { site: { name },
  *     sections: [{ id, heading?, collapsible?, collapsed?, items: [item] }] }
  *
  * An item is { id, kind, label, href?, icon, badge?, current?, secondary? }.
- * `kind` is one of ITEM_KINDS; the sidebar draws each kind with its own row,
- * so a new kind (a text field, say) is added here and in the sidebar together.
+ * `kind` is one of FoldRules' ITEM_KINDS; the sidebar draws each kind with
+ * its own row, so a new kind (a text field, say) is added here and in the
+ * sidebar together.
  * `icon` is { name } for a Mono icon, { image } for the site's picture or
  * { letter } for an entity without one. `secondary` is { label, pressed } for
  * a toggle at the row end, such as a favorite star.
@@ -19,8 +20,6 @@
  * Nothing on the page is changed here. The elements behind the model are
  * returned so that the actor can click them for the user.
  */
-
-export const ITEM_KINDS = ["nav", "entity", "action", "link"];
 
 const SKIPPED_TEXT = new Set([
   "img",
@@ -33,11 +32,17 @@ const SKIPPED_TEXT = new Set([
 const BADGE = /^[A-Z][A-Z0-9]{1,7}$/;
 const LABEL_LIMIT = 120;
 
-function shadowOf(element) {
+export function shadowOf(element) {
   return element.openOrClosedShadowRoot ?? element.shadowRoot ?? null;
 }
 
-function parentOf(node) {
+/**
+ * The parent of a node, crossing from a shadow root to its host.
+ *
+ * @param {Node} node
+ * @returns {?Node}
+ */
+export function parentOf(node) {
   let parent = node.parentNode;
   if (parent && parent.nodeType == parent.DOCUMENT_FRAGMENT_NODE) {
     return parent.host ?? null;
@@ -212,10 +217,10 @@ function matchesRule(rule, { element, url, label, location }) {
  * One reading of a page by a site rule.
  */
 class Transcription {
-  constructor(document, rule) {
+  constructor(document, rule, url) {
     this.document = document;
     this.rule = rule;
-    this.location = new URL(document.URL);
+    this.location = new URL(url ?? document.URL);
     this.walker = new Walker();
     this.elements = new Map();
     this.used = new Set();
@@ -499,14 +504,17 @@ class Transcription {
  * Reads the site menu from a document.
  *
  * @param {Document} document The page.
- * @param {object} rule The site's rule.
+ * @param {object} rule The site's compiled rule.
+ * @param {object} [options]
+ * @param {string} [options.url] The page address, when the document was
+ *   rebuilt from a capture.
  * @returns {?{model: object, elements: Map, watched: Node[], count: number}}
  *   null when the rule's root isn't on the page. `elements` maps item ids to
  *   { element, secondary? }, and `watched` lists the root and the shadow roots
  *   below it, whose changes can change the model.
  */
-export function transcribe(document, rule) {
-  return new Transcription(document, rule).run();
+export function transcribe(document, rule, { url } = {}) {
+  return new Transcription(document, rule, url).run();
 }
 
 /**
