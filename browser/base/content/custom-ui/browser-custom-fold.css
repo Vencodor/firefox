@@ -38,34 +38,17 @@
       }
     }
 
-    /* At the sidebar's bottom corner, across from the archive button and
-       shaped like it. */
+    /* After the reload button, shaped like the navigation buttons. Its width
+       unfolds as it appears, so the buttons before it slide aside. */
     #custom-fold-dock-button {
-      flex: none;
-      width: var(--size-custom-control);
-      height: var(--size-custom-control);
-      margin: 0;
-      margin-inline-start: auto;
-      padding: 0;
-      border: 0;
-      border-radius: var(--border-radius-custom-tab);
-      background: url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg") center / var(--icon-size-small) no-repeat;
-      color: var(--custom-muted);
-      -moz-context-properties: fill;
-      fill: currentColor;
-
-      &:hover {
-        background-color: var(--custom-hover);
-        color: var(--custom-ink);
-      }
-
-      &:focus-visible {
-        outline: var(--focus-outline);
-        outline-offset: var(--focus-outline-offset);
-      }
+      background-image: url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg");
 
       &[hidden] {
         display: none;
+      }
+
+      &[animating] {
+        overflow: clip;
       }
     }
 
@@ -92,14 +75,15 @@
       margin-block-start: calc(var(--space-custom-edge, var(--space-small)) - var(--space-custom-window-top, var(--space-small)));
     }
 
-    /* As high as the tab sidebar's header, the site's icon placed like a
-       row's icon. */
+    /* Lined up with the tab sidebar's header: the same top gap and height,
+       so the site's icon and the close button sit level with its buttons. */
     #custom-fold-dock-header {
       display: flex;
       flex: none;
       align-items: center;
       gap: var(--space-custom-gap);
-      min-height: var(--size-custom-header);
+      min-height: var(--size-item-large);
+      margin-block: var(--space-custom-gap) var(--space-custom-inset);
       padding-inline: var(--space-custom-padding) 0;
     }
 
@@ -503,16 +487,6 @@
     }
 
     #sidebar-container:not([sidebar-launcher-expanded]) {
-      /* The two corner buttons wrap onto two lines in the narrow sidebar. */
-      #custom-archive-footer {
-        flex-wrap: wrap;
-        row-gap: var(--space-xxsmall);
-      }
-
-      #custom-fold-dock-button {
-        margin-inline-start: 0;
-      }
-
       :is(.custom-fold-badge, .custom-fold-action, .custom-fold-heading-action, .custom-fold-check, .custom-fold-field-row) {
         display: none;
       }

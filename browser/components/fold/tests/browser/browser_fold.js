@@ -302,8 +302,8 @@ add_task(async function test_dock() {
     ok(!ui.open, "The tab list stays");
     ok(ui.switchVisible, "The switch offers the menu");
     ok(
-      !ui.dockButton.hidden,
-      "The button at the sidebar's bottom corner can dock the menu again"
+      ui.dockButtonVisible,
+      "The button after the reload button can dock the menu again"
     );
     Assert.deepEqual(
       JSON.parse(Services.prefs.getStringPref(ui.undockedPref)),
@@ -318,9 +318,9 @@ add_task(async function test_dock() {
     );
 
     ui.dockButton.click();
-    ok(ui.docked && !ui.open, "The corner button docks the menu again");
+    ok(ui.docked && !ui.open, "The dock button docks the menu again");
     ok(!ui.switchVisible, "The switch goes away");
-    ok(ui.dockButton.hidden, "So does the corner button");
+    ok(!ui.dockButtonVisible, "So does the dock button");
     await TestUtils.waitForCondition(
       () => row("Home"),
       "The docked menu is read again"
@@ -331,7 +331,7 @@ add_task(async function test_dock() {
     ui.minPageWidth = 100000;
     ui.updateSwitch({ animate: false });
     ok(!ui.docked, "A narrow window doesn't dock the menu");
-    ok(ui.dockButton.hidden, "Nor offers to");
+    ok(!ui.dockButtonVisible, "Nor offers to");
     ok(ui.switchVisible, "The switch offers the menu instead");
     ui.minPageWidth = minPageWidth;
     ui.updateSwitch({ animate: false });

@@ -79,6 +79,8 @@ var CustomFoldUI = {
     this.slideAnimations = [];
     this.switchVisible = false;
     this.switchAnimation = null;
+    this.dockButtonVisible = false;
+    this.dockButtonAnimation = null;
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     // The tab list joins the swipe areas while the switch shows.
@@ -219,7 +221,7 @@ var CustomFoldUI = {
       }
       this.dockTitle.textContent = rule.name;
     }
-    this.updateDock();
+    this.updateDock({ animate });
     this.setSwitchVisible(!!rule && !this.docked, { animate });
     if (rule) {
       this.updateSiteIcon();
@@ -253,12 +255,48 @@ var CustomFoldUI = {
 
   /**
    * Docks the menu unless the user closed it for the site, in which case the
-   * button at the sidebar's bottom corner offers to dock it again.
+   * button after the reload button offers to dock it again.
    */
-  updateDock() {
+  updateDock({ animate = true } = {}) {
     let canDock = this.canDock();
     this.setDocked(canDock && !this.undockedSites().includes(this.rule.id));
-    this.dockButton.hidden = !canDock || this.docked;
+    this.setDockButtonVisible(canDock && !this.docked, { animate });
+  },
+
+  /**
+   * Shows or hides the dock button. Its width unfolds or folds with it, so
+   * the navigation buttons before it slide aside instead of jumping.
+   */
+  setDockButtonVisible(visible, { animate = true } = {}) {
+    if (visible == this.dockButtonVisible) {
+      return;
+    }
+    this.dockButtonVisible = visible;
+    let button = this.dockButton;
+    this.dockButtonAnimation?.cancel();
+    this.dockButtonAnimation = null;
+    button.removeAttribute("animating");
+    button.hidden = false;
+    if (!animate || this.reducedMotion.matches || !button.checkVisibility()) {
+      button.hidden = !visible;
+      return;
+    }
+    let shown = { width: window.getComputedStyle(button).width, opacity: 1 };
+    let folded = { width: "0px", opacity: 0 };
+    button.setAttribute("animating", "");
+    let animation = button.animate(
+      visible ? [folded, shown] : [shown, folded],
+      {
+        duration: 200,
+        easing: this.easing,
+      }
+    );
+    animation.onfinish = () => {
+      this.dockButtonAnimation = null;
+      button.removeAttribute("animating");
+      button.hidden = !this.dockButtonVisible;
+    };
+    this.dockButtonAnimation = animation;
   },
 
   scheduleDockUpdate() {
@@ -504,7 +542,7 @@ var CustomFoldUI = {
       return;
     }
     this.setUndocked(this.rule.id, true);
-    if (!this.dockButton.hidden) {
+    if (this.dockButtonVisible) {
       this.dockButton.focus();
     }
   },
