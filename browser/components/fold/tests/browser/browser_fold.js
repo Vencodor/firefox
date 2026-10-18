@@ -272,6 +272,17 @@ add_task(async function test_menu() {
   });
 });
 
+add_task(async function test_sidebar_filled_once_drawn() {
+  let ui = window.CustomFoldUI;
+  await BrowserTestUtils.withNewTab(TEST_URL + "?lazy", async () => {
+    await TestUtils.waitForCondition(() => ui.docked, "The menu docks");
+    await TestUtils.waitForCondition(
+      () => row("Home"),
+      "A sidebar the site doesn't draw, and fills only once drawn, is read"
+    );
+  });
+});
+
 add_task(async function test_dock() {
   let ui = window.CustomFoldUI;
   await BrowserTestUtils.withNewTab(TEST_URL, async () => {

@@ -1204,6 +1204,14 @@ export function hidingStyle(rule) {
   if (rule.remove?.length) {
     style += `:is(${rule.remove.join(", ")}) { display: none !important; }\n`;
   }
+  // A concealed sidebar the site doesn't draw, such as on a narrow page, is
+  // drawn anyway, still concealed, for the site to fill it.
+  style += `[data-mono-fold-render] {
+  display: block !important;
+  transform: none !important;
+  translate: none !important;
+}
+`;
   // A site menu opened from the concealed sidebar, and what it's drawn on,
   // is shown in the Mono sidebar instead.
   style += `[data-mono-fold-relay] {

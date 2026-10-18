@@ -11,6 +11,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   findRule: "resource:///modules/fold/FoldRules.sys.mjs",
   isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
   hidingStyle: "resource:///modules/fold/FoldTranscriber.sys.mjs",
+  queryAllDeep: "resource:///modules/fold/FoldTranscriber.sys.mjs",
   readMenu: "resource:///modules/fold/FoldTranscriber.sys.mjs",
   transcribe: "resource:///modules/fold/FoldTranscriber.sys.mjs",
 });
@@ -36,6 +37,7 @@ const POPUP_SETTLE = 150;
 // loads or the user acts and longer while nothing happens.
 const REFRESH_DELAYS = [300, 600, 1200, 2500, 5000, 10000];
 const RELAY = "data-mono-fold-relay";
+const RENDER = "data-mono-fold-render";
 const KEEP = "data-mono-fold-keep";
 const UNRELAY_DELAY = 500;
 const DIALOGS = "[role='dialog'], [role='alertdialog'], dialog[open]";
@@ -258,6 +260,7 @@ export class FoldChild extends JSWindowActorChild {
     let deadline = start + timeout;
     let result = this.#read(rule);
     while (!result) {
+      this.#renderConcealed(rule);
       let now = Date.now();
       if (
         this.document.readyState != "complete" &&
@@ -274,6 +277,44 @@ export class FoldChild extends JSWindowActorChild {
       result = this.#read(rule);
     }
     return result;
+  }
+
+  /**
+   * Has the concealed sidebar laid out where the site doesn't draw it, such
+   * as on a page made too narrow for it by the menu docked beside the tab
+   * list, or off screen until it's opened. Sites often fill their sidebar
+   * only once it's drawn on screen. It stays concealed.
+   *
+   * @param {object} rule
+   */
+  #renderConcealed(rule) {
+    if (!this.#sheet) {
+      return;
+    }
+    let win = this.contentWindow;
+    let concealed = rule.hide.flatMap(selector =>
+      lazy.queryAllDeep(this.document, selector)
+    );
+    // The sidebar inside them too, which the site may hide on its own.
+    let roots = rule.root
+      .flatMap(selector => lazy.queryAllDeep(this.document, selector))
+      .filter(root => concealed.some(element => element.contains(root)));
+    for (let element of new Set([...concealed, ...roots])) {
+      if (element.hasAttribute(RENDER)) {
+        continue;
+      }
+      let rect = element.getBoundingClientRect();
+      if (
+        !element.checkVisibility() ||
+        rect.right <= 0 ||
+        rect.bottom <= 0 ||
+        rect.left >= win.innerWidth ||
+        rect.top >= win.innerHeight
+      ) {
+        lazy.log.debug(`drawing the concealed <${element.localName}>`);
+        element.setAttribute(RENDER, "");
+      }
+    }
   }
 
   /**

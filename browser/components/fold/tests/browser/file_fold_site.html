@@ -83,6 +83,21 @@
     sidebar.checkVisibility({ visibilityProperty: true })
   );
 
+  // ?lazy: like a site that doesn't draw its sidebar on a narrow page and
+  // fills it only once it's drawn.
+  if (new URLSearchParams(location.search).has("lazy")) {
+    let nav = sidebar.querySelector("nav");
+    let content = nav.innerHTML;
+    nav.replaceChildren();
+    sidebar.style.display = "none";
+    new IntersectionObserver((entries, observer) => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        observer.disconnect();
+        nav.innerHTML = content;
+      }
+    }).observe(sidebar);
+  }
+
   let menu = document.getElementById("menu");
   let menuTarget = null;
   let rename = document.getElementById("rename");

@@ -31,6 +31,9 @@ var CustomFoldUI = {
   // Sites update their sidebar a moment after a click or a navigation, and a
   // newly loaded page takes a moment to draw it.
   reloadDelays: [0, 400, 1200],
+  // After a failed reading the menu asks again a few times, for a site that
+  // fills its sidebar late.
+  retryDelays: [2000, 5000, 15000],
   inputDelay: 250,
   iconBase: "chrome://browser/content/custom-ui/resources/fold/",
 
@@ -69,6 +72,8 @@ var CustomFoldUI = {
     this.generation = 0;
     this.reloadTimers = [];
     this.reloadGeneration = 0;
+    this.retryTimer = null;
+    this.retryStep = 0;
     this.items = new Map();
     this.collapsed = new Map();
     this.slideAnimations = [];
@@ -552,6 +557,7 @@ var CustomFoldUI = {
    */
   connect(browser) {
     this.cancelReload();
+    this.cancelRetry();
     let generation = ++this.generation;
     this.browser = browser;
     this.model = null;
@@ -566,6 +572,7 @@ var CustomFoldUI = {
 
   disconnect() {
     this.cancelReload();
+    this.cancelRetry();
     this.pendingInput = null;
     clearTimeout(this.inputTimer);
     this.generation++;
@@ -578,6 +585,16 @@ var CustomFoldUI = {
   },
 
   show(model) {
+    if (model) {
+      this.cancelRetry();
+    } else {
+      this.scheduleRetry();
+      // While it asks again, what's shown stays: the menu or the loading
+      // message.
+      if (this.retryTimer) {
+        return;
+      }
+    }
     let json = JSON.stringify(model);
     if (json == this.modelJSON) {
       return;
@@ -608,6 +625,31 @@ var CustomFoldUI = {
         }
       }, delay)
     );
+  },
+
+  scheduleRetry() {
+    if (
+      this.retryTimer ||
+      !this.shown ||
+      this.retryStep >= this.retryDelays.length
+    ) {
+      return;
+    }
+    let { browser, generation } = this;
+    this.retryTimer = setTimeout(async () => {
+      this.retryTimer = null;
+      this.retryStep++;
+      let model = await this.lazy.Fold.activate(browser);
+      if (generation == this.generation) {
+        this.show(model);
+      }
+    }, this.retryDelays[this.retryStep]);
+  },
+
+  cancelRetry() {
+    clearTimeout(this.retryTimer);
+    this.retryTimer = null;
+    this.retryStep = 0;
   },
 
   cancelReload() {
@@ -1360,6 +1402,7 @@ var CustomFoldUI = {
     PanelUI.panel.removeEventListener("ViewShowing", this);
     this.rootObserver.disconnect();
     this.cancelReload();
+    this.cancelRetry();
     clearTimeout(this.inputTimer);
   },
 };
