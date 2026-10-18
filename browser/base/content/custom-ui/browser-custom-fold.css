@@ -36,6 +36,25 @@
       }
     }
 
+    /* After the reload button, shaped like the navigation buttons. Its width
+       unfolds as it appears, so the buttons before it slide aside. With Fold
+       off, a slash crosses the icon. */
+    #custom-fold-button {
+      background-image: url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg");
+
+      &.custom-fold-off {
+        background-image: url("chrome://browser/content/custom-ui/resources/fold/sidebar-off.svg");
+      }
+
+      &[hidden] {
+        display: none;
+      }
+
+      &[animating] {
+        overflow: clip;
+      }
+    }
+
     #custom-fold-switch-tabs {
       --custom-archive-tab-icon: url("chrome://browser/skin/tabs.svg");
     }

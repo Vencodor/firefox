@@ -41,6 +41,7 @@ var CustomFoldUI = {
     this.switchElement = document.getElementById("custom-fold-switch");
     this.siteTab = document.getElementById("custom-fold-switch-site");
     this.siteIcon = document.getElementById("custom-fold-switch-icon");
+    this.button = document.getElementById("custom-fold-button");
     this.tabList = this.container.querySelector(":scope > sidebar-main");
     this.tabLayer = [
       this.tabList,
@@ -60,6 +61,8 @@ var CustomFoldUI = {
     this.slideAnimations = [];
     this.switchVisible = false;
     this.switchAnimation = null;
+    this.buttonVisible = false;
+    this.buttonAnimation = null;
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     // The tab list joins the swipe areas while the switch shows.
@@ -69,6 +72,7 @@ var CustomFoldUI = {
       onSelect: index => this.setOpen(index == 1),
     });
     this.menu.addEventListener("click", this);
+    this.button.addEventListener("click", this);
     this.menu.addEventListener("auxclick", this);
     this.menu.addEventListener("input", this);
     PanelUI.panel.addEventListener("ViewShowing", this);
@@ -141,6 +145,7 @@ var CustomFoldUI = {
     let changed = rule?.id != this.rule?.id;
     this.rule = rule;
     this.setSwitchVisible(!!rule, { animate });
+    this.updateButton({ animate });
     if (!rule) {
       return;
     }
@@ -154,6 +159,74 @@ var CustomFoldUI = {
       document.l10n.setAttributes(this.menu, "custom-ui-fold-menu", args);
     }
     this.updateSiteIcon();
+  },
+
+  /**
+   * Shows the button after the reload button on a Fold site, Fold on or
+   * off, with a slash across its icon while Fold is off.
+   */
+  updateButton({ animate = true } = {}) {
+    let rule = this.available
+      ? this.lazy.Fold.ruleFor(gBrowser.selectedBrowser.currentURI)
+      : null;
+    let enabled = !!rule && this.lazy.Fold.isEnabledFor(rule.id);
+    this.button.classList.toggle("custom-fold-off", !enabled);
+    document.l10n.setAttributes(
+      this.button,
+      enabled ? "custom-ui-fold-turn-off" : "custom-ui-fold-turn-on"
+    );
+    this.setButtonVisible(!!rule, { animate });
+  },
+
+  /**
+   * Turns Fold on or off for the selected page's site, for every window, as
+   * the page settings panel's switch does. With Fold off the page keeps its
+   * own sidebar.
+   */
+  toggle() {
+    let rule = this.lazy.Fold.ruleFor(gBrowser.selectedBrowser.currentURI);
+    if (rule) {
+      this.lazy.Fold.setEnabledFor(
+        rule.id,
+        !this.lazy.Fold.isEnabledFor(rule.id)
+      );
+    }
+  },
+
+  /**
+   * Shows or hides the Fold button. Its width unfolds or folds with it, so
+   * the navigation buttons before it slide aside instead of jumping.
+   */
+  setButtonVisible(visible, { animate = true } = {}) {
+    if (visible == this.buttonVisible) {
+      return;
+    }
+    this.buttonVisible = visible;
+    let button = this.button;
+    this.buttonAnimation?.cancel();
+    this.buttonAnimation = null;
+    button.removeAttribute("animating");
+    button.hidden = false;
+    if (!animate || this.reducedMotion.matches || !button.checkVisibility()) {
+      button.hidden = !visible;
+      return;
+    }
+    let shown = { width: window.getComputedStyle(button).width, opacity: 1 };
+    let folded = { width: "0px", opacity: 0 };
+    button.setAttribute("animating", "");
+    let animation = button.animate(
+      visible ? [folded, shown] : [shown, folded],
+      {
+        duration: 200,
+        easing: this.easing,
+      }
+    );
+    animation.onfinish = () => {
+      this.buttonAnimation = null;
+      button.removeAttribute("animating");
+      button.hidden = !this.buttonVisible;
+    };
+    this.buttonAnimation = animation;
   },
 
   /**
@@ -223,6 +296,10 @@ var CustomFoldUI = {
   handleEvent(event) {
     switch (event.type) {
       case "click":
+        if (event.currentTarget == this.button) {
+          this.toggle();
+          break;
+        }
         this.onMenuClick(event);
         break;
       case "auxclick":

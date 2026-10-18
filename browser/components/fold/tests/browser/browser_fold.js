@@ -275,3 +275,31 @@ add_task(async function test_sidebar_filled_once_drawn() {
     ui.setOpen(false, { animate: false });
   });
 });
+
+add_task(async function test_fold_button() {
+  let ui = window.CustomFoldUI;
+  await BrowserTestUtils.withNewTab(TEST_URL, async browser => {
+    await TestUtils.waitForCondition(
+      () => ui.buttonVisible,
+      "The Fold button shows after the reload button"
+    );
+    ok(!ui.button.classList.contains("custom-fold-off"), "It shows Fold on");
+
+    ui.button.click();
+    ok(!Fold.isEnabledFor("fold-test"), "The button turns Fold off");
+    ok(ui.buttonVisible, "It stays to turn Fold on again");
+    ok(ui.button.classList.contains("custom-fold-off"), "It shows Fold off");
+    ok(!ui.rule, "The switch no longer offers the site's menu");
+    await TestUtils.waitForCondition(
+      async () => (await pageState(browser)).shown,
+      "The page shows its own sidebar"
+    );
+
+    ui.button.click();
+    ok(Fold.isEnabledFor("fold-test"), "The button turns Fold on again");
+    await TestUtils.waitForCondition(
+      async () => !(await pageState(browser)).shown,
+      "The page's sidebar is folded again"
+    );
+  });
+});

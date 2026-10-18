@@ -385,6 +385,16 @@ custom-ui-fold-more =
     .aria-label = { $item } 더 보기
     .title = { $item } 더 보기
 
+# The button after the reload button that turns Fold on or off for the
+# selected page's site.
+custom-ui-fold-turn-off =
+    .aria-label = Fold 끄기
+    .title = Fold 끄기
+
+custom-ui-fold-turn-on =
+    .aria-label = Fold 켜기
+    .title = Fold 켜기
+
 custom-ui-page-fold = 이 사이트에서 Fold 사용
 
 # The splitter of the column beside the tab list (CustomSidePanel).
