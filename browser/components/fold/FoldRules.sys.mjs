@@ -23,8 +23,8 @@
  * - css: extra rules, as a string or a list of lines, for the page layout
  *   without the sidebar.
  * - ready: { minItems, timeoutMs }. The site menu needs at least minItems
- *   items, waiting up to timeoutMs for the page to render them; otherwise the
- *   page is left alone.
+ *   items, waiting up to timeoutMs after the page has loaded for it to
+ *   render them; otherwise the page is left alone.
  * - current: how the current item is found. "auto" (the default) takes
  *   aria-current, aria-selected or currentSelector on the item or its row,
  *   and the address otherwise. "url" uses the address only, for sites whose

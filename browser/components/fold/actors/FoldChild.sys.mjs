@@ -23,6 +23,9 @@ ChromeUtils.defineLazyGetter(lazy, "log", () =>
 );
 
 const READY_INTERVAL = 200;
+// The longest a page still loading may keep the sidebar from being given up
+// on; the rule's ready.timeoutMs only starts counting once the page loaded.
+const LOAD_TIMEOUT = 30000;
 const UPDATE_DELAY = 150;
 const POPUP_INTERVAL = 50;
 const POPUP_TIMEOUT = 1500;
@@ -228,18 +231,49 @@ export class FoldChild extends JSWindowActorChild {
   async #check() {
     let generation = ++this.#checkGeneration;
     let rule = this.#rule;
-    let deadline = Date.now() + (rule.ready?.timeoutMs ?? 0);
-    while (!this.#read(rule)) {
-      if (Date.now() >= deadline) {
-        this.#read(rule, { report: true });
-        this.#unfold();
-        return;
+    let result = await this.#untilRead(
+      rule,
+      () => generation == this.#checkGeneration
+    );
+    if (result === null) {
+      this.#read(rule, { report: true });
+      this.#unfold();
+    }
+  }
+
+  /**
+   * Reads the sidebar until it can be read, for the rule's ready.timeoutMs
+   * once the page has loaded. Time spent loading doesn't count, since sites
+   * often draw their sidebar only then, and a menu docked beside the tab
+   * list asks as soon as the page starts.
+   *
+   * @param {object} rule
+   * @param {Function} current Whether this is still the latest reading.
+   * @returns {Promise<?object|undefined>} The reading, null if the sidebar
+   *   didn't come, or undefined if a newer reading replaced this one.
+   */
+  async #untilRead(rule, current) {
+    let timeout = rule.ready?.timeoutMs ?? 0;
+    let start = Date.now();
+    let deadline = start + timeout;
+    let result = this.#read(rule);
+    while (!result) {
+      let now = Date.now();
+      if (
+        this.document.readyState != "complete" &&
+        now - start < LOAD_TIMEOUT
+      ) {
+        deadline = now + timeout;
+      } else if (now >= deadline) {
+        return null;
       }
       await new Promise(resolve => setTimeout(resolve, READY_INTERVAL));
-      if (this.#destroyed || generation != this.#checkGeneration) {
-        return;
+      if (this.#destroyed || !current()) {
+        return undefined;
       }
+      result = this.#read(rule);
     }
+    return result;
   }
 
   /**
@@ -302,14 +336,12 @@ export class FoldChild extends JSWindowActorChild {
     if (!rule) {
       return { model: null };
     }
-    let deadline = Date.now() + (rule.ready?.timeoutMs ?? 0);
-    let result = this.#read(rule);
-    while (!result && Date.now() < deadline) {
-      await new Promise(resolve => setTimeout(resolve, READY_INTERVAL));
-      if (this.#destroyed || generation != this.#generation) {
-        return null;
-      }
-      result = this.#read(rule);
+    let result = await this.#untilRead(
+      rule,
+      () => generation == this.#generation
+    );
+    if (result === undefined) {
+      return null;
     }
     if (!result) {
       this.#read(rule, { report: true });

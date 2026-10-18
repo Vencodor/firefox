@@ -22,11 +22,9 @@
       grid-row: 4 / 6;
     }
 
-    /* The archive's icon-tab track, under the address, with the button that
-       docks the menu beside the tab list at its end. */
+    /* The archive's icon-tab track, under the address. */
     #custom-fold-switch {
-      display: flex;
-      gap: var(--space-xsmall);
+      display: grid;
       margin: 0 var(--space-custom-edge) var(--space-small);
 
       &[hidden] {
@@ -40,25 +38,24 @@
       }
     }
 
-    #custom-fold-switch-track {
-      flex: 1;
-      min-width: 0;
-    }
-
+    /* At the sidebar's bottom corner, across from the archive button and
+       shaped like it. */
     #custom-fold-dock-button {
       flex: none;
-      width: var(--size-custom-tab);
+      width: var(--size-custom-control);
+      height: var(--size-custom-control);
       margin: 0;
+      margin-inline-start: auto;
       padding: 0;
       border: 0;
-      border-radius: var(--border-radius-custom-pin);
-      background: var(--custom-pin-background) url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg") center / var(--icon-size-small) no-repeat;
+      border-radius: var(--border-radius-custom-tab);
+      background: url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg") center / var(--icon-size-small) no-repeat;
       color: var(--custom-muted);
       -moz-context-properties: fill;
       fill: currentColor;
-      appearance: none;
 
       &:hover {
+        background-color: var(--custom-hover);
         color: var(--custom-ink);
       }
 
@@ -506,13 +503,14 @@
     }
 
     #sidebar-container:not([sidebar-launcher-expanded]) {
-      #custom-fold-switch {
-        flex-direction: column;
+      /* The two corner buttons wrap onto two lines in the narrow sidebar. */
+      #custom-archive-footer {
+        flex-wrap: wrap;
+        row-gap: var(--space-xxsmall);
       }
 
       #custom-fold-dock-button {
-        width: auto;
-        height: var(--size-custom-archive-tab);
+        margin-inline-start: 0;
       }
 
       :is(.custom-fold-badge, .custom-fold-action, .custom-fold-heading-action, .custom-fold-check, .custom-fold-field-row) {

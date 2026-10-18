@@ -82,7 +82,7 @@ JSON 형식은 `browser/components/fold/FoldCapture.sys.mjs` 첫 주석에 설�
   - 줄 목록으로 쓴다.
 - **ready:**
   - `minItems`는 로그아웃 상태에서도 채워질 만큼 작게 잡는다(보통 3).
-  - `timeoutMs`는 3000에서 5000 사이로 한다.
+  - `timeoutMs`는 3000에서 5000 사이로 한다. 페이지 로드가 끝난 뒤부터 센다(로드 중인 시간은 최대 30초까지 세지 않는다).
   - 못 읽으면 원래 사이드바가 그대로 보이므로 안전하다.
 - **current:** 기본값 `"auto"`는 항목이나 행의 `aria-current`·`aria-selected`·`currentSelector`를 먼저 보고, 없으면 주소로 판단한다.
   - 사이트가 표시를 늦게 바꾸거나 쓰지 않으면 `"url"`(주소만).

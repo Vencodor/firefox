@@ -391,8 +391,8 @@ custom-ui-fold-dock-close =
     .title = Fold 닫기
 
 custom-ui-fold-dock-open =
-    .aria-label = { $site } 메뉴를 오른쪽에 펼치기
-    .title = { $site } 메뉴를 오른쪽에 펼치기
+    .aria-label = Fold 펼치기
+    .title = Fold 펼치기
 
 custom-ui-fold-dock-resize =
     .aria-label = Fold 폭 조절

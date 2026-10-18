@@ -55,7 +55,6 @@ var CustomFoldUI = {
     this.splitter = document.getElementById("custom-fold-splitter");
     this.sidebarBox = document.getElementById("sidebar-box");
     this.switchElement = document.getElementById("custom-fold-switch");
-    this.switchTrack = document.getElementById("custom-fold-switch-track");
     this.siteTab = document.getElementById("custom-fold-switch-site");
     this.siteIcon = document.getElementById("custom-fold-switch-icon");
     this.tabList = this.container.querySelector(":scope > sidebar-main");
@@ -79,8 +78,8 @@ var CustomFoldUI = {
 
     // The tab list joins the swipe areas while the switch shows.
     this.switch = new CustomSwitch({
-      tablist: this.switchTrack,
-      areas: [this.switchTrack, this.section],
+      tablist: this.switchElement,
+      areas: [this.switchElement, this.section],
       onSelect: index => this.setOpen(index == 1),
     });
     for (let menu of [this.overlayMenu, this.dockMenu]) {
@@ -210,11 +209,6 @@ var CustomFoldUI = {
         "custom-ui-fold-switch-site",
         args
       );
-      document.l10n.setAttributes(
-        this.dockButton,
-        "custom-ui-fold-dock-open",
-        args
-      );
       for (let menu of [this.overlayMenu, this.dockMenu]) {
         document.l10n.setAttributes(menu, "custom-ui-fold-menu", args);
       }
@@ -252,10 +246,14 @@ var CustomFoldUI = {
     return Math.min(this.maxDockWidth, room);
   },
 
+  /**
+   * Docks the menu unless the user closed it for the site, in which case the
+   * button at the sidebar's bottom corner offers to dock it again.
+   */
   updateDock() {
     let canDock = this.canDock();
-    this.dockButton.hidden = !canDock;
     this.setDocked(canDock && !this.undockedSites().includes(this.rule.id));
+    this.dockButton.hidden = !canDock || this.docked;
   },
 
   scheduleDockUpdate() {
@@ -501,7 +499,7 @@ var CustomFoldUI = {
       return;
     }
     this.setUndocked(this.rule.id, true);
-    if (this.switchVisible) {
+    if (!this.dockButton.hidden) {
       this.dockButton.focus();
     }
   },

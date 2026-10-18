@@ -2364,6 +2364,10 @@ pref("browser.customUI.fold.dockWidth", 240);
 // How much the pages' Fold actor logs: "Warn", or "Debug" to follow its
 // decisions in the Browser Console.
 pref("browser.customUI.fold.loglevel", "Warn");
+// Overlay scrollbars, such as the sidebar's, fade out after this many
+// milliseconds without scrolling: half the Windows default of 2500. The
+// engine has a single delay for all scrollbars, web pages' included.
+pref("ui.scrollbarFadeBeginDelay", 1250);
 pref("browser.newtabpage.enabled", false);
 pref("sidebar.verticalTabs", true);
 pref("sidebar.verticalTabs.dragToPinPromo.dismissed", false);
