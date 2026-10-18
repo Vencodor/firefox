@@ -6,15 +6,26 @@
 
 /**
  * Fold: on a site with a site rule, the page's own sidebar is folded away as
- * the page loads, and the switch under the address swaps the tab list for
- * that sidebar's menu, transcribed into Mono rows. The page reads and clicks
- * its elements through the Fold actor. Fold is on by default and can be
- * turned off per site from the page settings panel.
+ * the page loads, and its menu, transcribed into Mono rows, shows in a column
+ * docked beside the tab list. Closing that column, or a window too narrow
+ * for it, leaves the switch under the address to swap the tab list for the
+ * menu instead. The page reads and clicks its elements through the Fold
+ * actor. Fold is on by default and can be turned off per site from the page
+ * settings panel.
  */
 var CustomFoldUI = {
   pref: "browser.customUI.fold.enabled",
   sitesPref: "browser.customUI.fold.disabledSites",
+  undockedPref: "browser.customUI.fold.undockedSites",
+  dockWidthPref: "browser.customUI.fold.dockWidth",
+  // Whether the menu shows in place of the tab list, from the switch.
   open: false,
+  // Whether the menu shows in its column beside the tab list.
+  docked: false,
+  minDockWidth: 200,
+  maxDockWidth: 420,
+  // The page keeps at least this width beside a docked menu.
+  minPageWidth: 560,
   slideDistance: 24,
   easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
   // Sites update their sidebar a moment after a click or a navigation, and a
@@ -34,8 +45,17 @@ var CustomFoldUI = {
     this.root = document.documentElement;
     this.container = document.getElementById("sidebar-container");
     this.section = document.getElementById("custom-fold");
-    this.menu = document.getElementById("custom-fold-menu");
+    this.overlayMenu = document.getElementById("custom-fold-menu");
+    this.dock = document.getElementById("custom-fold-dock");
+    this.dockMenu = document.getElementById("custom-fold-dock-menu");
+    this.dockTitle = document.getElementById("custom-fold-dock-title");
+    this.dockIcon = document.getElementById("custom-fold-dock-icon");
+    this.dockClose = document.getElementById("custom-fold-dock-close");
+    this.dockButton = document.getElementById("custom-fold-dock-button");
+    this.splitter = document.getElementById("custom-fold-splitter");
+    this.sidebarBox = document.getElementById("sidebar-box");
     this.switchElement = document.getElementById("custom-fold-switch");
+    this.switchTrack = document.getElementById("custom-fold-switch-track");
     this.siteTab = document.getElementById("custom-fold-switch-site");
     this.siteIcon = document.getElementById("custom-fold-switch-icon");
     this.tabList = this.container.querySelector(":scope > sidebar-main");
@@ -59,15 +79,41 @@ var CustomFoldUI = {
 
     // The tab list joins the swipe areas while the switch shows.
     this.switch = new CustomSwitch({
-      tablist: this.switchElement,
-      areas: [this.switchElement, this.section],
+      tablist: this.switchTrack,
+      areas: [this.switchTrack, this.section],
       onSelect: index => this.setOpen(index == 1),
     });
-    this.menu.addEventListener("click", this);
-    this.menu.addEventListener("auxclick", this);
-    this.menu.addEventListener("input", this);
+    for (let menu of [this.overlayMenu, this.dockMenu]) {
+      menu.addEventListener("click", this);
+      menu.addEventListener("auxclick", this);
+      menu.addEventListener("input", this);
+    }
     PanelUI.panel.addEventListener("ViewShowing", this);
     this.section.addEventListener("keydown", this);
+    this.dock.addEventListener("keydown", this);
+    this.dockClose.addEventListener("click", this);
+    this.dockButton.addEventListener("click", this);
+    this.applyDockWidth();
+    this.dockFrame = 0;
+    this.dockResized = false;
+    this.dockObserver = new MutationObserver(() => this.onDockResize());
+    this.dockObserver.observe(this.dock, {
+      attributes: true,
+      attributeFilter: ["width"],
+    });
+    // The room left for a docked menu changes with the window, the tab
+    // sidebar's width and Firefox's own sidebar panel, which takes its place.
+    this.layoutObserver = new ResizeObserver(() => this.scheduleDockUpdate());
+    this.layoutObserver.observe(this.container);
+    this.sidebarBoxObserver = new MutationObserver(() =>
+      this.scheduleDockUpdate()
+    );
+    this.sidebarBoxObserver.observe(this.sidebarBox, {
+      attributes: true,
+      attributeFilter: ["hidden"],
+    });
+    window.addEventListener("resize", this);
+    window.addEventListener("mouseup", this, true);
     gBrowser.tabContainer.addEventListener("TabSelect", this);
     gBrowser.tabContainer.addEventListener("TabAttrModified", this);
     this.progressListener = {
@@ -78,6 +124,8 @@ var CustomFoldUI = {
     Services.prefs.addObserver("sidebar.verticalTabs", this);
     Services.prefs.addObserver(this.pref, this);
     Services.prefs.addObserver(this.sitesPref, this);
+    Services.prefs.addObserver(this.undockedPref, this);
+    Services.prefs.addObserver(this.dockWidthPref, this);
     window.addEventListener("unload", this, { once: true });
     this.rootObserver = new MutationObserver(() => this.updateAvailable());
     this.rootObserver.observe(this.root, {
@@ -87,6 +135,7 @@ var CustomFoldUI = {
         "customizing",
         "inDOMFullscreen",
         "fullscreenNavToolboxHidden",
+        "sidebar-positionend",
       ],
     });
 
@@ -114,8 +163,26 @@ var CustomFoldUI = {
     }
   },
 
-  observe() {
+  observe(subject, topic, data) {
+    if (data == this.dockWidthPref) {
+      this.applyDockWidth();
+    }
     this.updateAvailable();
+  },
+
+  /**
+   * The menu element showing the site menu now: the docked one or the one
+   * in place of the tab list.
+   */
+  get menu() {
+    return this.docked ? this.dockMenu : this.overlayMenu;
+  },
+
+  /**
+   * Whether the site menu shows, docked or in place of the tab list.
+   */
+  get shown() {
+    return this.open || this.docked;
   },
 
   /**
@@ -129,26 +196,171 @@ var CustomFoldUI = {
   },
 
   /**
-   * Shows the switch while Fold is on for the selected page's site.
+   * Docks the menu while Fold is on for the selected page's site, or shows
+   * the switch when it can't be docked.
    */
   updateSwitch({ animate = true } = {}) {
     let rule = this.available ? this.selectedRule : null;
     let changed = rule?.id != this.rule?.id;
     this.rule = rule;
-    this.setSwitchVisible(!!rule, { animate });
-    if (!rule) {
-      return;
-    }
-    if (changed) {
+    if (rule && changed) {
       let args = { site: rule.name };
       document.l10n.setAttributes(
         this.siteTab,
         "custom-ui-fold-switch-site",
         args
       );
-      document.l10n.setAttributes(this.menu, "custom-ui-fold-menu", args);
+      document.l10n.setAttributes(
+        this.dockButton,
+        "custom-ui-fold-dock-open",
+        args
+      );
+      for (let menu of [this.overlayMenu, this.dockMenu]) {
+        document.l10n.setAttributes(menu, "custom-ui-fold-menu", args);
+      }
+      this.dockTitle.textContent = rule.name;
     }
-    this.updateSiteIcon();
+    this.updateDock();
+    this.setSwitchVisible(!!rule && !this.docked, { animate });
+    if (rule) {
+      this.updateSiteIcon();
+    }
+  },
+
+  /**
+   * Whether the selected page's site menu has room beside the tab list:
+   * Firefox's own sidebar panel isn't open in its place and the page keeps
+   * its minimum width.
+   */
+  canDock() {
+    return (
+      !!this.rule &&
+      !this.root.hasAttribute("sidebar-positionend") &&
+      this.sidebarBox.hidden &&
+      this.maxDockWidthHere() >= this.minDockWidth
+    );
+  },
+
+  /**
+   * The widest the docked menu may be in the window as it is.
+   */
+  maxDockWidthHere() {
+    let room =
+      window.innerWidth -
+      this.container.getBoundingClientRect().width -
+      this.minPageWidth;
+    return Math.min(this.maxDockWidth, room);
+  },
+
+  updateDock() {
+    let canDock = this.canDock();
+    this.dockButton.hidden = !canDock;
+    this.setDocked(canDock && !this.undockedSites().includes(this.rule.id));
+  },
+
+  scheduleDockUpdate() {
+    if (this.dockFrame) {
+      return;
+    }
+    this.dockFrame = requestAnimationFrame(() => {
+      this.dockFrame = 0;
+      this.applyDockWidth();
+      this.updateSwitch();
+    });
+  },
+
+  setDocked(docked) {
+    if (docked == this.docked) {
+      return;
+    }
+    if (docked) {
+      this.setOpen(false, { animate: false });
+    } else {
+      this.disconnect();
+    }
+    let hadFocus = this.dock.contains(document.activeElement);
+    this.docked = docked;
+    this.dock.hidden = !docked;
+    this.splitter.hidden = !docked;
+    if (docked) {
+      this.applyDockWidth();
+      this.connect(gBrowser.selectedBrowser);
+    } else {
+      this.dockMenu.replaceChildren();
+      if (hadFocus) {
+        gBrowser.selectedBrowser.focus();
+      }
+    }
+  },
+
+  undockedSites() {
+    try {
+      let sites = JSON.parse(
+        Services.prefs.getStringPref(this.undockedPref, "[]")
+      );
+      return Array.isArray(sites) ? sites : [];
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Closes the site's docked menu for good, leaving the switch, or docks it
+   * again. Every window follows.
+   *
+   * @param {string} id The site rule id.
+   * @param {boolean} undocked
+   */
+  setUndocked(id, undocked) {
+    let sites = this.undockedSites().filter(site => site != id);
+    if (undocked) {
+      sites.push(id);
+    }
+    Services.prefs.setStringPref(this.undockedPref, JSON.stringify(sites));
+  },
+
+  get dockWidth() {
+    let width = Services.prefs.getIntPref(this.dockWidthPref, 240);
+    return Math.max(
+      this.minDockWidth,
+      Math.min(width, this.maxDockWidthHere())
+    );
+  },
+
+  applyDockWidth() {
+    this.dock.style.width = `${this.dockWidth}px`;
+  },
+
+  /**
+   * Follows the splitter while it's dragged, within the widths the window
+   * allows, and covers the page as the tab sidebar's resizing does.
+   */
+  onDockResize() {
+    if (this.splitter.getAttribute("state") != "dragging") {
+      return;
+    }
+    let width = parseFloat(this.dock.getAttribute("width"));
+    if (!Number.isFinite(width)) {
+      return;
+    }
+    this.dockResized = true;
+    this.root.toggleAttribute("custom-sidebar-resizing", true);
+    this.dock.style.width = `${Math.max(
+      this.minDockWidth,
+      Math.min(width, this.maxDockWidthHere())
+    )}px`;
+  },
+
+  onDockResizeEnd() {
+    if (!this.dockResized) {
+      return;
+    }
+    this.dockResized = false;
+    this.root.toggleAttribute("custom-sidebar-resizing", false);
+    Services.prefs.setIntPref(
+      this.dockWidthPref,
+      Math.round(this.dock.getBoundingClientRect().width)
+    );
   },
 
   /**
@@ -210,15 +422,29 @@ var CustomFoldUI = {
   },
 
   updateSiteIcon() {
-    this.siteIcon.src =
+    let icon =
       gBrowser.selectedTab.getAttribute("image") ||
       "chrome://global/skin/icons/defaultFavicon.svg";
+    this.siteIcon.src = icon;
+    this.dockIcon.src = icon;
   },
 
   handleEvent(event) {
     switch (event.type) {
       case "click":
-        this.onMenuClick(event);
+        if (event.currentTarget == this.dockClose) {
+          this.closeDock();
+        } else if (event.currentTarget == this.dockButton) {
+          this.openDock();
+        } else {
+          this.onMenuClick(event);
+        }
+        break;
+      case "resize":
+        this.scheduleDockUpdate();
+        break;
+      case "mouseup":
+        this.onDockResizeEnd();
         break;
       case "auxclick":
         if (event.button == 1) {
@@ -267,8 +493,31 @@ var CustomFoldUI = {
     }
   },
 
+  /**
+   * Closes the docked menu for the site; the switch offers it from then on.
+   */
+  closeDock() {
+    if (!this.rule) {
+      return;
+    }
+    this.setUndocked(this.rule.id, true);
+    if (this.switchVisible) {
+      this.dockButton.focus();
+    }
+  },
+
+  openDock() {
+    if (!this.rule) {
+      return;
+    }
+    this.setUndocked(this.rule.id, false);
+    if (this.docked) {
+      this.dockClose.focus();
+    }
+  },
+
   setOpen(open, { animate = true } = {}) {
-    open = open && !!this.rule && this.available;
+    open = open && !!this.rule && this.available && !this.docked;
     if (open == this.open) {
       this.switch.select(open ? 1 : 0, { animate });
       return;
@@ -390,7 +639,7 @@ var CustomFoldUI = {
    * while it fills in.
    */
   onPageReady(browser) {
-    if (this.open && browser == this.browser) {
+    if (this.shown && browser == this.browser) {
       this.reload();
     }
   },
@@ -399,7 +648,7 @@ var CustomFoldUI = {
    * A change of the site menu reported by the page as it happens.
    */
   onUpdate(browser, model) {
-    if (this.open && browser == this.browser) {
+    if (this.shown && browser == this.browser) {
       this.show(model);
     }
   },
@@ -426,7 +675,7 @@ var CustomFoldUI = {
   onTabSelect() {
     this.syncFold(gBrowser.selectedBrowser);
     this.updateSwitch();
-    if (!this.open || gBrowser.selectedBrowser == this.browser) {
+    if (!this.shown || gBrowser.selectedBrowser == this.browser) {
       return;
     }
     if (!this.rule) {
@@ -447,13 +696,16 @@ var CustomFoldUI = {
     }
     let ruleId = this.rule?.id;
     this.updateSwitch();
-    if (!this.open) {
+    if (!this.shown) {
       return;
     }
-    if (this.rule?.id != ruleId) {
-      this.setOpen(false);
-    } else {
+    if (this.rule?.id == ruleId) {
       this.reload();
+    } else if (this.docked) {
+      // Another Fold site in the same tab.
+      this.connect(browser);
+    } else {
+      this.setOpen(false);
     }
   },
 
@@ -919,7 +1171,7 @@ var CustomFoldUI = {
   async relay(id, anchor) {
     let browser = this.browser;
     let result = await this.lazy.Fold.openPopup(browser, id);
-    if (browser != this.browser || !this.open) {
+    if (browser != this.browser || !this.shown) {
       return;
     }
     if (result?.items?.length) {
@@ -962,7 +1214,11 @@ var CustomFoldUI = {
     if (event.key == "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      this.setOpen(false);
+      if (this.docked) {
+        gBrowser.selectedBrowser.focus();
+      } else {
+        this.setOpen(false);
+      }
       return;
     }
     if (event.key != "ArrowDown" && event.key != "ArrowUp") {
@@ -1092,6 +1348,14 @@ var CustomFoldUI = {
     Services.prefs.removeObserver("sidebar.verticalTabs", this);
     Services.prefs.removeObserver(this.pref, this);
     Services.prefs.removeObserver(this.sitesPref, this);
+    Services.prefs.removeObserver(this.undockedPref, this);
+    Services.prefs.removeObserver(this.dockWidthPref, this);
+    window.removeEventListener("resize", this);
+    window.removeEventListener("mouseup", this, true);
+    cancelAnimationFrame(this.dockFrame);
+    this.dockObserver.disconnect();
+    this.layoutObserver.disconnect();
+    this.sidebarBoxObserver.disconnect();
     gBrowser.tabContainer.removeEventListener("TabSelect", this);
     gBrowser.tabContainer.removeEventListener("TabAttrModified", this);
     gBrowser.removeTabsProgressListener(this.progressListener);

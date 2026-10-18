@@ -385,6 +385,18 @@ custom-ui-fold-more =
     .aria-label = { $item } 더 보기
     .title = { $item } 더 보기
 
+# The site menu docked beside the tab list.
+custom-ui-fold-dock-close =
+    .aria-label = Fold 닫기
+    .title = Fold 닫기
+
+custom-ui-fold-dock-open =
+    .aria-label = { $site } 메뉴를 오른쪽에 펼치기
+    .title = { $site } 메뉴를 오른쪽에 펼치기
+
+custom-ui-fold-dock-resize =
+    .aria-label = Fold 폭 조절
+
 custom-ui-page-fold = 이 사이트에서 Fold 사용
 
 ## Capture Fold: copies the selected page's navigation for an AI to write

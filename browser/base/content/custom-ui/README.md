@@ -22,7 +22,7 @@
 | `browser-custom-chat.js`, `agent-chat.html`, `agent-chat.js`, `agent-chat.css` | Mono 메뉴의 ‘Chat with Agent’에서 여는 독립 채팅 탭. 질문 초안, 대화 표시, 스트리밍 응답과 중지 처리 |
 | `browser-custom-archive.js`, `browser-custom-archive.css`, `custom-archive.inc.xhtml` | 사이드바 하단 보관함 버튼과 방문 기록(최근 닫은 탭 포함)·북마크·다운로드 화면. 기존 `PlacesQuery`, 북마크 트리, `SessionStore`, `Downloads` 데이터를 읽어 표시한다. 항목 클릭 동작은 아직 연결하지 않았다 |
 | `browser-custom-switch.js` | 보관함과 Fold가 함께 쓰는 아이콘 탭 전환 토글(`CustomSwitch`): 흰 선택 표시 이동, 좌우 스크롤 전환, 방향키 |
-| `browser-custom-fold.js`, `browser-custom-fold.css`, `custom-fold-switch.inc.xhtml`, `custom-fold.inc.xhtml` | Fold: 주소 영역 아래의 탭/사이트 전환 토글과 Fold 메뉴 화면. 웹페이지의 사이드바를 숨기고 `browser/components/fold/`의 전사 결과를 보관함 행·묶음 제목 스타일로 표시한다. 항목을 누르면 웹페이지의 원래 요소를 대신 클릭한다. More Tools 화면의 Capture Fold 항목도 여기서 추가한다 |
+| `browser-custom-fold.js`, `browser-custom-fold.css`, `custom-fold-switch.inc.xhtml`, `custom-fold.inc.xhtml`, `custom-fold-dock.inc.xhtml` | Fold: 탭 목록 오른쪽(Firefox 사이드바 패널 자리)에 붙는 Fold 열과, 열을 닫았거나 붙일 공간이 없을 때 쓰는 주소 영역 아래의 탭/사이트 전환 토글·Fold 메뉴 화면. 열 폭은 `browser.customUI.fold.dockWidth`, 열을 닫은 사이트는 `browser.customUI.fold.undockedSites`에 기록한다. 웹페이지의 사이드바를 숨기고 `browser/components/fold/`의 전사 결과를 보관함 행·묶음 제목 스타일로 표시한다. 항목을 누르면 웹페이지의 원래 요소를 대신 클릭한다. More Tools 화면의 Capture Fold 항목도 여기서 추가한다 |
 | `browser-custom-notice.js`, `browser-custom-notice.css`, `custom-notice-sidebar.inc.xhtml` | 새 기능 알림 카드(새 탭 검색 상자 아래, 사이드바 아래쪽). 내용은 `browser.customUI.notice`, 닫은 알림은 `browser.customUI.noticeDismissed`에 기록 |
 | `browser-custom-observation.js`, `browser-custom-observation.css`, `custom-observation-panel.inc.xhtml` | 앱 메뉴 More Tools의 ‘Observe Page’ 항목과 도구 모음 버튼에서 여는 오른쪽 페이지 관찰 패널. 후보 요소를 표시하고 선택 항목을 페이지에서 강조 |
 | `CustomSettingsWindow.sys.mjs`, `browser-custom-settings-window.js`, `browser-custom-settings-window.css`, `custom-settings-titlebar.inc.xhtml` | 설정 전용 창의 생성·재사용, Mono 헤더·창 제어 및 일반 창과의 분리 |
@@ -41,7 +41,7 @@
 | 사이드바 탐색·주소창·검색 제안 | 도메인 표시, 전체 주소 중앙 편집, 기존 탐색·검색 제안 연결. 비활성 탐색 버튼은 자리를 유지하며 연하게 표시 |
 | 에이전트 탭 상태·오브와 말풍선·'다음 클릭' 표시 | 화면과 연결 지점 구현. 새 탭의 Run 버튼은 제거했고 `CustomAgentUI.run()` 연결 지점은 유지. 모든 상태는 `browser.customUI.agentMock`으로 확인 |
 | 에이전트 채팅 탭 | 홈 검색 추천의 대화 명령에서 질문을 새 네이티브 탭으로 전달하는 전환은 확정. 채팅 UI 배치는 잠정적. 연결되어 있으면 첫 질문을 한 번 보내고, 미연결이면 초안으로 보존. 메뉴와 ‘새 대화’는 빈 새 탭을 연다 |
-| Fold(사이트 사이드바 전사) | Reddit 규칙과 공통 전사 엔진 구현. 접속 시 웹페이지 사이드바를 접고, 주소 영역 아래 토글로 메뉴를 연다. 페이지 설정 패널에서 사이트별로 끈다. 첫 안내 말풍선과 표시할 항목 편집은 이후 작업 |
+| Fold(사이트 사이드바 전사) | Reddit·Gemini 규칙과 공통 전사 엔진 구현. 접속 시 웹페이지 사이드바를 접고 탭 목록 오른쪽 열에 메뉴를 보여 준다. 열을 닫으면 주소 영역 아래 토글로 메뉴를 연다. 페이지 설정 패널에서 사이트별로 끈다. 첫 안내 말풍선과 표시할 항목 편집은 이후 작업 |
 | 기능 알림 카드 | 새 탭·사이드바 카드 구현(일러스트는 임시 그림). 오류 페이지 카드는 이전 대기 |
 | 프로필 메뉴·에이전트 현황 패널의 작업 목록 | 보류 |
 | 앱 메뉴·설정 드롭다운·메뉴 하위 보기 | 사용자 지정 외형, 기존 명령 연결 |

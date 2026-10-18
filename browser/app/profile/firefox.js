@@ -2356,6 +2356,11 @@ pref("browser.customUI.noticeDismissed", "[]");
 pref("browser.customUI.fold.enabled", true);
 // A JSON array of the site rule ids Fold is turned off for.
 pref("browser.customUI.fold.disabledSites", "[]");
+// A JSON array of the site rule ids whose menu the user closed beside the tab
+// list; it's then offered by the switch above the tabs instead.
+pref("browser.customUI.fold.undockedSites", "[]");
+// The width of the site menu beside the tab list, in CSS pixels.
+pref("browser.customUI.fold.dockWidth", 240);
 // How much the pages' Fold actor logs: "Warn", or "Debug" to follow its
 // decisions in the Browser Console.
 pref("browser.customUI.fold.loglevel", "Warn");
