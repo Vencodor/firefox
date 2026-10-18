@@ -1,7 +1,7 @@
 {
   "id": "gemini",
   "name": "Gemini",
-  "description": "Gemini's side navigation, a bard-sidenav element in the light DOM. Top links are found by address: the new chat is /app, and the library, images, scheduled and students links are relative in the page (library, images, ...), which resolve to /library and so on. The notebooks and chats sections are read through their expandable-section titles, and their title buttons (aria-expanded) toggle them, so the rule doesn't depend on the hashed class names of the rows. A chat row's menu button is an action of its row. A notebook row's menu button sits beside its link, outside the row element the transcriber looks for, so it is read as an item of its own. The chat menus say they open a menu with aria-haspopup on the button's wrapper; the notebook menu and the conversation filter don't, so popups names them. Their menus show as Mono menus, and the dialogs their items open (rename, delete) as Mono dialogs. Menus and dialogs open in Angular CDK overlays, whose backdrop (cdk-overlay-backdrop) is named in overlays so it isn't drawn either. The search button sits above the links as an extra; its search opens over the page, as on the site (onPage). The overflow (더보기) button comes after the sections, since extras can only go before the links or after the sections; the site shows it between the links and the sections. The account footer with its settings button is pinned under the menu (at bottom), as the site keeps it in view while the sidenav scrolls. The sidenav's own collapse button is excluded, and so is the icon-only copy of the top links shown when the sidenav is collapsed to a rail: the Mono sidebar replaces both. The sidenav is a flex item beside the content, which takes the space once it's hidden, so no css is needed.",
+  "description": "Gemini's side navigation, a bard-sidenav element in the light DOM. Top links are found by address: the new chat is /app, and the library, images, scheduled and students links are relative in the page (library, images, ...), which resolve to /library and so on. The notebooks and chats sections are read through their expandable-section titles, and their title buttons (aria-expanded) toggle them, so the rule doesn't depend on the hashed class names of the rows. A chat row's menu button is an action of its row. A notebook row's menu button sits beside its link, outside the row element the transcriber looks for, so it is read as an item of its own. The chats section's filter button sits in the section's header row (expandable-section-header-actions), so it is a heading action, shown as the Mono filter icon at the end of the section title. The chat menus say they open a menu with aria-haspopup on the button's wrapper; the notebook menu and the conversation filter don't, so popups names them. Their menus show as Mono menus; the dialogs their items open (rename, delete) show on the page. Menus open in Angular CDK overlays, whose backdrop (cdk-overlay-backdrop) is named in overlays so it isn't drawn either. The search button sits above the links as an extra; its search opens over the page. The overflow (더보기) button comes after the sections, since extras can only go before the links or after the sections; the site shows it between the links and the sections. The account footer with its settings button is pinned under the menu (at bottom), as the site keeps it in view while the sidenav scrolls. The sidenav's own collapse button is excluded, and so is the icon-only copy of the top links shown when the sidenav is collapsed to a rail: the Mono sidebar replaces both. The sidenav is a flex item beside the content, which takes the space once it's hidden, so no css is needed.",
   "matches": ["*://gemini.google.com/*"],
   "root": ["bard-sidenav[role='navigation']", "bard-sidenav"],
   "hide": ["bard-sidenav"],
@@ -11,7 +11,6 @@
   ],
   "popups": "gem-icon-button.gem-project-menu-button > button, gem-icon-button.conversation-filter-button > button",
   "overlays": ".cdk-overlay-backdrop",
-  "onPage": "button[aria-label='채팅 검색']",
   "ready": { "minItems": 3, "timeoutMs": 5000 },
   "current": "url",
   "currentIgnoresSearch": true,
@@ -43,10 +42,14 @@
     "heading": ".expandable-section-title",
     "items": "a[href], button",
     "container": "gem-nav-list-item",
+    "headingActions": ".expandable-section-header-actions button",
     "kinds": [
       { "href": "^/notebooks/create$", "kind": "action" },
       { "tag": "button", "kind": "action" }
     ],
-    "icons": [{ "href": "^/notebooks/create$", "icon": "add" }]
+    "icons": [
+      { "href": "^/notebooks/create$", "icon": "add" },
+      { "text": "^필터$", "icon": "filter" }
+    ]
   }
 }

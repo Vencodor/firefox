@@ -11,7 +11,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   findRule: "resource:///modules/fold/FoldRules.sys.mjs",
   isFoldEnabled: "resource:///modules/fold/FoldRules.sys.mjs",
   hidingStyle: "resource:///modules/fold/FoldTranscriber.sys.mjs",
-  readDialog: "resource:///modules/fold/FoldTranscriber.sys.mjs",
   readMenu: "resource:///modules/fold/FoldTranscriber.sys.mjs",
   transcribe: "resource:///modules/fold/FoldTranscriber.sys.mjs",
 });
@@ -27,15 +26,18 @@ const READY_INTERVAL = 200;
 const UPDATE_DELAY = 150;
 const POPUP_INTERVAL = 50;
 const POPUP_TIMEOUT = 1500;
-const DIALOG_TIMEOUT = 1000;
+// How long a menu is watched once one opened, for another one the site opens
+// a moment later, such as a second copy of the menu.
+const POPUP_SETTLE = 150;
+// Delays between readings while the Fold menu shows, short after the page
+// loads or the user acts and longer while nothing happens.
+const REFRESH_DELAYS = [300, 600, 1200, 2500, 5000, 10000];
 const RELAY = "data-mono-fold-relay";
 const KEEP = "data-mono-fold-keep";
 const UNRELAY_DELAY = 500;
 const DIALOGS = "[role='dialog'], [role='alertdialog'], dialog[open]";
 const MENU_ITEMS = "[role^='menuitem'], [role='option']";
-const POPUPS =
-  "[role='menu'], [role='listbox'], [role='dialog'], dialog[open], [popover]";
-const OPENED = `${POPUPS}, [role='alertdialog']`;
+const POPUPS = `[role='menu'], [role='listbox'], [popover], ${DIALOGS}`;
 const WATCHED_ATTRIBUTES = [
   "aria-checked",
   "aria-current",
@@ -75,10 +77,11 @@ export class FoldChild extends JSWindowActorChild {
   #observer = null;
   #sheet = null;
   #timer = null;
+  #refreshTimer = null;
+  #refreshStep = 0;
   #pending = null;
   #opening = null;
   #popup = null;
-  #dialog = null;
   #sent = "";
 
   receiveMessage({ name, data }) {
@@ -92,7 +95,8 @@ export class FoldChild extends JSWindowActorChild {
         this.#sync(data);
         break;
       case "Fold:Run":
-        return this.#run(data);
+        this.#run(data);
+        break;
       case "Fold:Input":
         this.#input(data);
         break;
@@ -100,11 +104,6 @@ export class FoldChild extends JSWindowActorChild {
         return this.#openPopup(data);
       case "Fold:ClosePopup":
         this.#closePopup();
-        break;
-      case "Fold:ReadDialog":
-        return this.#readDialog();
-      case "Fold:CloseDialog":
-        this.#closeDialog();
         break;
     }
     return null;
@@ -125,6 +124,7 @@ export class FoldChild extends JSWindowActorChild {
         if (event.target == this.document && this.#folded) {
           this.#check();
         }
+        this.#refreshSoon();
         break;
       // A page brought back from back/forward navigation follows the current
       // setting.
@@ -303,6 +303,7 @@ export class FoldChild extends JSWindowActorChild {
     this.#fold();
     this.#watch(result.watched);
     this.#sent = JSON.stringify(result.model);
+    this.#refreshSoon();
     return { model: result.model };
   }
 
@@ -325,12 +326,8 @@ export class FoldChild extends JSWindowActorChild {
       }
       return null;
     }
-    // A reading replaces the element map; the open menu's and dialog's
-    // items stay.
-    for (let id of [
-      ...(this.#popup?.ids ?? []),
-      ...(this.#dialog?.ids ?? []),
-    ]) {
+    // A reading replaces the element map; the open menu's items stay.
+    for (let id of this.#popup?.ids ?? []) {
       let entry = this.#elements.get(id);
       if (entry) {
         result.elements.set(id, entry);
@@ -347,7 +344,6 @@ export class FoldChild extends JSWindowActorChild {
   #deactivate() {
     this.#generation++;
     this.#closePopup();
-    this.#endDialog();
     this.#stopOpening();
     this.#stopWatching();
     if (!lazy.isFoldEnabled(this.#getRule())) {
@@ -359,6 +355,8 @@ export class FoldChild extends JSWindowActorChild {
     this.#active = false;
     clearTimeout(this.#timer);
     this.#timer = null;
+    clearTimeout(this.#refreshTimer);
+    this.#refreshTimer = null;
     this.#observer?.disconnect();
     this.#elements = new Map();
   }
@@ -421,11 +419,41 @@ export class FoldChild extends JSWindowActorChild {
 
   #scheduleUpdate(delay = UPDATE_DELAY) {
     clearTimeout(this.#timer);
-    this.#timer = setTimeout(() => this.#update(), delay);
+    this.#timer = setTimeout(() => {
+      this.#timer = null;
+      this.#update();
+    }, delay);
+  }
+
+  /**
+   * Reads the sidebar again and again while the Fold menu shows, often at
+   * first and less and less often after, for what the page changes without
+   * the observer seeing it, such as a sidebar the site draws anew. Loading
+   * and acting on the page start over from short delays.
+   */
+  #refreshSoon() {
+    if (!this.#active || this.#destroyed) {
+      return;
+    }
+    this.#refreshStep = 0;
+    this.#scheduleRefresh();
+  }
+
+  #scheduleRefresh() {
+    clearTimeout(this.#refreshTimer);
+    let delay =
+      REFRESH_DELAYS[Math.min(this.#refreshStep, REFRESH_DELAYS.length - 1)];
+    this.#refreshStep++;
+    this.#refreshTimer = setTimeout(async () => {
+      this.#refreshTimer = null;
+      await this.#update();
+      if (this.#active && !this.#destroyed && !this.#refreshTimer) {
+        this.#scheduleRefresh();
+      }
+    }, delay);
   }
 
   async #update() {
-    this.#timer = null;
     if (!this.#active || this.#destroyed) {
       return;
     }
@@ -457,73 +485,42 @@ export class FoldChild extends JSWindowActorChild {
   }
 
   /**
-   * Clicks the page element behind an item, action, section title, menu
-   * item or dialog button, as the user would. A dialog the click opens is
-   * read for the Mono sidebar and concealed on the page.
+   * Clicks the page element behind an item, action, section title or menu
+   * item, as the user would. What the click opens, such as a dialog, shows on
+   * the page as the site draws it.
    *
    * @param {{id: string}} data
-   * @returns {Promise<?{dialog: object}>} The dialog the click opened, if
-   *   any.
    */
-  async #run({ id }) {
+  #run({ id }) {
     let element = this.#element(id);
     if (!element) {
       lazy.log.debug(`run ${id}: no element`);
-      return null;
+      return;
     }
-    if (this.#opensOnPage(element)) {
-      lazy.log.debug(`run ${id}: opens on the page`);
-      this.document.notifyUserGestureActivation();
-      element.click();
-      return null;
+    // Choosing a menu item closes the site's menu, and what the item opens,
+    // or what a click right after a menu closed opens, isn't concealed.
+    if (id.startsWith("popup/")) {
+      this.#closePopup({ dismiss: false });
     }
-    let before = this.#visible(element, DIALOGS);
-    let opening = this.#startOpening(element);
-    try {
-      // The user clicked in the Mono sidebar, so the page may act as on its
-      // own click, such as opening a new window.
-      this.document.notifyUserGestureActivation();
-      element.click();
-      if (id.startsWith("popup/")) {
-        this.#closePopup({ dismiss: false });
-      }
-      let deadline = Date.now() + DIALOG_TIMEOUT;
-      while (Date.now() < deadline) {
-        await new Promise(resolve => setTimeout(resolve, POPUP_INTERVAL));
-        if (this.#destroyed || !this.#active) {
-          return null;
-        }
-        let dialog = [...this.#visible(element, DIALOGS)].find(
-          candidate => !before.has(candidate)
-        );
-        if (dialog) {
-          lazy.log.debug(`run ${id}: opened a dialog`);
-          return {
-            dialog: this.#relayDialog(dialog, this.#openedOverlays(element)),
-          };
-        }
-      }
-      lazy.log.debug(
-        `run ${id}: clicked <${element.localName}>, no dialog opened` +
-          (this.#dialog
-            ? `; the relayed dialog is ${
-                this.#dialog.element.isConnected &&
-                this.#dialog.element.checkVisibility()
-                  ? "still open"
-                  : "closed"
-              }`
-            : "")
-      );
-      return null;
-    } finally {
+    let opening = this.#opening;
+    for (let timer of opening?.lingering ?? []) {
+      clearTimeout(timer);
+      opening.lingering.delete(timer);
       this.#endOpening(opening);
     }
+    lazy.log.debug(`run ${id}: clicking <${element.localName}>`);
+    // The user clicked in the Mono sidebar, so the page may act as on its
+    // own click, such as opening a new window.
+    this.document.notifyUserGestureActivation();
+    element.click();
+    this.#refreshSoon();
   }
 
   /**
-   * Conceals what the page opens from now on, until #endOpening, so a menu
-   * or dialog opened from the Mono sidebar is never drawn on the page, not
-   * even before it's found and relayed. What's open already stays shown.
+   * Conceals the menus the page opens from now on, until #endOpening, so a
+   * menu opened from the Mono sidebar is never drawn on the page, not even
+   * before it's found, nor a copy of it the site opens a moment later. What's
+   * open already stays shown.
    *
    * @param {Element} element The element about to be clicked.
    * @returns {object} The opening to end.
@@ -557,14 +554,24 @@ export class FoldChild extends JSWindowActorChild {
       lazy.log.error("concealing what opens failed", e);
       uri = null;
     }
-    this.#opening = { count: 1, uri, kept };
+    this.#opening = { count: 1, uri, kept, lingering: new Set() };
     return this.#opening;
   }
 
   /**
    * @param {object} opening What #startOpening returned.
+   * @param {number} [delay] For what the site animates away to stay
+   *   concealed.
    */
-  #endOpening(opening) {
+  #endOpening(opening, delay = 0) {
+    if (delay) {
+      let timer = setTimeout(() => {
+        opening.lingering.delete(timer);
+        this.#endOpening(opening);
+      }, delay);
+      opening.lingering.add(timer);
+      return;
+    }
     if (opening === this.#opening && --opening.count == 0) {
       this.#stopOpening();
     }
@@ -592,25 +599,9 @@ export class FoldChild extends JSWindowActorChild {
     }
   }
 
-  /**
-   * Whether the rule has the menus and dialogs an element opens show on the
-   * page as the site draws them.
-   *
-   * @param {Element} element
-   * @returns {boolean}
-   */
-  #opensOnPage(element) {
-    let selector = this.#getRule()?.onPage;
-    try {
-      return !!selector && element.matches(selector);
-    } catch {
-      return false;
-    }
-  }
-
   #openedSelector() {
     let overlays = this.#getRule()?.overlays;
-    return overlays ? `${OPENED}, ${overlays}` : OPENED;
+    return overlays ? `${POPUPS}, ${overlays}` : POPUPS;
   }
 
   /**
@@ -638,139 +629,13 @@ export class FoldChild extends JSWindowActorChild {
    */
   #unrelay(nodes) {
     setTimeout(() => {
-      let current = new Set([
-        ...(this.#dialog?.concealed ?? []),
-        ...(this.#popup?.concealed ?? []),
-      ]);
+      let current = new Set(this.#popup?.concealed);
       for (let node of nodes) {
         if (!current.has(node)) {
           node.removeAttribute(RELAY);
         }
       }
     }, UNRELAY_DELAY);
-  }
-
-  /**
-   * Conceals a dialog the site opened, and what dims the page behind it,
-   * and reads it for the Mono sidebar.
-   *
-   * @param {Element} element The site's dialog.
-   * @param {Element[]} [overlays] The rule's overlays opened with it.
-   * @returns {object} The dialog as readDialog reads it.
-   */
-  #relayDialog(element, overlays = []) {
-    this.#endDialog();
-    this.#dialog = { element, concealed: [], ids: [] };
-    let dialog = this.#readDialogNow();
-    // One with nothing to act on stays on the page as the site shows it.
-    if (!dialog.items.length) {
-      lazy.log.debug("the dialog has no controls; it shows on the page");
-      this.#endDialog();
-      return null;
-    }
-    this.#dialog.concealed = [
-      ...new Set([element, ...this.#backdrops(element), ...overlays]),
-    ];
-    for (let node of this.#dialog.concealed) {
-      node.setAttribute(RELAY, "");
-    }
-    return dialog;
-  }
-
-  #readDialogNow() {
-    let relay = this.#dialog;
-    for (let id of relay.ids) {
-      this.#elements.delete(id);
-    }
-    let { dialog, elements } = lazy.readDialog(this.document, relay.element);
-    for (let [id, entry] of elements) {
-      this.#elements.set(id, entry);
-    }
-    relay.ids = [...elements.keys()];
-    return dialog;
-  }
-
-  /**
-   * The relayed dialog as it is now, for the Mono sidebar to follow it.
-   *
-   * @returns {{dialog: ?object}} null once the site closed it.
-   */
-  #readDialog() {
-    let relay = this.#dialog;
-    if (!relay) {
-      return { dialog: null };
-    }
-    if (!relay.element.isConnected || !relay.element.checkVisibility()) {
-      this.#endDialog();
-      return { dialog: null };
-    }
-    return { dialog: this.#readDialogNow() };
-  }
-
-  #closeDialog() {
-    this.#dialog?.element.dispatchEvent(
-      new this.contentWindow.KeyboardEvent("keydown", {
-        key: "Escape",
-        code: "Escape",
-        keyCode: 27,
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-      })
-    );
-  }
-
-  /**
-   * Stops relaying the dialog; one still open shows on the page again.
-   */
-  #endDialog() {
-    let relay = this.#dialog;
-    if (!relay) {
-      return;
-    }
-    this.#dialog = null;
-    for (let id of relay.ids) {
-      this.#elements.delete(id);
-    }
-    this.#unrelay(relay.concealed);
-  }
-
-  /**
-   * The empty layers covering the page next to a dialog, which sites use to
-   * dim the page behind it.
-   *
-   * @param {Element} dialog
-   * @returns {Element[]}
-   */
-  #backdrops(dialog) {
-    let win = this.contentWindow;
-    let found = [];
-    let node = dialog;
-    for (let depth = 0; depth < 4; depth++) {
-      let parent = node.parentNode;
-      if (!parent) {
-        break;
-      }
-      for (let sibling of parent.children) {
-        if (sibling === node) {
-          continue;
-        }
-        let rect = sibling.getBoundingClientRect();
-        if (
-          rect.width >= win.innerWidth * 0.9 &&
-          rect.height >= win.innerHeight * 0.9 &&
-          !sibling.textContent.trim()
-        ) {
-          found.push(sibling);
-        }
-      }
-      node =
-        parent.nodeType == parent.DOCUMENT_FRAGMENT_NODE ? parent.host : parent;
-      if (!node || node.localName == "body") {
-        break;
-      }
-    }
-    return found;
   }
 
   /**
@@ -810,6 +675,7 @@ export class FoldChild extends JSWindowActorChild {
     if (proceed && element.form) {
       element.form.requestSubmit();
     }
+    this.#refreshSoon();
   }
 
   /**
@@ -854,12 +720,13 @@ export class FoldChild extends JSWindowActorChild {
 
   /**
    * Clicks a button that opens the site's menu and reads that menu, which
-   * the Mono sidebar shows in its place. The site's menu stays concealed
-   * while it's open.
+   * the Mono sidebar shows in its place. The site's menu, and any other the
+   * site opens while the Mono one is open, stays concealed. A dialog the
+   * button opens instead, or a menu with nothing to read, shows on the page.
    *
    * @param {{id: string}} data
-   * @returns {Promise<?object>} { items } of the menu, { dialog } when a
-   *   dialog opened instead, or null when nothing opened.
+   * @returns {Promise<?{items: object[]}>} The menu's items, or null when
+   *   no menu opened.
    */
   async #openPopup({ id }) {
     let trigger = this.#element(id);
@@ -868,67 +735,91 @@ export class FoldChild extends JSWindowActorChild {
       return null;
     }
     this.#closePopup();
-    if (this.#opensOnPage(trigger)) {
-      lazy.log.debug(`menu ${id}: opens on the page`);
-      this.document.notifyUserGestureActivation();
-      trigger.click();
-      return null;
-    }
     let before = this.#openPopups(trigger);
     let expanded = trigger.getAttribute("aria-expanded") == "true";
     let opening = this.#startOpening(trigger);
+    let relayed = false;
     try {
       this.document.notifyUserGestureActivation();
       trigger.click();
-      let popup = null;
+      this.#refreshSoon();
+      let opened = [];
       let deadline = Date.now() + POPUP_TIMEOUT;
-      while (!popup && Date.now() < deadline) {
+      while (Date.now() < deadline) {
         await new Promise(resolve => setTimeout(resolve, POPUP_INTERVAL));
         if (this.#destroyed || !this.#active) {
           return null;
         }
-        popup =
-          [...this.#openPopups(trigger)].find(
-            element => !before.has(element)
-          ) ?? null;
+        opened = [...this.#openPopups(trigger)].filter(
+          element => !before.has(element)
+        );
         // A menu kept in the document while closed, hidden in a way that
         // still counts as shown, opens when its button says it's expanded.
+        let controlled = this.#controlled(trigger);
         if (
-          !popup &&
+          !opened.length &&
+          controlled &&
           !expanded &&
           trigger.getAttribute("aria-expanded") == "true"
         ) {
-          popup = this.#controlled(trigger);
+          opened = [controlled];
+        }
+        if (opened.length) {
+          deadline = Math.min(deadline, Date.now() + POPUP_SETTLE);
         }
       }
-      if (!popup) {
-        lazy.log.debug(`no menu opened from ${id}`);
+      // The menu is the one with the most to read; others are copies of it
+      // or what it's drawn in.
+      let menus = opened
+        .filter(
+          element => !element.matches(DIALOGS) || this.#hasMenuItems(element)
+        )
+        .map(element => ({
+          element,
+          ...lazy.readMenu(this.document, element),
+        }))
+        .filter(menu => menu.items.length)
+        .sort((a, b) => b.items.length - a.items.length);
+      if (!menus.length) {
+        lazy.log.debug(
+          opened.length
+            ? `menu ${id}: opened a dialog or nothing to read; it shows on the page`
+            : `menu ${id}: nothing opened`
+        );
         return null;
       }
-      let overlays = this.#openedOverlays(trigger);
-      // A button may open a dialog with fields rather than a menu.
-      if (popup.matches(DIALOGS) && !popup.querySelector(MENU_ITEMS)) {
-        let dialog = this.#relayDialog(popup, overlays);
-        return dialog && { dialog };
-      }
-      let { items, elements } = lazy.readMenu(this.document, popup);
+      let [{ element: popup, items, elements }] = menus;
       lazy.log.debug(`menu ${id}: read ${items.length} items`);
-      // One with nothing to read stays on the page as the site shows it.
-      if (!items.length) {
-        return null;
-      }
-      let concealed = [...new Set([popup, ...overlays])];
+      let concealed = [
+        ...new Set([
+          ...menus.map(menu => menu.element),
+          ...this.#openedOverlays(trigger),
+        ]),
+      ];
       for (let node of concealed) {
         node.setAttribute(RELAY, "");
       }
       for (let [itemId, entry] of elements) {
         this.#elements.set(itemId, entry);
       }
-      this.#popup = { popup, trigger, concealed, ids: [...elements.keys()] };
+      this.#popup = {
+        popup,
+        trigger,
+        concealed,
+        opening,
+        ids: [...elements.keys()],
+      };
+      relayed = true;
       return { items };
     } finally {
-      this.#endOpening(opening);
+      if (!relayed) {
+        this.#endOpening(opening);
+      }
     }
+  }
+
+  #hasMenuItems(element) {
+    return !!element.querySelector(MENU_ITEMS);
   }
 
   /**
@@ -966,7 +857,9 @@ export class FoldChild extends JSWindowActorChild {
         trigger.click();
       }
     }
-    // Shown again only once the site has closed it.
+    // Shown again only once the site has closed it. What an item opens isn't
+    // concealed.
     this.#unrelay(relay.concealed);
+    this.#endOpening(relay.opening, dismiss ? UNRELAY_DELAY : 0);
   }
 }

@@ -81,6 +81,7 @@ browser.jar:
         content/browser/custom-ui/resources/fold/all.svg (content/custom-ui/resources/fold/all.svg)
         content/browser/custom-ui/resources/fold/answers.svg (content/custom-ui/resources/fold/answers.svg)
         content/browser/custom-ui/resources/fold/explore.svg (content/custom-ui/resources/fold/explore.svg)
+        content/browser/custom-ui/resources/fold/filter.svg (content/custom-ui/resources/fold/filter.svg)
         content/browser/custom-ui/resources/fold/folder.svg (content/custom-ui/resources/fold/folder.svg)
         content/browser/custom-ui/resources/fold/home.svg (content/custom-ui/resources/fold/home.svg)
         content/browser/custom-ui/resources/fold/image.svg (content/custom-ui/resources/fold/image.svg)

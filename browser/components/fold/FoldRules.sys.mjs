@@ -37,16 +37,13 @@
  *   them, such as the site's own sidebar collapse button.
  * - popups: a selector of buttons that open a site menu without saying so
  *   with aria-haspopup on themselves or a close wrapper. Their menu is shown
- *   as a Mono menu, and a dialog its items open as a Mono dialog.
- * - onPage: a selector of sidebar controls whose menus and dialogs show on
- *   the page as the site draws them rather than in the Mono sidebar, such
- *   as a search that opens over the page. Menus and dialogs with nothing
- *   the Mono sidebar can show stay on the page too.
- * - overlays: a selector of the layers the site opens with its menus and
- *   dialogs that aren't menus or dialogs themselves, such as the backdrop
- *   dimming the page. Like menus and dialogs, they're concealed from the
- *   moment the Mono sidebar clicks something, so nothing it opens is drawn
- *   on the page, and stay concealed while it's shown in the Mono sidebar.
+ *   as a Mono menu. Dialogs, whatever opens them, show on the page as the
+ *   site draws them.
+ * - overlays: a selector of the layers the site opens with its menus that
+ *   aren't menus themselves, such as a backdrop catching clicks. Like menus,
+ *   they're concealed from the moment the Mono sidebar opens a menu, so it's
+ *   never drawn on the page, and stay concealed while it's shown in the
+ *   Mono sidebar.
  * - customIcons: { name: "<svg ...>" }, icons for this site's items, named
  *   like the Mono icons. The SVG holds shapes only.
  * - siteIcons: false to not use the site's own SVG icons for items with no
@@ -62,10 +59,12 @@
  *   - container: the element of one row. The row's first link, or its first
  *     element, is the item; the other elements in the row become its
  *     actions, like a favorite star or a menu button.
+ *   - headingActions: buttons in a section shown as icons at the end of its
+ *     title, always visible, such as a filter. They're not read as items.
  *   - pressed: a selector marking a row action, or what's inside it, as on.
  *   - secondary: { selector, pressed }, the older form of `pressed`.
  *   - kinds, icons: ordered lists of { tag, href, text, external } tests
- *     (all optional) giving an item's kind or icon.
+ *     (all optional) giving an item's kind, or an item's or action's icon.
  *   - sections: [{ heading, kind, collapsed }] for a section whose heading
  *     matches: every item takes `kind`, and `collapsed` makes the section
  *     collapsible, collapsed or not at first. Otherwise a section is
@@ -105,6 +104,7 @@ export const ICON_NAMES = [
   "all",
   "answers",
   "explore",
+  "filter",
   "folder",
   "home",
   "image",
@@ -340,7 +340,6 @@ const RULE_KEYS = new Set([
   "exclude",
   "popups",
   "overlays",
-  "onPage",
   "customIcons",
   "siteIcons",
   "main",
@@ -352,6 +351,7 @@ const GROUP_KEYS = new Set([
   "heading",
   "items",
   "container",
+  "headingActions",
   "pressed",
   "secondary",
   "kinds",
@@ -489,10 +489,6 @@ export function validateRule(rule) {
     "overlays must be a selector"
   );
   check(
-    rule.onPage == undefined || isString(rule.onPage),
-    "onPage must be a selector"
-  );
-  check(
     rule.currentIgnoresSearch == undefined ||
       typeof rule.currentIgnoresSearch == "boolean",
     "currentIgnoresSearch must be true or false"
@@ -551,7 +547,7 @@ export function validateRule(rule) {
   checkKeys(groups, GROUP_KEYS, "groups");
   check(isString(groups.each), "groups.each must be a selector");
   check(isString(groups.items), "groups.items must be a selector");
-  for (let key of ["heading", "container", "pressed"]) {
+  for (let key of ["heading", "container", "headingActions", "pressed"]) {
     check(
       groups[key] == undefined || isString(groups[key]),
       `groups.${key} must be a selector`

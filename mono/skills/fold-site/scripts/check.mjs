@@ -25,6 +25,16 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const fold = path.resolve(here, "../../../../browser/components/fold");
 const ORIGIN = "http://fold.test";
 
+function describeAction(action) {
+  return [
+    action.pressed != undefined && (action.pressed ? "on" : "off"),
+    action.popup && "opens a menu",
+    action.icon && Object.keys(action.icon)[0] + " icon",
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 async function loadPlaywright() {
   for (let specifier of [
     "playwright",
@@ -118,6 +128,11 @@ async function check(rulePath, capturePath) {
       state += " (pinned under the menu)";
     }
     console.log(`\n[${section.heading ?? section.id}]${state}`);
+    for (let action of section.actions ?? []) {
+      console.log(
+        `  > title action: ${action.label}  (${describeAction(action)})`
+      );
+    }
     for (let item of section.items) {
       let marks = [
         item.kind,
@@ -131,13 +146,7 @@ async function check(rulePath, capturePath) {
         .join(", ");
       console.log(`  ${item.label}  (${marks})`);
       for (let action of item.actions ?? []) {
-        let actionState = [
-          action.pressed != undefined && (action.pressed ? "on" : "off"),
-          action.popup && "opens a menu",
-          action.icon && Object.keys(action.icon)[0] + " icon",
-        ]
-          .filter(Boolean)
-          .join(", ");
+        let actionState = describeAction(action);
         console.log(
           `    - action: ${action.label}${actionState ? `  (${actionState})` : ""}`
         );

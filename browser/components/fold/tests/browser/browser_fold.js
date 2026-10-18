@@ -165,26 +165,13 @@ add_task(async function test_menu() {
     ui.popup.activateItem(ui.popup.children[0]);
     await hidden;
 
-    // Rename opens the site's dialog, shown as a sheet over the menu.
-    let sheet = await TestUtils.waitForCondition(
-      () => document.querySelector("#custom-fold-dialog:not([hidden])"),
-      "The site's dialog shows in the Mono sidebar"
-    );
-    is(
-      sheet.querySelector(".custom-fold-dialog-title").textContent,
-      "Rename chat",
-      "The sheet has the dialog's title"
-    );
-    let name = sheet.querySelector(".custom-fold-dialog-field");
-    is(name.value, "First chat", "The sheet has the dialog's field");
-    ok(
-      !(await SpecialPowers.spawn(browser, [], () =>
-        content.document.getElementById("rename").checkVisibility({
-          visibilityProperty: true,
-          opacityProperty: true,
-        })
-      )),
-      "The site's dialog is concealed on the page"
+    // Rename opens the site's dialog, which shows on the page as the site
+    // draws it, from the moment it opens.
+    await waitForPage(browser, doc =>
+      doc.getElementById("rename").checkVisibility({
+        visibilityProperty: true,
+        opacityProperty: true,
+      })
     );
     is(
       await SpecialPowers.spawn(
@@ -192,35 +179,45 @@ add_task(async function test_menu() {
         [],
         () => content.document.body.dataset.renameShownAtOpen
       ),
-      "hidden hidden",
-      "The site's dialog and its backdrop are concealed from the moment they open"
+      "visible visible",
+      "The site's dialog and its backdrop show on the page as they open"
     );
-    name.focus();
-    name.select();
-    EventUtils.sendString("Better name");
-    [...sheet.querySelectorAll(".custom-fold-dialog-button")]
-      .find(button => button.textContent == "Save")
-      .click();
+    ok(
+      !document.getElementById("custom-fold-dialog"),
+      "The site's dialog isn't moved into the sidebar"
+    );
+    await SpecialPowers.spawn(browser, [], () => {
+      let doc = content.document;
+      doc.getElementById("rename-input").value = "Better name";
+      doc.getElementById("rename-save").click();
+    });
     await waitForPage(
       browser,
       doc => doc.body.dataset.lastAction == "rename First chat to Better name"
     );
-    await TestUtils.waitForCondition(
-      () => document.getElementById("custom-fold-dialog").hidden,
-      "The sheet closes with the site's dialog"
-    );
 
-    // The rule keeps the find dialog on the page.
+    // A section's own button shows at the end of its title without hovering.
+    let filter = document.querySelector(
+      "#custom-fold-menu .custom-fold-heading-row > .custom-fold-heading-action"
+    );
+    is(
+      filter?.parentNode.querySelector(".custom-fold-toggle")?.textContent,
+      "Recent",
+      "The filter button sits in the Recent section's title"
+    );
+    is(filter.getAttribute("aria-label"), "Filter chats", "It has a name");
+    ok(filter.checkVisibility(), "It shows without hovering");
+    ok(!row("Filter chats"), "It isn't read as an item");
+    filter.click();
+    await waitForPage(browser, doc => doc.body.dataset.filtered == "true");
+
+    // A dialog a button opens shows on the page too.
     row("Find chats").click();
     await waitForPage(browser, doc =>
       doc.getElementById("find").checkVisibility({
         visibilityProperty: true,
         opacityProperty: true,
       })
-    );
-    ok(
-      document.getElementById("custom-fold-dialog").hidden,
-      "A dialog the rule keeps on the page isn't shown in the sidebar"
     );
     await SpecialPowers.spawn(browser, [], () =>
       content.document.getElementById("find-close").click()

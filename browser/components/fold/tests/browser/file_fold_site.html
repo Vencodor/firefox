@@ -45,6 +45,7 @@
     <button class="new" aria-label="New chat"><svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="black"/></svg></button>
     <div class="section">
       <button class="section-header" aria-expanded="true"><span class="title">Recent</span></button>
+      <button class="filter" aria-label="Filter chats"></button>
       <ul class="items">
         <li class="row"><a href="?view=chat-1">First chat</a><button class="more" aria-label="Options for First chat" aria-haspopup="menu"></button></li>
         <li class="row"><a href="?view=chat-2">Second chat</a><span class="menu-button" aria-haspopup="menu"><button class="more" aria-label="Options for Second chat"></button></span></li>
@@ -128,7 +129,7 @@
     if (header) {
       let expanded = header.getAttribute("aria-expanded") != "true";
       header.setAttribute("aria-expanded", String(expanded));
-      header.nextElementSibling.hidden = !expanded;
+      header.closest(".section").querySelector(".items").hidden = !expanded;
       return;
     }
     let more = event.target.closest(".more");
@@ -166,6 +167,10 @@
     }
     if (event.target.id == "rename-cancel") {
       closeRename();
+      return;
+    }
+    if (event.target.closest(".filter")) {
+      document.body.dataset.filtered = "true";
       return;
     }
     if (event.target.closest(".find")) {

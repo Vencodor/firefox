@@ -9,7 +9,6 @@
   "hide": ["#sidebar"],
   "remove": ["#open-nav"],
   "overlays": "#backdrop",
-  "onPage": ".find",
   "css": [
     "body { grid-template-columns: minmax(0, 1fr) !important; }",
     "main { grid-column: 1 / -1 !important; }"
@@ -34,7 +33,8 @@
     "each": ".section",
     "heading": ".title",
     "items": "a[href], button, input",
-    "container": ".row"
+    "container": ".row",
+    "headingActions": ".filter"
   },
   "extras": [
     { "items": ".search input, .find, .new", "at": "start" },

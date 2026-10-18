@@ -92,98 +92,53 @@
       }
     }
 
-    /* A dialog the site opened, as a sheet over the menu. */
-    #custom-fold-dialog {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
+    /* A section's own buttons, like a filter, sit at the end of its title
+       and stay shown. */
+    .custom-fold-heading-row {
       display: flex;
-      flex-direction: column;
-      gap: var(--space-medium);
-      padding: var(--space-medium) var(--space-custom-edge);
-      overflow: auto;
-      background-color: var(--custom-background);
-
-      &[hidden] {
-        display: none;
-      }
-    }
-
-    .custom-fold-dialog-title {
-      margin: 0;
-      color: var(--custom-ink);
-      font-size: var(--font-size-custom-label);
-      font-weight: var(--font-weight-semibold);
-    }
-
-    .custom-fold-dialog-text {
-      margin: 0;
-      color: var(--custom-muted);
-      font-size: var(--font-size-custom-label);
-      line-height: 1.5;
-    }
-
-    .custom-fold-dialog-body {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-small);
-    }
-
-    .custom-fold-dialog-field {
-      appearance: none;
-      min-height: var(--size-custom-tab);
-      margin: 0;
-      padding: 0 var(--space-custom-padding);
-      border: var(--border-width) solid var(--custom-line);
-      border-radius: var(--border-radius-custom-tab);
-      background-color: var(--custom-surface);
-      color: var(--custom-ink);
-      font: inherit;
-      font-size: var(--font-size-custom-label);
-
-      &:focus-visible {
-        outline: var(--focus-outline);
-        outline-offset: 0;
-      }
-    }
-
-    .custom-fold-dialog-buttons {
-      display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       justify-content: flex-end;
-      gap: var(--space-small);
+      gap: var(--space-xxsmall);
+
+      > .custom-archive-heading {
+        flex: 1;
+        min-width: 0;
+      }
     }
 
-    /* The last button, usually the one that confirms, takes the accent. */
-    .custom-fold-dialog-button {
-      appearance: none;
-      min-height: var(--size-custom-navigation-control);
+    .custom-fold-heading-action {
+      display: grid;
+      flex: none;
+      place-items: center;
+      box-sizing: border-box;
+      width: var(--tab-content-button-size);
+      height: var(--tab-content-button-size);
       margin: 0;
-      padding: 0 var(--space-medium);
-      border: var(--border-width) solid var(--custom-line);
-      border-radius: var(--border-radius-custom-tab);
-      background-color: var(--custom-surface);
-      color: var(--custom-ink);
-      font: inherit;
-      font-size: var(--font-size-custom-label);
+      padding: 0;
+      border: 0;
+      border-radius: calc(var(--border-radius-custom-tab) - 3px);
+      background-color: var(--button-background-color-ghost);
+      color: var(--custom-muted);
+      appearance: none;
+
+      > .custom-archive-icon {
+        width: 12px;
+        height: 12px;
+        color: inherit;
+      }
 
       &:hover {
-        background-color: var(--custom-hover);
+        background-color: var(--button-background-color-ghost-hover);
+        color: var(--custom-ink);
       }
 
-      &:last-child {
-        border-color: transparent;
-        background-color: var(--custom-accent);
-        color: var(--custom-accent-ink);
-      }
-
-      &:disabled {
-        opacity: 0.4;
+      &[aria-pressed="true"] {
+        color: var(--custom-ink);
       }
 
       &:focus-visible {
         outline: var(--focus-outline);
-        outline-offset: var(--focus-outline-offset);
+        outline-offset: var(--focus-outline-inset);
       }
     }
 
@@ -439,7 +394,7 @@
     }
 
     #sidebar-container:not([sidebar-launcher-expanded]) {
-      :is(.custom-fold-badge, .custom-fold-action, .custom-fold-check, .custom-fold-field-row) {
+      :is(.custom-fold-badge, .custom-fold-action, .custom-fold-heading-action, .custom-fold-check, .custom-fold-field-row) {
         display: none;
       }
 

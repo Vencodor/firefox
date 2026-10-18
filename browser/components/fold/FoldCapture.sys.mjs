@@ -758,7 +758,6 @@ function selectorsOf(rule) {
     rule.currentSelector,
     rule.popups,
     rule.overlays,
-    rule.onPage,
     groups.each,
     groups.heading,
     groups.items,
@@ -849,12 +848,15 @@ export function checkCapture(rule, capture, document) {
       problems.push(`no section "${heading}"; read ${headings.join(", ")}`);
     }
   }
-  let labels = new Set(
-    items.flatMap(item => [
+  let labels = new Set([
+    ...model.sections.flatMap(section =>
+      (section.actions ?? []).map(action => action.label)
+    ),
+    ...items.flatMap(item => [
       item.label,
       ...(item.actions ?? []).map(action => action.label),
-    ])
-  );
+    ]),
+  ]);
   for (let label of expect.labels ?? []) {
     if (!labels.has(label)) {
       problems.push(`nothing reads "${label}"`);

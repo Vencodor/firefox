@@ -21,7 +21,6 @@ var CustomFoldUI = {
   // newly loaded page takes a moment to draw it.
   reloadDelays: [0, 400, 1200],
   inputDelay: 250,
-  dialogInterval: 400,
   iconBase: "chrome://browser/content/custom-ui/resources/fold/",
 
   lazy: {},
@@ -219,11 +218,7 @@ var CustomFoldUI = {
   handleEvent(event) {
     switch (event.type) {
       case "click":
-        if (this.dialogElement?.contains(event.target)) {
-          this.onDialogClick(event);
-        } else {
-          this.onMenuClick(event);
-        }
+        this.onMenuClick(event);
         break;
       case "auxclick":
         if (event.button == 1) {
@@ -324,7 +319,6 @@ var CustomFoldUI = {
 
   disconnect() {
     this.cancelReload();
-    this.hideDialog({ reload: false });
     this.pendingInput = null;
     clearTimeout(this.inputTimer);
     this.generation++;
@@ -386,11 +380,7 @@ var CustomFoldUI = {
   run(id) {
     let browser = this.browser;
     this.flushInput();
-    this.lazy.Fold.run(browser, id).then(dialog => {
-      if (dialog && browser == this.browser && this.open) {
-        this.showDialog(dialog);
-      }
-    });
+    this.lazy.Fold.run(browser, id);
     this.reload();
   },
 
@@ -553,6 +543,17 @@ var CustomFoldUI = {
       heading.textContent = section.heading;
       element.append(heading);
     }
+    if (section.actions) {
+      let row = document.createElement("div");
+      row.className = "custom-fold-heading-row";
+      if (element.firstChild) {
+        row.append(element.firstChild);
+      }
+      row.append(
+        ...section.actions.map(action => this.createHeadingAction(action))
+      );
+      element.append(row);
+    }
     for (let item of section.items) {
       list.append(this.createItem(item));
     }
@@ -663,6 +664,34 @@ var CustomFoldUI = {
   },
 
   /**
+   * A section's own button, like a filter, as an icon at the end of its
+   * title. Unlike a row's actions it's always shown.
+   *
+   * @param {object} action
+   * @returns {Element}
+   */
+  createHeadingAction(action) {
+    let button = document.createElement("button");
+    button.type = "button";
+    button.className = "custom-fold-heading-action";
+    button.dataset.actionId = action.id;
+    button.setAttribute("aria-label", action.label);
+    button.title = action.label;
+    if (action.popup) {
+      button.dataset.popup = "true";
+      button.setAttribute("aria-haspopup", "menu");
+    }
+    if (action.pressed != undefined) {
+      button.setAttribute("aria-pressed", String(action.pressed));
+    }
+    let icon = action.icon && Object.values(action.icon).some(Boolean);
+    button.append(
+      this.createIcon(icon ? action.icon : { name: "more" }, action)
+    );
+    return button;
+  },
+
+  /**
    * @param {?object} icon The model's icon.
    * @param {object} owner The item or action it belongs to.
    * @returns {Element}
@@ -722,6 +751,16 @@ var CustomFoldUI = {
       }
       return;
     }
+    if (target.classList.contains("custom-fold-heading-action")) {
+      if (event.button == 0 && this.browser) {
+        if (target.dataset.popup) {
+          this.relay(target.dataset.actionId, target);
+        } else {
+          this.run(target.dataset.actionId);
+        }
+      }
+      return;
+    }
     let item = this.items.get(target.dataset.itemId);
     if (!item || !this.browser) {
       return;
@@ -761,7 +800,7 @@ var CustomFoldUI = {
       return;
     }
     this.pendingInput = {
-      id: input.dataset.dialogId ?? input.dataset.itemId,
+      id: input.dataset.itemId,
       value: input.value,
     };
     clearTimeout(this.inputTimer);
@@ -769,8 +808,7 @@ var CustomFoldUI = {
   },
 
   /**
-   * Sends what was typed but not sent yet, before a click that may use it,
-   * such as a dialog's save button.
+   * Sends what was typed but not sent yet, before a click that may use it.
    */
   flushInput() {
     clearTimeout(this.inputTimer);
@@ -784,185 +822,18 @@ var CustomFoldUI = {
   submitField(input) {
     clearTimeout(this.inputTimer);
     this.pendingInput = null;
-    this.lazy.Fold.input(
-      this.browser,
-      input.dataset.dialogId ?? input.dataset.itemId,
-      input.value,
-      { submit: true }
-    );
-    if (input.dataset.dialogId) {
-      setTimeout(() => this.refreshDialog(), this.dialogInterval);
-    } else {
-      this.reload();
-    }
-  },
-
-  /**
-   * A dialog the site opens from the menu, like a rename or a delete
-   * confirmation, shows as a sheet over the menu. Its fields and buttons act
-   * on the site's dialog, which stays concealed, and the sheet follows it
-   * until the site closes it.
-   *
-   * @param {object} dialog The dialog as Fold.run reads it.
-   */
-  showDialog(dialog) {
-    if (!this.dialogElement) {
-      let sheet = document.createElement("div");
-      sheet.id = "custom-fold-dialog";
-      sheet.setAttribute("role", "dialog");
-      sheet.setAttribute("aria-modal", "true");
-      sheet.setAttribute("aria-labelledby", "custom-fold-dialog-title");
-      sheet.addEventListener("click", this);
-      sheet.addEventListener("input", this);
-      this.section.append(sheet);
-      this.dialogElement = sheet;
-    }
-    let first = !this.dialog;
-    this.dialog = dialog;
-    this.menu.inert = true;
-    this.dialogElement.hidden = false;
-    let json = JSON.stringify(dialog);
-    if (json != this.dialogJSON) {
-      this.dialogJSON = json;
-      this.renderDialog();
-    }
-    if (first) {
-      this.dialogElement.querySelector("input, button:not(:disabled)")?.focus();
-    }
-    this.dialogTimer ??= setInterval(
-      () => this.refreshDialog(),
-      this.dialogInterval
-    );
-  },
-
-  async refreshDialog() {
-    let browser = this.browser;
-    if (!this.dialog || !browser) {
-      return;
-    }
-    let dialog = await this.lazy.Fold.readDialog(browser);
-    if (browser != this.browser || !this.dialog) {
-      return;
-    }
-    if (dialog) {
-      this.showDialog(dialog);
-    } else {
-      this.hideDialog();
-    }
-  },
-
-  hideDialog({ reload = true } = {}) {
-    clearInterval(this.dialogTimer);
-    this.dialogTimer = null;
-    if (!this.dialog) {
-      return;
-    }
-    let hadFocus = this.dialogElement.contains(document.activeElement);
-    this.dialog = null;
-    this.dialogJSON = null;
-    this.dialogElement.hidden = true;
-    this.dialogElement.replaceChildren();
-    this.menu.inert = false;
-    if (hadFocus) {
-      this.menu.querySelector("button, input")?.focus();
-    }
-    if (reload && this.browser) {
-      this.reload();
-    }
-  },
-
-  renderDialog() {
-    let sheet = this.dialogElement;
-    let focused = sheet.contains(document.activeElement)
-      ? document.activeElement
-      : null;
-    let focusId = focused?.dataset.dialogId;
-    let typing =
-      focused?.localName == "input"
-        ? {
-            value: focused.value,
-            start: focused.selectionStart,
-            end: focused.selectionEnd,
-          }
-        : null;
-    let title = document.createElement("h2");
-    title.id = "custom-fold-dialog-title";
-    title.className = "custom-fold-dialog-title";
-    title.textContent = this.dialog.title;
-    let parts = [title];
-    if (this.dialog.text) {
-      let text = document.createElement("p");
-      text.className = "custom-fold-dialog-text";
-      text.textContent = this.dialog.text;
-      parts.push(text);
-    }
-    let body = document.createElement("div");
-    body.className = "custom-fold-dialog-body";
-    let buttons = document.createElement("div");
-    buttons.className = "custom-fold-dialog-buttons";
-    for (let item of this.dialog.items) {
-      let control;
-      if (item.kind == "field") {
-        control = document.createElement("input");
-        control.className = "custom-fold-dialog-field";
-        control.autocomplete = "off";
-        control.value = item.value ?? "";
-        control.placeholder = item.placeholder ?? "";
-        control.setAttribute("aria-label", item.label);
-        body.append(control);
-      } else if (item.kind == "toggle") {
-        control = this.createRow({ ...item, id: "" });
-        delete control.dataset.itemId;
-        body.append(control);
-      } else {
-        control = document.createElement("button");
-        control.type = "button";
-        control.className = "custom-fold-dialog-button";
-        control.textContent = item.label;
-        buttons.append(control);
-      }
-      control.dataset.dialogId = item.id;
-      control.disabled = !!item.disabled;
-    }
-    parts.push(body, buttons);
-    sheet.replaceChildren(...parts);
-    if (focusId) {
-      let target = [...sheet.querySelectorAll("input, button")].find(
-        element => element.dataset.dialogId == focusId
-      );
-      target?.focus();
-      // What the user is typing wins over the page's value read meanwhile.
-      if (typing && target?.localName == "input") {
-        target.value = typing.value;
-        target.setSelectionRange(typing.start, typing.end);
-      }
-    }
-  },
-
-  onDialogClick(event) {
-    let target = event.target.closest("button");
-    let id = target?.dataset.dialogId;
-    if (!id || target.disabled || !this.browser) {
-      return;
-    }
-    let browser = this.browser;
-    this.flushInput();
-    this.lazy.Fold.run(browser, id).then(dialog => {
-      if (browser != this.browser) {
-        return;
-      }
-      if (dialog) {
-        this.showDialog(dialog);
-      } else {
-        this.refreshDialog();
-      }
+    this.lazy.Fold.input(this.browser, input.dataset.itemId, input.value, {
+      submit: true,
     });
+    this.reload();
   },
 
   toggleSection(heading) {
     let expanded = heading.getAttribute("aria-expanded") != "true";
     heading.setAttribute("aria-expanded", String(expanded));
-    heading.nextElementSibling.hidden = !expanded;
+    heading
+      .closest(".custom-archive-section")
+      .querySelector(":scope > .custom-archive-list").hidden = !expanded;
     this.collapsed.set(heading.dataset.section, !expanded);
     if (heading.dataset.toggleId && this.browser) {
       this.run(heading.dataset.toggleId);
@@ -1032,7 +903,7 @@ var CustomFoldUI = {
 
   /**
    * Opens the site's own menu behind an item or action and shows its items
-   * here, or the dialog it opens as a sheet.
+   * here. A dialog it opens instead shows on the page.
    */
   async relay(id, anchor) {
     let browser = this.browser;
@@ -1040,9 +911,7 @@ var CustomFoldUI = {
     if (browser != this.browser || !this.open) {
       return;
     }
-    if (result?.dialog) {
-      this.showDialog(result.dialog);
-    } else if (result?.items?.length) {
+    if (result?.items?.length) {
       this.openPopup(anchor, result.items, "relay");
     } else {
       this.reload();
@@ -1073,10 +942,6 @@ var CustomFoldUI = {
   },
 
   onKeyDown(event) {
-    if (this.dialogElement?.contains(event.target)) {
-      this.onDialogKeyDown(event);
-      return;
-    }
     let field = event.target.localName == "input";
     if (field && event.key == "Enter") {
       event.preventDefault();
@@ -1103,18 +968,6 @@ var CustomFoldUI = {
     if (controls[next]) {
       event.preventDefault();
       controls[next].focus();
-    }
-  },
-
-  onDialogKeyDown(event) {
-    if (event.key == "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      this.lazy.Fold.closeDialog(this.browser);
-      setTimeout(() => this.refreshDialog(), this.dialogInterval);
-    } else if (event.key == "Enter" && event.target.localName == "input") {
-      event.preventDefault();
-      this.submitField(event.target);
     }
   },
 
@@ -1235,7 +1088,6 @@ var CustomFoldUI = {
     this.rootObserver.disconnect();
     this.cancelReload();
     clearTimeout(this.inputTimer);
-    clearInterval(this.dialogTimer);
   },
 };
 

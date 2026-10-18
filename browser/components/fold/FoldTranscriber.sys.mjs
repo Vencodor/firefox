@@ -620,6 +620,16 @@ class Transcription {
       let override =
         groups.sections?.find(section => section.heading.test(heading)) ?? {};
       let id = this.uniqueId(slug(heading) || "section", "");
+      // Read first, so they're not read as items too.
+      let headingActions = groups.headingActions
+        ? this.candidates(group, groups.headingActions, [
+            headingElement,
+            toggle,
+          ])
+            .slice(0, MAX_ACTIONS)
+            .map(element => this.action(element, { id }, group))
+            .filter(Boolean)
+        : [];
       let items = this.rows(
         this.candidates(group, groups.items, [headingElement, toggle]),
         { section: id, scope: group, kind: override.kind }
@@ -633,6 +643,9 @@ class Transcription {
       let section = { id, items };
       if (heading) {
         section.heading = clip(heading);
+      }
+      if (headingActions.length) {
+        section.actions = headingActions;
       }
       if (override.collapsed != undefined) {
         section.collapsible = true;
@@ -1163,102 +1176,6 @@ export function readMenu(document, menu) {
   return { items, elements };
 }
 
-const DIALOG_CONTROLS = [
-  "input:not([type='hidden'])",
-  "textarea",
-  "button",
-  "a[href]",
-  "[role='button']",
-  "[role='checkbox']",
-  "[role='switch']",
-].join(", ");
-const DIALOG_TITLES =
-  "h1, h2, h3, [role='heading'], [mat-dialog-title], [slot='title']";
-const MAX_DIALOG_ITEMS = 20;
-const DIALOG_TEXT_LIMIT = 600;
-
-/**
- * Reads a dialog the site opened, such as a rename or delete confirmation
- * from a row's menu, for the Mono sidebar to show instead: its title, its
- * text, and its fields, checkboxes and buttons in order.
- *
- * @param {Document} document The page.
- * @param {Element} dialog The site's dialog element.
- * @returns {{dialog: object, elements: Map}} The dialog as
- *   { title, text, items: [{ id, kind, label, value?, placeholder?,
- *   checked?, disabled? }] }, kind being field, toggle or button, and the
- *   elements behind the items by id.
- */
-export function readDialog(document, dialog) {
-  let reading = new Transcription(document, { root: [] });
-  let titleElement = null;
-  let labelled = dialog.getAttribute("aria-labelledby");
-  if (labelled) {
-    titleElement = dialog
-      .getRootNode()
-      .getElementById?.(labelled.split(/\s+/)[0]);
-  }
-  titleElement ??= reading.walker.query(dialog, DIALOG_TITLES);
-  let title = titleElement
-    ? textPieces(titleElement, { all: true }).join(" ")
-    : (dialog.getAttribute("aria-label") ?? "");
-
-  let found = reading.walker
-    .queryAll(dialog, DIALOG_CONTROLS)
-    .filter(element => !closest(element, "[hidden]", dialog));
-  let set = new Set(found);
-  let items = [];
-  let elements = new Map();
-  for (let element of found) {
-    if (isInside(element, set, dialog) || items.length >= MAX_DIALOG_ITEMS) {
-      continue;
-    }
-    let kind = controlKind(element) ?? "button";
-    let { label } = reading.label(element, kind == "button" ? null : kind);
-    if (!label && kind != "field") {
-      continue;
-    }
-    let item = {
-      id: reading.uniqueId("dialog", slug(label) || kind),
-      kind,
-      label: label || title,
-    };
-    if (kind == "field") {
-      item.value = clip(String(element.value ?? ""), VALUE_LIMIT);
-      let placeholder = element.getAttribute("placeholder");
-      if (placeholder) {
-        item.placeholder = clip(placeholder);
-      }
-    } else if (kind == "toggle") {
-      item.checked = isChecked(element);
-    }
-    if (element.disabled || element.getAttribute("aria-disabled") == "true") {
-      item.disabled = true;
-    }
-    items.push(item);
-    elements.set(item.id, { element });
-  }
-
-  // The text is what's left once the title and the controls are taken out.
-  let skip = new Set([title, ...items.map(item => item.label)]);
-  let described = dialog.getAttribute("aria-describedby");
-  let source =
-    (described &&
-      dialog.getRootNode().getElementById?.(described.split(/\s+/)[0])) ||
-    dialog;
-  let text = textPieces(source)
-    .filter(piece => !skip.has(piece))
-    .join(" ");
-  return {
-    dialog: {
-      title: clip(title),
-      text: clip(text, DIALOG_TEXT_LIMIT),
-      items,
-    },
-    elements,
-  };
-}
-
 /**
  * The stylesheet that conceals the site's sidebar while Fold is on. It's
  * loaded as a user sheet, so it reaches into shadow trees and wins over the
@@ -1287,8 +1204,8 @@ export function hidingStyle(rule) {
   if (rule.remove?.length) {
     style += `:is(${rule.remove.join(", ")}) { display: none !important; }\n`;
   }
-  // A site menu or dialog opened from the concealed sidebar, and what dims
-  // the page behind it, is shown in the Mono sidebar instead.
+  // A site menu opened from the concealed sidebar, and what it's drawn on,
+  // is shown in the Mono sidebar instead.
   style += `[data-mono-fold-relay] {
   visibility: hidden !important;
   opacity: 0 !important;
