@@ -31,6 +31,12 @@ observation/CandidateRanking.sys.mjs
 observation/ObservationOverlay.sys.mjs
   Gecko의 anonymous content 표시층. 사이트 DOM/스타일은 수정하지 않으며
   pointer-events:none으로 클릭을 가로채지 않는다.
+AgentHeadless.sys.mjs
+  HiddenBrowserManager(WindowlessBrowser)를 사용해 화면 없는 브라우저에서
+  검색 및 URL 로드를 수행하고 AgentObservationSession으로 본문과 링크를 수집한다.
+AgentRuntime.sys.mjs
+  에이전트 채팅 탭(CustomAgentUI.connect)과 LLM API(DeepSeek 호환)를 연결하며,
+  LLM의 web_search / read_web_page 도구 호출을 AgentHeadless로 실행해 응답한다.
 browser/base/content/custom-ui/browser-custom-observation.*
   관찰 API를 소비하는 검사 UI. 기존 CustomAgentUI의 실행/상태 연결과 분리된다.
 
@@ -76,18 +82,33 @@ element.ranking은 score, baseScore(반복/중복 감점 전), reasons를 담는
   이 점수 근거를 생략해 입력 크기를 줄일 수 있다.
 추후 목적 기반 순위를 연결할 때 기본 점수보다 목적 관련성을 우선해야 한다.
 
+페이지 맥락 추출 규칙 (Profile 2: rankContextBlocks)
+기본 20점에서 다음 근거를 합산하며 기준점(18점) 이상 블록을 우선순위대로 예산 내에서 선택한 뒤
+원래 DOM 읽기 순서로 재조합한다. 같은 표 행(<tr>)의 셀(<th>/<td>)은 ' | '로 묶고 블록 간에는 줄바꿈(\n)으로 구분한다.
+상태/알림: 긴급 알림(alert/assertive) +20, 상태 안내(status/polite) +8.
+영역/상투구: 바닥글(footer 및 비시맨틱 footer 클래스/ID) -18, 쿠키·광고·공유·상투구 배너(boilerplate_clutter) -16,
+  검색 영역 +4, 상단 헤더/내비게이션(nav 및 비시맨틱 navbar/breadcrumb) -14, 차단 대화상자 +16,
+  외부 사이드바(aside 및 비시맨틱 sidebar/related) -8, 본문/중앙 영역(main/article 및 article-body 등) +6.
+제목 계층: H1 +16, 주변부 소음이 아닌 H2/카드 제목 +10, H3 이상 +6.
+밀도/구조 신호: 단독 상태 화면(isolated_main_state) +12, 문장형/본문 블록(body_or_sentence) +6,
+  고밀도 장문 단락(rich_prose_density, CETD 기반 낮은 링크·컨트롤 밀도 및 다절 문단) +4,
+  표·코드·정의형 구조화 데이터(structured_data) +4, 카드 메타데이터(card_meta) -10,
+  보조 액션/컨트롤 과밀(card_action_or_dense_controls) -10, 링크 과밀 클러스터/단독 비문장 링크(link_heavy) -12,
+  소형 프레임(small_iframe) -8, 반복 카드 감점(3번째 카드부터 -4점씩 최대 -20점).
+
 현재 범위
 http/https/file 문서, 현재 화면에 보이는 조작 후보, 열린 Shadow DOM,
 보이는 iframe(최대 깊이 3, 최상위 포함 최대 16문서)을 처리한다.
 프레임 수집에는 전체 5초 제한을 두며, 초과한 프레임은 제외 사유를 기록한다.
 기본 예산은 동작 250개, 본문 6000자, 요소 문맥 320자다.
+Headless 수집(AgentHeadless)에서는 화면 아래(offscreen) 본문 블록도 함께 수집해 긴 문서를 보존한다.
 본문 잘림, 동작 예산 초과 및 프레임 수집 실패를 결과/검사 UI에 표시한다.
 비밀번호와 파일 입력값은 수집하지 않는다. 관찰 데이터는 세션 메모리에만
 유지하며 자동 저장, 외부 전송, 모델 호출, 페이지 조작을 수행하지 않는다.
 
 닫힌 Shadow DOM, canvas 내부, 브라우저 내부 페이지와 완전한 접근성 이름
 알고리즘은 지원하지 않는다. 프레임 가림/클리핑은 표본 검사이며 CSS 변환된
-프레임의 좌표 정확성은 보장하지 않는다. 본문은 전체 문서 읽기 API가 아니다.
+프레임의 좌표 정확성은 보장하지 않는다.
 MutationObserver/이벤트로 감지되지 않는 CSS 애니메이션이나 스크립트의 값
 직접 변경도 있으므로 '다시 관찰'이 필요할 수 있다. 별도 클릭 실행기는 없다.
 

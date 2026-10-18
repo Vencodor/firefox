@@ -62,15 +62,37 @@ export class AgentObservationSession {
       }
     };
     Services.obs.addObserver(this.observer, "agent-observation-invalidated");
-    this.progressListener = {
-      onLocationChange: (changedBrowser, webProgress) => {
-        if (changedBrowser === browser && webProgress.isTopLevel && this.id) {
-          this.invalidate("navigation");
-        }
-      },
-    };
-    this.tabbrowser = browser.documentGlobal.gBrowser;
-    this.tabbrowser.addTabsProgressListener(this.progressListener);
+    this.tabbrowser = browser.documentGlobal?.gBrowser ?? null;
+    if (this.tabbrowser) {
+      this.progressListener = {
+        onLocationChange: (changedBrowser, webProgress) => {
+          if (
+            changedBrowser === browser &&
+            webProgress.isTopLevel &&
+            this.id
+          ) {
+            this.invalidate("navigation");
+          }
+        },
+      };
+      this.tabbrowser.addTabsProgressListener(this.progressListener);
+    } else if (browser.webProgress) {
+      this.progressListener = {
+        QueryInterface: ChromeUtils.generateQI([
+          "nsIWebProgressListener",
+          "nsISupportsWeakReference",
+        ]),
+        onLocationChange: webProgress => {
+          if (webProgress?.isTopLevel && this.id) {
+            this.invalidate("navigation");
+          }
+        },
+      };
+      browser.webProgress.addProgressListener(
+        this.progressListener,
+        Ci.nsIWebProgress.NOTIFY_LOCATION
+      );
+    }
   }
 
   async observe(options = {}) {
@@ -275,6 +297,7 @@ export class AgentObservationSession {
         rankedContext = rankContextBlocks(contextBlocks, {
           textLimit: config.textLimit,
           isIsolatedMainState: stateSignals.isIsolatedMainState,
+          query: config.query,
         });
         if (config.textMode !== "raw") {
           pageText = rankedContext.text;
@@ -381,7 +404,7 @@ export class AgentObservationSession {
       };
       this.result = result;
       this.#populateFrameItems(this.mode);
-      if (!(await this.#show())) {
+      if (options.showOverlay !== false && !(await this.#show())) {
         throw new Error("Observation changed before highlighting");
       }
       if (generation !== this.generation) {
@@ -546,7 +569,13 @@ export class AgentObservationSession {
     this.destroyed = true;
     const cleared = this.clear();
     Services.obs.removeObserver(this.observer, "agent-observation-invalidated");
-    this.tabbrowser.removeTabsProgressListener(this.progressListener);
+    if (this.tabbrowser) {
+      this.tabbrowser.removeTabsProgressListener(this.progressListener);
+    } else if (this.browser.webProgress && this.progressListener) {
+      try {
+        this.browser.webProgress.removeProgressListener(this.progressListener);
+      } catch {}
+    }
     if (sessions.get(this.browser) === this) {
       sessions.delete(this.browser);
     }

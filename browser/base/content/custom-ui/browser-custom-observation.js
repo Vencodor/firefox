@@ -153,7 +153,11 @@ var CustomObservationUI = {
       }
       return;
     }
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    this.panel?.getBoundingClientRect();
+    browser?.getBoundingClientRect();
+    await new Promise(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
+    );
     if (
       requestId !== this.requestId ||
       this.panel.hidden ||
@@ -593,8 +597,12 @@ var CustomObservationUI = {
             isolated_main_state:
               "agent-observation-reason-isolated-main-state",
             body_or_sentence: "agent-observation-reason-body-or-sentence",
+            rich_prose_density: "agent-observation-reason-rich-prose-density",
+            structured_data: "agent-observation-reason-structured-data",
             card_action_or_dense_controls:
               "agent-observation-reason-card-action-or-dense-controls",
+            link_heavy: "agent-observation-reason-link-heavy",
+            boilerplate_clutter: "agent-observation-reason-boilerplate-clutter",
             small_iframe: "agent-observation-reason-small-iframe",
           }[reason?.code] ?? "agent-observation-reason-other";
         document.l10n.setAttributes(label, reasonId);

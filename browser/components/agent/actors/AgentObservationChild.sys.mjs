@@ -30,6 +30,8 @@ export class AgentObservationChild extends JSWindowActorChild {
     );
     this.id = id;
     this.targets = targets;
+    this.capturedWidth = this.contentWindow.innerWidth;
+    this.capturedHeight = this.contentWindow.innerHeight;
     this.overlay = new ObservationOverlay(this.document);
     this.mutationObserver = new this.contentWindow.MutationObserver(() =>
       this.invalidate("mutation")
@@ -81,7 +83,7 @@ export class AgentObservationChild extends JSWindowActorChild {
       const rect = reference.target.getBoundingClientRect();
       if (
         ["x", "y", "width", "height"].some(
-          key => Math.abs(rect[key] - item.rect[key]) > 1
+          key => Math.abs(rect[key] - item.rect[key]) > 2
         )
       ) {
         this.invalidate("geometry");
@@ -94,6 +96,13 @@ export class AgentObservationChild extends JSWindowActorChild {
   }
 
   handleEvent(event) {
+    if (
+      event.type === "resize" &&
+      this.contentWindow.innerWidth === this.capturedWidth &&
+      this.contentWindow.innerHeight === this.capturedHeight
+    ) {
+      return;
+    }
     this.invalidate(event.type);
   }
 

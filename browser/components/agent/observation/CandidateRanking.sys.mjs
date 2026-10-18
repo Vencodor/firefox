@@ -44,8 +44,12 @@ const CONTEXT_WEIGHTS = {
   heading_3_plus: 6,
   isolated_main_state: 12,
   body_or_sentence: 6,
+  rich_prose_density: 4,
+  structured_data: 4,
   card_meta: -10,
   card_action_or_dense_controls: -10,
+  link_heavy: -12,
+  boilerplate_clutter: -16,
   small_iframe: -8,
 };
 
@@ -269,16 +273,60 @@ export function rankCandidates(rows, roleOf, { legacyMode = false } = {}) {
   return ranked;
 }
 
+function sameTableRow(a, b) {
+  return Boolean(
+    a &&
+      b &&
+      a.table_row_id &&
+      a.table_row_id === b.table_row_id &&
+      (a.frame_id ?? "top") === (b.frame_id ?? "top")
+  );
+}
+
+function formatContextText(blocks, textLimit) {
+  if (!blocks.length) {
+    return "";
+  }
+  let out = "";
+  for (let i = 0; i < blocks.length; i++) {
+    const cur = blocks[i];
+    const prev = i > 0 ? blocks[i - 1] : null;
+    const sep = prev ? (sameTableRow(prev, cur) ? " | " : "\n") : "";
+    out += sep + cur.text;
+    if (out.length >= textLimit) {
+      return out.slice(0, textLimit);
+    }
+  }
+  return out;
+}
+
+function extractQueryKeywords(queryInput) {
+  const raw = Array.isArray(queryInput)
+    ? queryInput.join(" ")
+    : String(queryInput || "");
+  if (!raw.trim()) {
+    return [];
+  }
+  const matches = raw.toLowerCase().match(/[\p{L}\p{N}]{2,}/gu) || [];
+  return Array.from(new Set(matches));
+}
+
 /**
  * Profile 2 ("context"): Scores semantic text blocks to detect page state
  * (e.g., 404 errors, alerts, modals, primary headings, and top feed summaries)
- * while suppressing navigation, footer, sidebar, and metadata noise.
+ * while suppressing navigation, footer, sidebar, link-farm, and metadata noise.
  * Selects top blocks within `textLimit` and reassembles them in DOM reading order.
  */
 export function rankContextBlocks(
   blocks,
-  { textLimit = 6000, threshold = 18, isIsolatedMainState = false } = {}
+  {
+    textLimit = 6000,
+    threshold = 18,
+    isIsolatedMainState = false,
+    query = "",
+  } = {}
 ) {
+  const queryKeywords = extractQueryKeywords(query);
   const cardPositions = new Map();
   const scoredBlocks = blocks.map((block, index) => {
     const reasons = [{ code: "base", delta: CONTEXT_WEIGHTS.base }];
@@ -291,10 +339,11 @@ export function rankContextBlocks(
       add("status_polite");
     }
 
-    // 2. Landmark region (conditional mutual exclusion):
-    // footer (-18) > search (+4) > nav/header (-14) > blocking_dialog (+16) > external_complementary (-8) > main/central (+6)
+    // 2. Landmark region & boilerplate clutter (conditional mutual exclusion):
+    // footer (-18) > boilerplate_clutter (-16) > search (+4) > nav/header (-14) > blocking_dialog (+16) > external_complementary (-8) > main/central (+6)
     const isPeripheralNoise = Boolean(
       block.footer ||
+        block.boilerplate_clutter ||
         (!block.search &&
           (block.navigation ||
             block.header_banner ||
@@ -305,6 +354,8 @@ export function rankContextBlocks(
     );
     if (block.footer) {
       add("footer");
+    } else if (block.boilerplate_clutter) {
+      add("boilerplate_clutter");
     } else if (block.search) {
       add("search");
     } else if (block.navigation || block.header_banner) {
@@ -320,7 +371,7 @@ export function rankContextBlocks(
     // 3. Heading & Title hierarchy (mutually exclusive; peripheral widgets don't get sub-heading boosts)
     const isHeadingOrTitle =
       block.heading_level > 0 || block.card_subrole === "title";
-    if (block.heading_level === 1) {
+    if (block.heading_level === 1 && !block.boilerplate_clutter) {
       add("heading_1");
     } else if (
       !isPeripheralNoise &&
@@ -331,7 +382,25 @@ export function rankContextBlocks(
       add("heading_3_plus");
     }
 
-    // 4. Content density & subrole signals
+    // 4. CETD / Readability link density & subrole classification
+    const linkDensity = Number(block.link_density) || 0;
+    const linkCount = Number(block.link_count) || 0;
+    const nonLinkChars = Number(block.non_link_chars ?? block.text?.length ?? 0);
+    const isMultiLinkCluster =
+      !isHeadingOrTitle &&
+      block.card_subrole !== "body" &&
+      linkCount >= 2 &&
+      linkDensity > 0.6 &&
+      nonLinkChars < 60;
+    const isShortStandaloneLink =
+      !isHeadingOrTitle &&
+      block.card_subrole !== "body" &&
+      block.card_subrole !== "meta" &&
+      block.card_subrole !== "action" &&
+      (block.tag === "a" || block.role === "link") &&
+      !block.is_sentence_like;
+    const isLinkHeavy = isMultiLinkCluster || isShortStandaloneLink;
+
     if (
       isIsolatedMainState &&
       (inContentRegion || block.blocking_dialog) &&
@@ -341,11 +410,34 @@ export function rankContextBlocks(
     }
     if (
       !isPeripheralNoise &&
+      !isLinkHeavy &&
       (block.card_subrole === "body" || block.is_sentence_like) &&
       block.card_subrole !== "meta" &&
       block.card_subrole !== "action"
     ) {
       add("body_or_sentence");
+    }
+    if (
+      !isPeripheralNoise &&
+      !isLinkHeavy &&
+      block.is_rich_prose &&
+      linkDensity <= 0.35 &&
+      (block.control_density || 0) <= 0.25 &&
+      block.card_subrole !== "meta" &&
+      block.card_subrole !== "action"
+    ) {
+      add("rich_prose_density");
+    }
+    if (
+      !isPeripheralNoise &&
+      !isLinkHeavy &&
+      block.is_structured_data &&
+      linkDensity <= 0.5 &&
+      (block.control_density || 0) <= 0.4 &&
+      block.card_subrole !== "meta" &&
+      block.card_subrole !== "action"
+    ) {
+      add("structured_data");
     }
     if (block.card_subrole === "meta") {
       add("card_meta");
@@ -354,6 +446,8 @@ export function rankContextBlocks(
       (block.control_density > 0.8 && !isHeadingOrTitle)
     ) {
       add("card_action_or_dense_controls");
+    } else if (isLinkHeavy) {
+      add("link_heavy");
     }
     if (block.small_iframe) {
       add("small_iframe");
@@ -374,6 +468,21 @@ export function rankContextBlocks(
       repetition = -Math.min(20, Math.max(0, pos - 2) * 4);
       if (repetition) {
         reasons.push({ code: "repeated", delta: repetition });
+      }
+    }
+
+    // 6. Query-aware relevance boost (when a search query is provided)
+    if (queryKeywords.length && !isPeripheralNoise && block.text) {
+      const lowerText = String(block.text).toLowerCase();
+      let matchedCount = 0;
+      for (const kw of queryKeywords) {
+        if (lowerText.includes(kw)) {
+          matchedCount++;
+        }
+      }
+      if (matchedCount > 0) {
+        const queryBoost = Math.min(12, matchedCount * 4);
+        reasons.push({ code: "query_match", delta: queryBoost });
       }
     }
 
@@ -399,13 +508,13 @@ export function rankContextBlocks(
     if (item.score < threshold) {
       continue;
     }
-    const nextLen = item.text.length + (chosen.length ? 1 : 0);
-    if (charBudgetUsed + nextLen > textLimit) {
+    const nextLen = item.text.length + (chosen.length ? 3 : 0);
+    if (charBudgetUsed + item.text.length + (chosen.length ? 1 : 0) > textLimit) {
       truncated = true;
       continue;
     }
     chosen.push(item);
-    charBudgetUsed += nextLen;
+    charBudgetUsed += Math.min(nextLen, item.text.length + 1);
   }
 
   // Fallback if qualifying blocks produced almost no text (< 80 chars)
@@ -414,13 +523,12 @@ export function rankContextBlocks(
       if (chosen.includes(item)) {
         continue;
       }
-      const nextLen = item.text.length + (chosen.length ? 1 : 0);
-      if (charBudgetUsed + nextLen > textLimit) {
+      if (charBudgetUsed + item.text.length + (chosen.length ? 1 : 0) > textLimit) {
         truncated = true;
         break;
       }
       chosen.push(item);
-      charBudgetUsed += nextLen;
+      charBudgetUsed += item.text.length + (chosen.length ? 1 : 0);
       if (charBudgetUsed >= 160) {
         break;
       }
@@ -429,10 +537,7 @@ export function rankContextBlocks(
 
   // Re-order selected blocks in natural DOM reading order
   chosen.sort((a, b) => a.order - b.order);
-  const text = chosen
-    .map(item => item.text)
-    .join(" ")
-    .slice(0, textLimit);
+  const text = formatContextText(chosen, textLimit);
 
   return {
     text,

@@ -35,6 +35,7 @@ export function collectDOMObservation(window, options = {}) {
   };
   const viewportArea = Math.max(1, window.innerWidth * window.innerHeight);
   const smallIframe = Boolean(options.smallIframe);
+  const includeOffscreenText = Boolean(options.includeOffscreenText);
 
   const heuristics = new DOMHeuristics(window, { clip, legacyMode });
   const parentOf = heuristics.parentOf.bind(heuristics);
@@ -338,21 +339,14 @@ export function collectDOMObservation(window, options = {}) {
       }
     }
     if (usable) {
-      const nativeFooter = landmark(element, "footer,[role='contentinfo']");
-      const footer =
-        nativeFooter &&
-        (nativeFooter.getAttribute("role") === "contentinfo" ||
-          !landmark(
-            parentOf(nativeFooter),
-            'article,section,aside,nav,[role="article"]'
-          ));
+      const footer = heuristics.isFooterRegion(element);
       const repetition = repetitionCard(element);
       const visibleArea =
         Math.max(0, intersection.width) * Math.max(0, intersection.height);
       const rectArea = rect.width * rect.height;
       const role = roleOf(row);
       row.ranking_features = {
-        navigation: Boolean(landmark(element, "nav,[role='navigation']")),
+        navigation: heuristics.isNavigationRegion(element),
         dialog: Boolean(
           landmark(
             element,
@@ -362,9 +356,13 @@ export function collectDOMObservation(window, options = {}) {
         ),
         menu: Boolean(landmark(element, '[role="menu"],[role="listbox"]', true)),
         search: Boolean(landmark(element, 'search,[role="search"]')),
-        main: Boolean(landmark(element, "main,[role='main']")),
+        main: Boolean(
+          landmark(element, "main,[role='main']") ||
+            heuristics.isPositiveContentContainer(element)
+        ),
         complementary: Boolean(
-          landmark(element, "aside,[role='complementary']")
+          landmark(element, "aside,[role='complementary']") ||
+            heuristics.isExternalComplementary(element)
         ),
         footer: Boolean(footer),
         invalid:
@@ -508,6 +506,21 @@ export function collectDOMObservation(window, options = {}) {
     };
   }
 
+  function hasDirectTextSibling(container) {
+    if (!container?.childNodes) {
+      return false;
+    }
+    for (const child of container.childNodes) {
+      if (
+        child.nodeType === NodeConstructor.TEXT_NODE &&
+        normalize(child.textContent).length > 0
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function unitContainerForTextParent(parent) {
     const prose = closest(parent, PROSE_BLOCK_SELECTOR);
     if (prose) {
@@ -526,6 +539,15 @@ export function collectDOMObservation(window, options = {}) {
       'button,[role="button"],a[href],[role="link"],[role="tab"],[role="menuitem"],summary,time,[datetime]'
     );
     if (controlOrLink) {
+      if (controlOrLink.matches('a[href],[role="link"]')) {
+        const inlineHost = closest(
+          parentOf(controlOrLink),
+          'li,[role="listitem"],td,th,[role="cell"],[role="gridcell"]'
+        );
+        if (inlineHost && hasDirectTextSibling(inlineHost)) {
+          return inlineHost;
+        }
+      }
       return controlOrLink;
     }
     return (
@@ -539,6 +561,8 @@ export function collectDOMObservation(window, options = {}) {
   function collectContextBlocksAndState(rootNode) {
     const unitMap = new Map();
     const unitOrder = [];
+    const tableRowIds = new WeakMap();
+    let nextTableRowId = 1;
     let visited = 0;
     let walkTruncated = false;
     let docMainBlockCount = 0;
@@ -574,11 +598,14 @@ export function collectDOMObservation(window, options = {}) {
         }
         const unit = unitContainerForTextParent(parent);
         const inMainDoc = hasMainLandmark
-          ? Boolean(landmark(unit, 'main,[role="main"]'))
-          : !landmark(
-              unit,
-              'nav,[role="navigation"],footer,[role="contentinfo"],aside,[role="complementary"]'
-            ) && !heuristics.isGlobalHeaderBanner(unit);
+          ? Boolean(
+              landmark(unit, 'main,[role="main"]') ||
+                heuristics.isPositiveContentContainer(unit)
+            )
+          : !heuristics.isFooterRegion(unit) &&
+            !heuristics.isNavigationRegion(unit) &&
+            !heuristics.isExternalComplementary(unit) &&
+            !heuristics.isGlobalHeaderBanner(unit);
 
         if (inMainDoc) {
           docMainCharCount += value.length;
@@ -596,7 +623,7 @@ export function collectDOMObservation(window, options = {}) {
           width: rect.width,
           height: rect.height,
         });
-        if (r.width <= 0 || r.height <= 0) {
+        if (!includeOffscreenText && (r.width <= 0 || r.height <= 0)) {
           return;
         }
         let entry = unitMap.get(unit);
@@ -656,15 +683,7 @@ export function collectDOMObservation(window, options = {}) {
       const blockNodeId = `b${order + 1}`;
       targets.set(blockNodeId, { element: unit, target: unit });
 
-      const nativeFooter = landmark(unit, "footer,[role='contentinfo']");
-      const footer = Boolean(
-        nativeFooter &&
-          (nativeFooter.getAttribute("role") === "contentinfo" ||
-            !landmark(
-              parentOf(nativeFooter),
-              'article,section,aside,nav,[role="article"]'
-            ))
-      );
+      const footer = heuristics.isFooterRegion(unit);
       const alertNode = landmark(
         unit,
         '[role="alert"],[aria-live="assertive"]',
@@ -720,6 +739,7 @@ export function collectDOMObservation(window, options = {}) {
 
       const inMain = Boolean(
         landmark(unit, 'main,[role="main"]') ||
+          heuristics.isPositiveContentContainer(unit) ||
           (landmark(unit, 'aside,[role="complementary"]') &&
             !heuristics.isExternalComplementary(unit))
       );
@@ -729,6 +749,27 @@ export function collectDOMObservation(window, options = {}) {
         effectiveRole && effectiveRole !== "link"
           ? 1
           : heuristics.controlDensityOf(unit);
+      const linkMetrics = heuristics.linkMetricsOf(unit);
+      const isStructuredData = heuristics.isStructuredDataBlock(unit);
+      const boilerplateClutter =
+        heuristics.isBoilerplateClutter(unit) || metrics.isBoilerplateText;
+
+      let tableRowId = null;
+      if (
+        isStructuredData &&
+        unit.matches?.(
+          'td,th,[role="cell"],[role="gridcell"],[role="columnheader"],[role="rowheader"]'
+        )
+      ) {
+        const tr = closest(unit, 'tr,[role="row"]');
+        if (tr) {
+          if (!tableRowIds.has(tr)) {
+            tableRowIds.set(tr, `tr${nextTableRowId++}`);
+          }
+          tableRowId = tableRowIds.get(tr);
+        }
+      }
+
       const translationDecision = heuristics.explainTranslationDecision(unit);
 
       blocks.push({
@@ -744,14 +785,21 @@ export function collectDOMObservation(window, options = {}) {
         blocking_dialog: blockingDialog,
         footer,
         search: Boolean(landmark(unit, 'search,[role="search"]')),
-        navigation: Boolean(landmark(unit, 'nav,[role="navigation"]')),
+        navigation: heuristics.isNavigationRegion(unit),
         header_banner: heuristics.isGlobalHeaderBanner(unit),
         main: inMain,
         in_central_band: inCentralBand,
         external_complementary: heuristics.isExternalComplementary(unit),
+        boilerplate_clutter: boilerplateClutter,
         card_subrole: subrole,
         is_sentence_like: metrics.isSentenceLike,
+        is_rich_prose: metrics.isRichProse,
+        is_structured_data: isStructuredData,
         control_density: controlDensity,
+        link_density: linkMetrics.linkDensity,
+        link_count: linkMetrics.linkCount,
+        non_link_chars: linkMetrics.nonLinkChars,
+        table_row_id: tableRowId,
         small_iframe: smallIframe,
         repetition_group: rep?.group || null,
         repetition_item: rep?.item || null,
@@ -783,7 +831,7 @@ export function collectDOMObservation(window, options = {}) {
       const siblings = node.parentElement?.children || [];
       heuristics.compactCache.set(
         node,
-        count > 1 &&
+        count >= 1 &&
           count <= 30 &&
           node.children.length > 1 &&
           Boolean(
@@ -816,11 +864,21 @@ export function collectDOMObservation(window, options = {}) {
     if (referenced) {
       return referenced;
     }
-    const heading = group.querySelector(
+    const directHeading = group.querySelector(
       ':scope > h1,:scope > h2,:scope > h3,:scope > h4,:scope > legend,:scope > [role="heading"]'
     );
-    if (heading && cssVisible(heading)) {
-      return nameOf(heading);
+    if (directHeading && cssVisible(directHeading)) {
+      return nameOf(directHeading);
+    }
+    const nestedHeading = group.querySelector(
+      'h1,h2,h3,h4,legend,[role="heading"],[slot*="title"]'
+    );
+    if (
+      nestedHeading &&
+      cssVisible(nestedHeading) &&
+      closest(nestedHeading, GROUP_SELECTOR) === group
+    ) {
+      return nameOf(nestedHeading);
     }
     if (group.matches("form,fieldset")) {
       const before = group.previousElementSibling;

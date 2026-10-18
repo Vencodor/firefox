@@ -491,7 +491,7 @@ add_task(
           "Session switches overlay back to action mode"
         );
       } finally {
-        session.destroy();
+        await session.destroy();
       }
 
       if (window.CustomObservationUI) {
@@ -534,4 +534,94 @@ add_task(
     });
   }
 );
+
+add_task(
+  async function test_context_extractor_boilerplate_link_density_and_structured_data() {
+    await BrowserTestUtils.withNewTab(FIXTURE, async browser => {
+      await SpecialPowers.spawn(browser, [], () => {
+        const doc = content.document;
+        doc.body.innerHTML = `
+          <div class="navbar">
+            <a href="https://example.com/home">Home</a>
+            <a href="https://example.com/pricing">Pricing</a>
+            <a href="https://example.com/docs">Docs</a>
+          </div>
+          <div class="cookie-banner" role="dialog" style="width: 800px; height: 300px;">
+            <p>We use cookies to improve your experience and analyze traffic on our site.</p>
+            <button type="button">Accept All Cookies</button>
+          </div>
+          <div class="article-body">
+            <h1>Quantum Engine 3.0 Release Notes</h1>
+            <p>Quantum Engine 3.0 introduces a Composite Text Density (CETD) context extractor, parallel DOM distillation, and structured table serialization for embedded browser AI agents.</p>
+            <ul>
+              <li>Install <a href="https://example.com/ext">Quantum Companion</a> to inspect live context scores in the sidebar.</li>
+            </ul>
+            <table>
+              <tr><th>Metric</th><th>Improvement</th></tr>
+              <tr><td>Token Reduction</td><td>84%</td></tr>
+            </table>
+            <div class="tag-cloud">
+              <a href="https://example.com/t/1">Browser</a>
+              <a href="https://example.com/t/2">AI</a>
+              <a href="https://example.com/t/3">DOM</a>
+              <a href="https://example.com/t/4">Extraction</a>
+              <a href="https://example.com/t/5">Benchmark</a>
+            </div>
+            <article class="card">
+              <div class="card-header"><h3>Nested Card Heading</h3></div>
+              <button id="nested-card-btn" type="button">Inspect</button>
+            </article>
+          </div>
+          <div class="sidebar">
+            <h2>Related Articles</h2>
+            <p>Check out our older posts from last year for more background details.</p>
+          </div>
+          <div class="site-footer">
+            <p>© 2026 Example Corp. All rights reserved.</p>
+          </div>
+        `;
+      });
+
+      const session = new AgentObservationSession(browser);
+      try {
+        const result = await session.observe({ textMode: "ranked" });
+        const text = result.page.text;
+
+        Assert.ok(
+          text.includes("Quantum Engine 3.0 Release Notes") &&
+            text.includes("Composite Text Density (CETD) context extractor"),
+          "Includes main heading and rich prose paragraph from non-semantic .article-body"
+        );
+        Assert.ok(
+          text.includes(
+            "Install Quantum Companion to inspect live context scores in the sidebar."
+          ),
+          "Preserves inline link inside list item sentence without fragmenting it"
+        );
+        Assert.ok(
+          text.includes("Metric | Improvement") &&
+            text.includes("Token Reduction | 84%"),
+          "Formats structured table cells on the same row with pipe separators"
+        );
+        Assert.ok(
+          !text.includes("We use cookies") &&
+            !text.includes("Related Articles") &&
+            !text.includes("All rights reserved") &&
+            !text.includes("Browser AI DOM Extraction Benchmark"),
+          "Suppresses non-semantic navbar, GDPR cookie dialog, sidebar, footer, and link-heavy tag cloud"
+        );
+
+        const inspectBtn = getElement(result, "Inspect");
+        Assert.equal(
+          inspectBtn?.context?.heading,
+          "Nested Card Heading",
+          "Extracts card context heading even when nested inside a wrapper div"
+        );
+      } finally {
+        session.destroy();
+      }
+    });
+  }
+);
+
 

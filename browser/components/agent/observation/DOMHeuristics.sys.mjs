@@ -46,16 +46,34 @@ const TITLE_MARKER_SELECTOR =
   'h1,h2,h3,h4,h5,h6,[role="heading"],[slot*="title"],[slot="full-post-link"],[id^="post-title-"]';
 
 const META_MARKER_SELECTOR =
-  'time,[datetime],[rel="author"],[rel="tag"],[slot*="author"],[slot*="credit"],[slot*="flair"],[slot*="subreddit"],[slot*="meta"],[slot*="timestamp"],[data-ad-click-location="username"],[data-ad-click-location="promoted_label"],[data-testid*="author"],[data-testid*="timestamp"]';
+  'time,[datetime],[rel="author"],[rel="tag"],[itemprop="author"],[itemprop="datePublished"],[slot*="author"],[slot*="credit"],[slot*="flair"],[slot*="subreddit"],[slot*="meta"],[slot*="timestamp"],[data-ad-click-location="username"],[data-ad-click-location="promoted_label"],[data-testid*="author"],[data-testid*="timestamp"]';
 
 const ACTION_MARKER_SELECTOR =
   '[slot*="comment"],[slot*="share"],[slot*="action"],[slot*="overflow"],[slot*="vote"],shreddit-post-overflow-menu';
 
 const BODY_MARKER_SELECTOR =
-  '[slot="text-body"],[slot*="post-media-container"],[slot*="content"],[slot*="body"],[slot*="description"]';
+  '[slot="text-body"],[slot*="post-media-container"],[slot*="content"],[slot*="body"],[slot*="description"],[itemprop="articleBody"]';
 
 const BLOCK_CONTAINER_SELECTOR =
   'p,li,h1,h2,h3,h4,h5,h6,[role="heading"],blockquote,dd,dt,td,th,figcaption,pre,[role="alert"],[role="status"],[slot="text-body"],[slot="title"],article,[role="article"],section,main,[role="main"],div';
+
+const POSITIVE_CONTENT_ATTR_RE =
+  /(?:^|[-_\s])(?:article-body|article-content|post-content|post-body|entry-content|markdown-body|main-content|story-body|story-content|doc-content|page-content|prose-content|blog-post|news-body)(?:$|[-_\s])/i;
+
+const FOOTER_ATTR_RE =
+  /(?:^|[-_\s])(?:footer|site-footer|page-footer|global-footer|app-footer|colophon|subfooter|copyright-bar|legal-footer)(?:$|[-_\s])/i;
+
+const NAV_ATTR_RE =
+  /(?:^|[-_\s])(?:navbar|nav-bar|site-nav|main-nav|top-nav|primary-nav|global-nav|header-nav|subnav|breadcrumb|breadcrumbs|menubar|menu-bar|pagination-nav|skip-link|skip-to-content|table-of-contents)(?:$|[-_\s])/i;
+
+const SIDEBAR_ATTR_RE =
+  /(?:^|[-_\s])(?:sidebar|side-bar|left-rail|right-rail|widget-area|related-posts|related-articles|recommended-posts|more-stories)(?:$|[-_\s])/i;
+
+const CLUTTER_ATTR_RE =
+  /(?:^|[-_\s])(?:cookie-banner|cookie-consent|cookie-notice|cookie-bar|gdpr-banner|gdpr-consent|onetrust|cybotcookiebot|ad-slot|ad-banner|ad-container|ad-wrapper|advertisement|sponsored-links|outbrain|taboola|social-share|share-buttons|share-bar|newsletter-signup|promo-banner|popup-banner)(?:$|[-_\s])/i;
+
+const BOILERPLATE_TEXT_RE =
+  /^(?:©\s*\d{4}|copyright\s*(?:©|\(c\))?\s*\d{4}|all\s+rights\s+reserved\.?|terms\s+of\s+(?:service|use)|privacy\s+policy|cookie\s+(?:policy|preferences|settings)|skip\s+to\s+(?:main\s+)?content|accept\s+(?:all\s+)?cookies|manage\s+cookies|무단\s*전재\s*및\s*재배포\s*금지|저작권자\s*©|개인정보\s*처리방침|이용약관)/i;
 
 const TRANSLATION_EXCLUDED_TAGS = new Set([
   "CODE",
@@ -107,15 +125,16 @@ const NO_SPACE_SCRIPT_RE =
 const ABBREV_DOT_RE = /\b(?:hr|hrs|min|mins|sec|secs|mr|mrs|ms|dr|prof|vs|etc|inc|ltd|jr|sr)\./gi;
 const DECIMAL_DOT_RE = /\d+\.\d+/g;
 const TERMINAL_PUNCT_RE = /[.?!。？！](?=\s|$)/;
+const CLAUSE_PUNCT_RE = /[,;:，；：、—–]/g;
 
 const SHORT_META_PATTERNS = [
   /^(?:Author:\s*)?[ur]\/[^\s/]+$/i,
-  /^(?:Flair:\s*.+|Ad|Promoted|Sponsored)$/i,
-  /^(?:\d+\s*(?:sec|min|hr|h|d|mo|yr)s?\s*ago|\d+\s*(?:초|분|시간|일|주|개월|년)\s*전)$/i,
+  /^(?:Flair:\s*.+|Ad|Promoted|Sponsored|광고|프로모션|스폰서)$/i,
+  /^(?:\d+\s*(?:sec|min|hr|h|d|wk|mo|yr)s?\s*ago|\d+\s*(?:초|분|시간|일|주|개월|년)\s*전|\d+\s*(?:秒|分|分钟|時間|小时|日|天|週間|주|ヶ月|개월|年)前)$/i,
 ];
 
 const SHORT_ACTION_RE =
-  /^(?:\d+[\d,.kKmM]*\s+)?(?:go\s+to\s+)?(?:comments?|share|save|report|award|hide|reply|upvote|downvote|공유|저장|신고|댓글|답글)$/i;
+  /^(?:\d+[\d,.kKmM만천]*\s+)?(?:go\s+to\s+)?(?:comments?|share|save|report|award|hide|reply|upvote|downvote|like|follow|subscribe|bookmark|copy\s+link|공유|저장|신고|댓글|답글|추천|비추천|좋아요|구독|팔로우|스크랩|복사|共有|保存|返信|いいね|分享|收藏|举报|回复|点赞)$/i;
 
 const META_HREF_RE = /(?:\/user\/|\/u\/|\?f=flair_name)/i;
 
@@ -187,14 +206,19 @@ export function analyzeTextMetrics(rawText) {
       charCount: 0,
       wordCount: 0,
       noSpaceScriptCount: 0,
+      clauseCount: 0,
       hasTerminalPunct: false,
       isSentenceLike: false,
+      isRichProse: false,
+      isBoilerplateText: false,
       isShortLabel: true,
     };
   }
   const wordCount = text.split(/\s+/).filter(Boolean).length;
   const noSpaceMatches = text.match(NO_SPACE_SCRIPT_RE);
   const noSpaceScriptCount = noSpaceMatches ? noSpaceMatches.length : 0;
+  const clauseMatches = text.match(CLAUSE_PUNCT_RE);
+  const clauseCount = clauseMatches ? clauseMatches.length : 0;
   const cleanedForPunct = text
     .replace(DECIMAL_DOT_RE, "0")
     .replace(ABBREV_DOT_RE, "abbr");
@@ -203,6 +227,12 @@ export function analyzeTextMetrics(rawText) {
     wordCount >= 4 ||
     noSpaceScriptCount >= 10 ||
     (hasTerminalPunct && (wordCount >= 2 || noSpaceScriptCount >= 4));
+  const isRichProse =
+    (text.length >= 80 || noSpaceScriptCount >= 35) &&
+    (wordCount >= 12 || noSpaceScriptCount >= 30) &&
+    (hasTerminalPunct || clauseCount >= 1);
+  const isBoilerplateText =
+    text.length <= 140 && BOILERPLATE_TEXT_RE.test(text);
   const isShortLabel =
     !hasTerminalPunct &&
     wordCount <= 2 &&
@@ -214,8 +244,11 @@ export function analyzeTextMetrics(rawText) {
     charCount: text.length,
     wordCount,
     noSpaceScriptCount,
+    clauseCount,
     hasTerminalPunct,
     isSentenceLike,
+    isRichProse,
+    isBoilerplateText,
     isShortLabel,
   };
 }
@@ -253,6 +286,8 @@ export class DOMHeuristics {
     this.excludedNodeCache = new WeakMap();
     this.excludedDescendantCache = new WeakMap();
     this.controlDensityCache = new WeakMap();
+    this.linkMetricsCache = new WeakMap();
+    this.regionFlagCache = new WeakMap();
     this.nextRepetitionItemId = 1;
     this.nextRepetitionGroupId = 1;
   }
@@ -632,6 +667,102 @@ export class DOMHeuristics {
       : 2;
   }
 
+  attrTokensOf(element) {
+    if (!element || element.nodeType !== this.NodeConstructor.ELEMENT_NODE) {
+      return "";
+    }
+    const cls = typeof element.className === "string" ? element.className : "";
+    const id = element.id || "";
+    const testId = element.getAttribute?.("data-testid") || "";
+    return `${id} ${cls} ${testId}`;
+  }
+
+  hasAncestorAttrMatch(element, regex, stopSelector = null) {
+    for (
+      let cur = element;
+      cur && !cur.matches?.("body,html");
+      cur = this.parentOf(cur)
+    ) {
+      if (stopSelector && cur.matches?.(stopSelector)) {
+        return false;
+      }
+      const tokens = this.attrTokensOf(cur);
+      if (tokens && POSITIVE_CONTENT_ATTR_RE.test(tokens)) {
+        return false;
+      }
+      if (tokens && regex.test(tokens)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  isFooterRegion(element) {
+    const nativeFooter = this.landmark(element, "footer,[role='contentinfo']");
+    if (
+      nativeFooter &&
+      (nativeFooter.getAttribute("role") === "contentinfo" ||
+        !this.landmark(
+          this.parentOf(nativeFooter),
+          'article,section,aside,nav,[role="article"]'
+        ))
+    ) {
+      return true;
+    }
+    if (this.legacyMode) {
+      return false;
+    }
+    return this.hasAncestorAttrMatch(
+      element,
+      FOOTER_ATTR_RE,
+      'main,article,[role="main"],[role="article"]'
+    );
+  }
+
+  isNavigationRegion(element) {
+    if (this.landmark(element, 'nav,[role="navigation"]')) {
+      return true;
+    }
+    if (this.legacyMode) {
+      return false;
+    }
+    return this.hasAncestorAttrMatch(
+      element,
+      NAV_ATTR_RE,
+      'main,article,[role="main"],[role="article"]'
+    );
+  }
+
+  isPositiveContentContainer(element) {
+    if (this.legacyMode || !element) {
+      return false;
+    }
+    if (
+      this.landmark(element, 'article,[role="article"],[itemprop="articleBody"]') &&
+      !this.landmark(
+        element,
+        'aside,footer,nav,[role="complementary"],[role="contentinfo"],[role="navigation"]'
+      )
+    ) {
+      return true;
+    }
+    return this.hasAncestorAttrMatch(
+      element,
+      POSITIVE_CONTENT_ATTR_RE,
+      'aside,footer,nav,[role="complementary"],[role="contentinfo"],[role="navigation"]'
+    );
+  }
+
+  isBoilerplateClutter(element) {
+    if (this.legacyMode || !element) {
+      return false;
+    }
+    if (this.closest(element, "pre,code")) {
+      return false;
+    }
+    return this.hasAncestorAttrMatch(element, CLUTTER_ATTR_RE);
+  }
+
   isBlockingDialog(element, viewportArea) {
     const dialogNode = this.landmark(
       element,
@@ -639,6 +770,9 @@ export class DOMHeuristics {
       true
     );
     if (!dialogNode) {
+      return false;
+    }
+    if (this.isBoilerplateClutter(dialogNode)) {
       return false;
     }
     try {
@@ -678,11 +812,18 @@ export class DOMHeuristics {
 
   isExternalComplementary(element) {
     const aside = this.landmark(element, 'aside,[role="complementary"]');
-    if (!aside) {
+    if (aside) {
+      return !this.landmark(
+        this.parentOf(aside),
+        'main,article,[role="main"],[role="article"]'
+      );
+    }
+    if (this.legacyMode) {
       return false;
     }
-    return !this.landmark(
-      this.parentOf(aside),
+    return this.hasAncestorAttrMatch(
+      element,
+      SIDEBAR_ATTR_RE,
       'main,article,[role="main"],[role="article"]'
     );
   }
@@ -719,6 +860,64 @@ export class DOMHeuristics {
     const density = Math.min(1, controlChars / totalText.length);
     this.controlDensityCache.set(block, density);
     return density;
+  }
+
+  /**
+   * Computes CETD / Readability-inspired link density and anchor counts
+   * for a block container to distinguish prose with inline links from
+   * link-heavy navigation / directory / tag-cloud clusters.
+   */
+  linkMetricsOf(block) {
+    if (!block) {
+      return { linkDensity: 0, linkCount: 0, nonLinkChars: 0 };
+    }
+    if (this.linkMetricsCache.has(block)) {
+      return this.linkMetricsCache.get(block);
+    }
+    const totalText = normalize(block.textContent);
+    if (!totalText) {
+      const empty = { linkDensity: 0, linkCount: 0, nonLinkChars: 0 };
+      this.linkMetricsCache.set(block, empty);
+      return empty;
+    }
+    if (block.matches?.('a[href],[role="link"]')) {
+      const selfLink = { linkDensity: 1, linkCount: 1, nonLinkChars: 0 };
+      this.linkMetricsCache.set(block, selfLink);
+      return selfLink;
+    }
+    const links = block.querySelectorAll?.('a[href],[role="link"]');
+    let linkChars = 0;
+    let linkCount = 0;
+    for (const link of links || []) {
+      const lText = normalize(link.textContent);
+      if (lText) {
+        linkChars += lText.length;
+        linkCount++;
+      }
+    }
+    const linkDensity = Math.min(1, linkChars / totalText.length);
+    const nonLinkChars = Math.max(0, totalText.length - linkChars);
+    const result = { linkDensity, linkCount, nonLinkChars };
+    this.linkMetricsCache.set(block, result);
+    return result;
+  }
+
+  isStructuredDataBlock(element) {
+    if (this.legacyMode || !element) {
+      return false;
+    }
+    if (this.closest(element, "pre,code,dt,dd")) {
+      return true;
+    }
+    const cell = this.closest(element, 'td,th,[role="cell"],[role="gridcell"],[role="columnheader"],[role="rowheader"]');
+    if (!cell) {
+      return false;
+    }
+    const table = this.closest(cell, 'table,[role="table"],[role="grid"]');
+    if (table && /^(?:presentation|none)$/i.test(table.getAttribute("role") || "")) {
+      return false;
+    }
+    return true;
   }
 
   closestBlockContainer(node) {
@@ -773,19 +972,24 @@ export class DOMHeuristics {
       node.getAttribute("translate") === "no" ||
       node.classList?.contains("notranslate") ||
       node.isContentEditable ||
-      node.getAttribute("slot") === "full-post-link"
+      node.getAttribute("slot") === "full-post-link" ||
+      this.isBoilerplateClutter(node)
     ) {
       excluded = true;
     } else if (
       node.matches?.(
         'nav,footer,search,header,aside,[role="navigation"],[role="contentinfo"],[role="search"],[role="banner"],[role="complementary"],[role="menu"],[role="menubar"],[role="listbox"],[role="tablist"]'
       ) ||
-      parent?.matches?.('header,[role="banner"]')
+      parent?.matches?.('header,[role="banner"]') ||
+      this.isFooterRegion(node) ||
+      this.isNavigationRegion(node)
     ) {
       if (
         node.matches?.(
           'nav,footer,search,[role="navigation"],[role="contentinfo"],[role="search"],[role="menu"],[role="menubar"],[role="listbox"],[role="tablist"]'
-        )
+        ) ||
+        this.isFooterRegion(node) ||
+        this.isNavigationRegion(node)
       ) {
         excluded = true;
       } else if (

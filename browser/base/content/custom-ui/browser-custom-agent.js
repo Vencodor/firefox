@@ -26,12 +26,14 @@ const CUSTOM_AGENT_LABEL_CLEARANCE = 34;
  */
 var CustomAgentUI = {
   mockPref: "browser.customUI.agentMock",
+  apiKeyPref: "browser.agent.apiKey",
   bubbleTimeoutMs: 5000,
   tickIntervalMs: 100,
   doneGraceMs: 1500,
   statuses: ["working", "confirm", "paused", "done"],
 
   agent: null,
+  _runtimeAgent: null,
   states: new WeakMap(),
   parts: new WeakMap(),
   nextClicks: new WeakMap(),
@@ -39,6 +41,19 @@ var CustomAgentUI = {
   tickTimer: 0,
   pointerInside: false,
   focusInside: false,
+
+  get runtimeAgent() {
+    if (!this._runtimeAgent) {
+      try {
+        this._runtimeAgent = ChromeUtils.importESModule(
+          "resource:///modules/agent/AgentRuntime.sys.mjs"
+        ).AgentChatAdapter;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return this._runtimeAgent;
+  },
 
   get enabled() {
     return document.documentElement.hasAttribute("custom-ui");
@@ -83,6 +98,7 @@ var CustomAgentUI = {
     };
     gBrowser.addTabsProgressListener(this.progressListener);
     Services.prefs.addObserver(this.mockPref, this);
+    Services.prefs.addObserver(this.apiKeyPref, this);
     window.addEventListener("unload", this, { once: true });
 
     try {
@@ -103,9 +119,25 @@ var CustomAgentUI = {
 
   updateMock() {
     let mock = Services.prefs.getBoolPref(this.mockPref, false);
-    if (mock && !this.agent) {
-      this.connect(this.mockAgent);
-    } else if (!mock && this.agent === this.mockAgent) {
+    if (mock) {
+      if (!this.agent || this.agent === this._runtimeAgent) {
+        this.connect(this.mockAgent);
+      }
+      return;
+    }
+    if (this.agent === this.mockAgent) {
+      this.disconnect();
+    }
+    let hasApiKey = Boolean(
+      Services.prefs.getStringPref(this.apiKeyPref, "").trim()
+    );
+    if ((!Cu.isInAutomation || hasApiKey) && !this.agent && this.runtimeAgent) {
+      this.connect(this.runtimeAgent);
+    } else if (
+      Cu.isInAutomation &&
+      !hasApiKey &&
+      this.agent === this._runtimeAgent
+    ) {
       this.disconnect();
     }
   },
@@ -696,6 +728,7 @@ var CustomAgentUI = {
         break;
       case "unload":
         Services.prefs.removeObserver(this.mockPref, this);
+        Services.prefs.removeObserver(this.apiKeyPref, this);
         gBrowser.tabContainer.removeEventListener("TabSelect", this);
         gBrowser.tabContainer.removeEventListener("TabClose", this);
         gBrowser.removeTabsProgressListener(this.progressListener);

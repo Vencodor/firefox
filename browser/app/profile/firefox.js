@@ -2347,6 +2347,14 @@ pref("sidebar.installed.extensions", "");
 pref("browser.customUI.enabled", true);
 // Drives the agent UI with a built-in mock agent so every state can be seen.
 pref("browser.customUI.agentMock", false);
+pref("browser.agent.apiKey", "");
+pref("browser.agent.apiBaseUrl", "https://api.deepseek.com");
+pref("browser.agent.model", "deepseek-flash");
+pref("browser.agent.thinking", true);
+pref("browser.agent.searchUrlTemplate", "https://www.google.com/search?q={searchTerms}&gbv=1");
+pref("browser.agent.headlessPageTimeoutMs", 4000);
+pref("browser.agent.headlessMinConcurrency", 3);
+pref("browser.agent.headlessMaxConcurrency", 8);
 // A new-feature notice card, as JSON: { id, title, description, label }.
 pref("browser.customUI.notice", "");
 // A JSON array of the notice ids the user has closed.
