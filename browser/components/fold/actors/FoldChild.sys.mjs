@@ -468,6 +468,13 @@ export class FoldChild extends JSWindowActorChild {
   async #run({ id }) {
     let element = this.#element(id);
     if (!element) {
+      lazy.log.debug(`run ${id}: no element`);
+      return null;
+    }
+    if (this.#opensOnPage(element)) {
+      lazy.log.debug(`run ${id}: opens on the page`);
+      this.document.notifyUserGestureActivation();
+      element.click();
       return null;
     }
     let before = this.#visible(element, DIALOGS);
@@ -490,11 +497,23 @@ export class FoldChild extends JSWindowActorChild {
           candidate => !before.has(candidate)
         );
         if (dialog) {
+          lazy.log.debug(`run ${id}: opened a dialog`);
           return {
             dialog: this.#relayDialog(dialog, this.#openedOverlays(element)),
           };
         }
       }
+      lazy.log.debug(
+        `run ${id}: clicked <${element.localName}>, no dialog opened` +
+          (this.#dialog
+            ? `; the relayed dialog is ${
+                this.#dialog.element.isConnected &&
+                this.#dialog.element.checkVisibility()
+                  ? "still open"
+                  : "closed"
+              }`
+            : "")
+      );
       return null;
     } finally {
       this.#endOpening(opening);
@@ -573,6 +592,22 @@ export class FoldChild extends JSWindowActorChild {
     }
   }
 
+  /**
+   * Whether the rule has the menus and dialogs an element opens show on the
+   * page as the site draws them.
+   *
+   * @param {Element} element
+   * @returns {boolean}
+   */
+  #opensOnPage(element) {
+    let selector = this.#getRule()?.onPage;
+    try {
+      return !!selector && element.matches(selector);
+    } catch {
+      return false;
+    }
+  }
+
   #openedSelector() {
     let overlays = this.#getRule()?.overlays;
     return overlays ? `${OPENED}, ${overlays}` : OPENED;
@@ -625,14 +660,21 @@ export class FoldChild extends JSWindowActorChild {
    */
   #relayDialog(element, overlays = []) {
     this.#endDialog();
-    let concealed = [
+    this.#dialog = { element, concealed: [], ids: [] };
+    let dialog = this.#readDialogNow();
+    // One with nothing to act on stays on the page as the site shows it.
+    if (!dialog.items.length) {
+      lazy.log.debug("the dialog has no controls; it shows on the page");
+      this.#endDialog();
+      return null;
+    }
+    this.#dialog.concealed = [
       ...new Set([element, ...this.#backdrops(element), ...overlays]),
     ];
-    for (let node of concealed) {
+    for (let node of this.#dialog.concealed) {
       node.setAttribute(RELAY, "");
     }
-    this.#dialog = { element, concealed, ids: [] };
-    return this.#readDialogNow();
+    return dialog;
   }
 
   #readDialogNow() {
@@ -795,15 +837,19 @@ export class FoldChild extends JSWindowActorChild {
 
   #openPopups(trigger) {
     let found = this.#visible(trigger, POPUPS);
-    let controlled = trigger.getAttribute("aria-controls");
-    let target =
-      controlled &&
-      (trigger.getRootNode().getElementById?.(controlled) ??
-        this.document.getElementById(controlled));
+    let target = this.#controlled(trigger);
     if (target?.checkVisibility()) {
       found.add(target);
     }
     return found;
+  }
+
+  #controlled(trigger) {
+    let controlled = trigger.getAttribute("aria-controls")?.split(/\s+/)[0];
+    return controlled
+      ? (trigger.getRootNode().getElementById?.(controlled) ??
+          this.document.getElementById(controlled))
+      : null;
   }
 
   /**
@@ -818,10 +864,18 @@ export class FoldChild extends JSWindowActorChild {
   async #openPopup({ id }) {
     let trigger = this.#element(id);
     if (!trigger) {
+      lazy.log.debug(`menu ${id}: no element`);
       return null;
     }
     this.#closePopup();
+    if (this.#opensOnPage(trigger)) {
+      lazy.log.debug(`menu ${id}: opens on the page`);
+      this.document.notifyUserGestureActivation();
+      trigger.click();
+      return null;
+    }
     let before = this.#openPopups(trigger);
+    let expanded = trigger.getAttribute("aria-expanded") == "true";
     let opening = this.#startOpening(trigger);
     try {
       this.document.notifyUserGestureActivation();
@@ -837,6 +891,15 @@ export class FoldChild extends JSWindowActorChild {
           [...this.#openPopups(trigger)].find(
             element => !before.has(element)
           ) ?? null;
+        // A menu kept in the document while closed, hidden in a way that
+        // still counts as shown, opens when its button says it's expanded.
+        if (
+          !popup &&
+          !expanded &&
+          trigger.getAttribute("aria-expanded") == "true"
+        ) {
+          popup = this.#controlled(trigger);
+        }
       }
       if (!popup) {
         lazy.log.debug(`no menu opened from ${id}`);
@@ -845,13 +908,19 @@ export class FoldChild extends JSWindowActorChild {
       let overlays = this.#openedOverlays(trigger);
       // A button may open a dialog with fields rather than a menu.
       if (popup.matches(DIALOGS) && !popup.querySelector(MENU_ITEMS)) {
-        return { dialog: this.#relayDialog(popup, overlays) };
+        let dialog = this.#relayDialog(popup, overlays);
+        return dialog && { dialog };
+      }
+      let { items, elements } = lazy.readMenu(this.document, popup);
+      lazy.log.debug(`menu ${id}: read ${items.length} items`);
+      // One with nothing to read stays on the page as the site shows it.
+      if (!items.length) {
+        return null;
       }
       let concealed = [...new Set([popup, ...overlays])];
       for (let node of concealed) {
         node.setAttribute(RELAY, "");
       }
-      let { items, elements } = lazy.readMenu(this.document, popup);
       for (let [itemId, entry] of elements) {
         this.#elements.set(itemId, entry);
       }

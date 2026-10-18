@@ -38,6 +38,10 @@
  * - popups: a selector of buttons that open a site menu without saying so
  *   with aria-haspopup on themselves or a close wrapper. Their menu is shown
  *   as a Mono menu, and a dialog its items open as a Mono dialog.
+ * - onPage: a selector of sidebar controls whose menus and dialogs show on
+ *   the page as the site draws them rather than in the Mono sidebar, such
+ *   as a search that opens over the page. Menus and dialogs with nothing
+ *   the Mono sidebar can show stay on the page too.
  * - overlays: a selector of the layers the site opens with its menus and
  *   dialogs that aren't menus or dialogs themselves, such as the backdrop
  *   dimming the page. Like menus and dialogs, they're concealed from the
@@ -336,6 +340,7 @@ const RULE_KEYS = new Set([
   "exclude",
   "popups",
   "overlays",
+  "onPage",
   "customIcons",
   "siteIcons",
   "main",
@@ -482,6 +487,10 @@ export function validateRule(rule) {
   check(
     rule.overlays == undefined || isString(rule.overlays),
     "overlays must be a selector"
+  );
+  check(
+    rule.onPage == undefined || isString(rule.onPage),
+    "onPage must be a selector"
   );
   check(
     rule.currentIgnoresSearch == undefined ||

@@ -41,6 +41,7 @@
     </div>
     <a href="?view=home"><svg viewBox="0 0 16 16"><path d="M2 8l6-6 6 6v6H2z"/></svg><span>Home</span></a>
     <a href="?view=explore"><span>Explore</span></a>
+    <button class="find" aria-label="Find chats"></button>
     <button class="new" aria-label="New chat"><svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="black"/></svg></button>
     <div class="section">
       <button class="section-header" aria-expanded="true"><span class="title">Recent</span></button>
@@ -62,6 +63,10 @@
   <button role="menuitem" data-action="delete">Delete</button>
 </div>
 <div id="backdrop" hidden></div>
+<div id="find" role="dialog" aria-label="Find chats" hidden>
+  <input type="search" aria-label="Find">
+  <button id="find-close">Close</button>
+</div>
 <div id="rename" role="dialog" aria-labelledby="rename-title" hidden>
   <h2 id="rename-title">Rename chat</h2>
   <p>Give the chat a new name.</p>
@@ -161,6 +166,14 @@
     }
     if (event.target.id == "rename-cancel") {
       closeRename();
+      return;
+    }
+    if (event.target.closest(".find")) {
+      document.getElementById("find").hidden = false;
+      return;
+    }
+    if (event.target.id == "find-close") {
+      document.getElementById("find").hidden = true;
       return;
     }
     if (event.target.closest(".new")) {

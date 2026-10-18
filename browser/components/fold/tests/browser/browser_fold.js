@@ -210,6 +210,22 @@ add_task(async function test_menu() {
       "The sheet closes with the site's dialog"
     );
 
+    // The rule keeps the find dialog on the page.
+    row("Find chats").click();
+    await waitForPage(browser, doc =>
+      doc.getElementById("find").checkVisibility({
+        visibilityProperty: true,
+        opacityProperty: true,
+      })
+    );
+    ok(
+      document.getElementById("custom-fold-dialog").hidden,
+      "A dialog the rule keeps on the page isn't shown in the sidebar"
+    );
+    await SpecialPowers.spawn(browser, [], () =>
+      content.document.getElementById("find-close").click()
+    );
+
     document.querySelector("#custom-fold-menu .custom-fold-toggle").click();
     await waitForPage(
       browser,

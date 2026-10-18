@@ -1,7 +1,7 @@
 {
   "id": "fold-test",
   "name": "Fold test",
-  "description": "The test site of browser_fold.js: a search field and an icon-only button above the links, a section whose title sits in a button, rows with a menu button and a checkbox, and an account link pinned under the menu. Its menu and dialog open with a backdrop.",
+  "description": "The test site of browser_fold.js: a search field and an icon-only button above the links, a section whose title sits in a button, rows with a menu button and a checkbox, and an account link pinned under the menu. Its menu and dialog open with a backdrop, and its find button opens a dialog that stays on the page.",
   "matches": [
     "https://example.com/browser/browser/components/fold/tests/browser/*"
   ],
@@ -9,6 +9,7 @@
   "hide": ["#sidebar"],
   "remove": ["#open-nav"],
   "overlays": "#backdrop",
+  "onPage": ".find",
   "css": [
     "body { grid-template-columns: minmax(0, 1fr) !important; }",
     "main { grid-column: 1 / -1 !important; }"
@@ -36,7 +37,7 @@
     "container": ".row"
   },
   "extras": [
-    { "items": ".search input, .new", "at": "start" },
+    { "items": ".search input, .find, .new", "at": "start" },
     { "items": ".account a", "at": "bottom" }
   ]
 }

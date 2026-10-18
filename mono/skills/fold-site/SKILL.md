@@ -94,6 +94,7 @@ JSON 형식은 `browser/components/fold/FoldCapture.sys.mjs` 첫 주석에 설�
   - `groups.container`로 행을 지정하면 행의 첫 링크가 항목, 나머지 버튼이 액션이 된다. 켜짐 상태를 `aria-pressed`로 알리지 않는 토글은 `groups.pressed` 선택자로 알려 준다.
 - **사이트 메뉴와 대화상자:** 버튼 자신이나 가까운 감싸는 요소(행 안, 세 단계까지)에 `aria-haspopup`이 있으면, 항목이든 액션이든 누를 때 사이트 메뉴를 열어 그 항목을 Mono 메뉴로 보여 준다. 메뉴 항목이나 버튼이 대화상자(`role="dialog"`, `alertdialog`, `<dialog>`)를 열면 그 제목, 설명, 입력창, 체크박스, 버튼을 사이드바의 Mono 시트로 보여 준다. 사이트의 메뉴·대화상자와 뒤를 어둡게 하는 배경은 감춘다.
   - `aria-haspopup`이 없는 메뉴 버튼은 규칙의 `popups` 선택자로 지정한다(예: Gemini의 노트북 메뉴).
+  - 페이지 위에 크게 열리는 검색창처럼 웹페이지에 그대로 보여야 하는 메뉴·대화상자는 그 버튼을 `onPage` 선택자로 지정한다(예: Gemini의 채팅 검색). 지정하지 않으면 Mono 사이드바로 옮겨진다. 읽을 조작이 없는 메뉴·대화상자는 지정하지 않아도 페이지에 그대로 보인다.
   - 메뉴·대화상자(`role=menu|listbox|dialog|alertdialog`, `dialog`, `popover`)는 Mono 사이드바에서 누르는 순간부터 웹페이지에 그려지지 않는다. 그와 함께 열리는 배경(페이지를 어둡게 하는 층 등)은 역할이 없어 알 수 없으므로 `overlays` 선택자로 지정한다(예: Angular Material 사이트의 `.cdk-overlay-backdrop`). 캡처에 `overlays`가 있으면 그 구조에서 배경 요소를 찾는다.
   - 메뉴 항목이 다시 하위 메뉴를 여는 경우는 아직 지원하지 않는다. 그런 항목이 있으면 보고한다.
   - 항목 종류(`kind`) 기준: 커뮤니티·채널처럼 사진이나 첫 글자가 어울리는 개체는 `entity`, 만들기·관리 같은 동작은 `action`, 다른 사이트로 나가는 링크는 `link`, 나머지는 `nav`. `field`와 `toggle`은 요소 종류로 정해진다.

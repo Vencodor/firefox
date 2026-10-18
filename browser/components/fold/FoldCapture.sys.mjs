@@ -588,7 +588,20 @@ export function capturePage(window, rule = null) {
 
   // A menu or dialog the site has open outside the sidebar, such as a row
   // menu opened before capturing, so a rule's popups can be checked.
-  let overlays = queryAllDeep(document, OVERLAYS)
+  // Also what an expanded button says it controls, for menus without a role.
+  let controlled = queryAllDeep(
+    document,
+    "[aria-expanded='true'][aria-controls]"
+  )
+    .map(trigger =>
+      trigger
+        .getRootNode()
+        .getElementById?.(trigger.getAttribute("aria-controls").split(/\s+/)[0])
+    )
+    .filter(Boolean);
+  let overlays = [
+    ...new Set([...queryAllDeep(document, OVERLAYS), ...controlled]),
+  ]
     .filter(
       element =>
         element.checkVisibility() &&
@@ -745,6 +758,7 @@ function selectorsOf(rule) {
     rule.currentSelector,
     rule.popups,
     rule.overlays,
+    rule.onPage,
     groups.each,
     groups.heading,
     groups.items,
