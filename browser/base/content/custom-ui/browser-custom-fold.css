@@ -7,82 +7,65 @@
 /* The site menu reuses the archive's sections, headings and rows, so a
    transcribed sidebar looks and collapses like the rest of the sidebar. */
 
-#custom-fold-dock,
-#custom-fold-splitter {
+#custom-fold,
+#custom-fold-switch {
   display: none;
 }
 
 @media (-moz-pref("sidebar.verticalTabs")) {
   :root[custom-ui]:not([customizing], [inDOMFullscreen], [fullscreenNavToolboxHidden]) {
-    /* After the reload button, shaped like the navigation buttons. Its width
-       unfolds as it appears, so the buttons before it slide aside. With Fold
-       off, a slash crosses the icon. */
-    #custom-fold-button {
-      background-image: url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg");
+    /* Covers the tab list and notice rows like the archive; the address and
+       the switch above stay. */
+    #sidebar-container:not([hidden]) > #custom-fold {
+      grid-row: 4 / 6;
+    }
 
-      &.custom-fold-off {
-        background-image: url("chrome://browser/content/custom-ui/resources/fold/sidebar-off.svg");
-      }
+    /* The archive's icon-tab track, under the address. */
+    #custom-fold-switch {
+      display: grid;
+      margin: 0 var(--space-custom-edge) var(--space-small);
 
       &[hidden] {
         display: none;
       }
 
+      /* Folds with its height while it appears or goes away. */
       &[animating] {
+        box-sizing: border-box;
         overflow: clip;
       }
     }
 
-    /* The menu's own column beside the tab list, where Firefox's sidebar
-       panel goes, reaching to the window top like the tab sidebar. */
-    #custom-fold-dock:not([hidden]) {
-      display: flex;
-      flex-direction: column;
-      grid-area: 1 / 3 / 3 / 4;
-      box-sizing: border-box;
-      min-width: 0;
-      min-height: 0;
-      margin-block-start: calc(var(--space-custom-edge, var(--space-small)) - var(--space-custom-window-top, var(--space-small)));
-      padding-inline: var(--space-custom-edge);
-      border-inline-start: var(--border-width) solid var(--custom-line);
-      background: var(--custom-background);
-      color: var(--custom-ink);
+    #custom-fold-switch-tabs {
+      --custom-archive-tab-icon: url("chrome://browser/skin/tabs.svg");
     }
 
-    #custom-fold-splitter:not([hidden]) {
-      grid-area: 1 / 4 / 3 / 5;
-      width: var(--size-custom-splitter, var(--size-item-xsmall));
-      margin-inline: 0;
-      margin-block-start: calc(var(--space-custom-edge, var(--space-small)) - var(--space-custom-window-top, var(--space-small)));
-    }
-
-    /* Lined up with the tab sidebar's header: the same top gap and height,
-       so the site's icon and name sit level with its logo and buttons. */
-    #custom-fold-dock-header {
+    #custom-fold-switch-site {
       display: flex;
-      flex: none;
       align-items: center;
-      gap: var(--space-custom-gap);
-      min-height: var(--size-item-large);
-      margin-block: var(--space-custom-gap) var(--space-custom-inset);
-      padding-inline: var(--space-custom-padding);
+      justify-content: center;
+      background: none;
     }
 
-    #custom-fold-dock-icon {
-      flex: none;
+    #custom-fold-switch-icon {
+      position: relative;
       width: var(--icon-size-small);
       height: var(--icon-size-small);
     }
 
-    #custom-fold-dock-title {
-      flex: 1;
+    #sidebar-container:not([custom-fold]) > #custom-fold,
+    #sidebar-container[custom-fold] > :is(sidebar-main, #custom-notice-sidebar) {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #custom-fold {
+      position: relative;
+      display: flex;
+      flex-direction: column;
       min-width: 0;
-      margin: 0;
-      overflow: hidden;
-      font-size: var(--font-size-custom-title);
-      font-weight: var(--font-weight-semibold);
-      white-space: nowrap;
-      mask-image: linear-gradient(to left, transparent, black var(--size-custom-text-fade));
+      min-height: 0;
+      padding-inline: var(--space-custom-edge);
     }
 
     /* Pinned sections (a rule's "bottom" extras, like the account and its

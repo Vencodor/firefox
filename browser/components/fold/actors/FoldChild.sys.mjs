@@ -246,8 +246,8 @@ export class FoldChild extends JSWindowActorChild {
   /**
    * Reads the sidebar until it can be read, for the rule's ready.timeoutMs
    * once the page has loaded. Time spent loading doesn't count, since sites
-   * often draw their sidebar only then, and a menu docked beside the tab
-   * list asks as soon as the page starts.
+   * often draw their sidebar only then, and the menu may ask as soon as the
+   * page starts.
    *
    * @param {object} rule
    * @param {Function} current Whether this is still the latest reading.
@@ -281,8 +281,7 @@ export class FoldChild extends JSWindowActorChild {
 
   /**
    * Has the concealed sidebar laid out where the site doesn't draw it, such
-   * as on a page made too narrow for it by the menu docked beside the tab
-   * list, or off screen until it's opened. Sites often fill their sidebar
+   * as on a page too narrow for it, or off screen until it's opened. Sites often fill their sidebar
    * only once it's drawn on screen. It stays concealed.
    *
    * @param {object} rule
