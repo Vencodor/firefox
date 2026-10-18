@@ -4,7 +4,7 @@
 
 /**
  * Icon tabs on a track with a selection surface that slides under the
- * selected tab, shared by the archive's views and the sidebar's site switch.
+ * selected tab, for the archive's views.
  *
  * A horizontal scroll over the switch's areas grows the surface into glass
  * and steps it one tab for every `swipeStep` pixels in the direction the

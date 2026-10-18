@@ -37,10 +37,6 @@
         grid-row: 2;
       }
 
-      > #custom-fold-switch {
-        grid-row: 3;
-      }
-
       > sidebar-main {
         grid-row: 4;
       }
@@ -63,7 +59,7 @@
     }
 
     #sidebar-container:not([custom-archive]) > :is(#custom-archive-search, #custom-archive),
-    #sidebar-container[custom-archive] > :is(#custom-sidebar-address, #custom-fold-switch, sidebar-main, #custom-notice-sidebar) {
+    #sidebar-container[custom-archive] > :is(#custom-sidebar-address, sidebar-main, #custom-notice-sidebar) {
       opacity: 0;
       pointer-events: none;
     }

@@ -21,8 +21,6 @@ add_setup(async function () {
   ui.minPageWidth = 0;
   registerCleanupFunction(() => {
     ui.minPageWidth = minPageWidth;
-    ui.setOpen(false, { animate: false });
-    Services.prefs.clearUserPref(ui.undockedPref);
     Fold.setEnabledFor(rule.id, true);
     Fold.setRulesForTests(null);
   });
@@ -58,13 +56,8 @@ function row(label) {
   return menuRows().find(element => element.textContent.includes(label));
 }
 
-add_task(async function test_folded_with_the_menu_closed() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.customUI.fold.undockedSites", '["fold-test"]']],
-  });
-  ok(!window.CustomFoldUI.open, "The Fold menu is closed");
+add_task(async function test_folded_as_the_page_loads() {
   await BrowserTestUtils.withNewTab(TEST_URL, async browser => {
-    ok(!window.CustomFoldUI.shown, "The Fold menu isn't shown");
     let state = await pageState(browser);
     is(state.shownAtLoad, "false", "The sidebar is concealed before it draws");
     ok(!state.shown, "The sidebar stays concealed");
@@ -88,7 +81,6 @@ add_task(async function test_folded_with_the_menu_closed() {
       "Turning Fold on again conceals it"
     );
   });
-  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function test_menu() {
@@ -265,10 +257,7 @@ add_task(async function test_menu() {
       "A sidebar drawn anew is read again"
     );
 
-    ui.closeDock();
-    ok(!ui.shown, "Closing the docked menu hides it");
-    ok(!(await pageState(browser)).shown, "Closing the menu keeps it folded");
-    ui.openDock();
+    ok(!(await pageState(browser)).shown, "The page's sidebar stays folded");
   });
 });
 
@@ -283,58 +272,54 @@ add_task(async function test_sidebar_filled_once_drawn() {
   });
 });
 
-add_task(async function test_dock() {
+add_task(async function test_toggle() {
   let ui = window.CustomFoldUI;
-  await BrowserTestUtils.withNewTab(TEST_URL, async () => {
+  await BrowserTestUtils.withNewTab(TEST_URL, async browser => {
     await TestUtils.waitForCondition(() => ui.docked, "The menu docks");
     ok(!ui.dock.hidden, "The docked menu shows beside the tab list");
-    ok(!ui.switchVisible, "No switch while the menu is docked");
     is(ui.dockTitle.textContent, "Fold test", "The column has the site name");
+    ok(ui.buttonVisible, "The Fold button shows after the reload button");
+    ok(!ui.button.classList.contains("custom-fold-off"), "It shows Fold on");
     await TestUtils.waitForCondition(
       () => row("Home"),
       "The docked menu is read"
     );
 
-    // Closing the column leaves the switch, from which the menu opens in
-    // place of the tab list.
-    ui.dockClose.click();
-    ok(!ui.docked && ui.dock.hidden, "Closing the column hides it");
-    ok(!ui.open, "The tab list stays");
-    ok(ui.switchVisible, "The switch offers the menu");
-    ok(
-      ui.dockButtonVisible,
-      "The button after the reload button can dock the menu again"
-    );
-    Assert.deepEqual(
-      JSON.parse(Services.prefs.getStringPref(ui.undockedPref)),
-      ["fold-test"],
-      "The site is remembered as closed"
-    );
-    ui.setOpen(true, { animate: false });
-    is(ui.menu, ui.overlayMenu, "The menu shows in place of the tab list");
+    // Turning Fold off gives the page its own sidebar back.
+    ui.button.click();
+    ok(!Fold.isEnabledFor("fold-test"), "The button turns Fold off");
+    ok(!ui.docked && ui.dock.hidden, "The column goes away");
+    ok(ui.buttonVisible, "The button stays to turn Fold on again");
+    ok(ui.button.classList.contains("custom-fold-off"), "It shows Fold off");
     await TestUtils.waitForCondition(
-      () => row("Home"),
-      "The menu in place of the tab list is read"
+      async () => (await pageState(browser)).shown,
+      "The page shows its own sidebar"
     );
 
-    ui.dockButton.click();
-    ok(ui.docked && !ui.open, "The dock button docks the menu again");
-    ok(!ui.switchVisible, "The switch goes away");
-    ok(!ui.dockButtonVisible, "So does the dock button");
+    ui.button.click();
+    ok(Fold.isEnabledFor("fold-test"), "The button turns Fold on again");
+    ok(ui.docked, "The column comes back");
     await TestUtils.waitForCondition(
-      () => row("Home"),
-      "The docked menu is read again"
+      async () => !(await pageState(browser)).shown,
+      "The page's sidebar is folded again"
     );
 
-    // Without room for the page beside it, the menu isn't docked.
+    // Without room for the column, the page keeps its own sidebar.
     let { minPageWidth } = ui;
     ui.minPageWidth = 100000;
-    ui.updateSwitch({ animate: false });
+    ui.update({ animate: false });
     ok(!ui.docked, "A narrow window doesn't dock the menu");
-    ok(!ui.dockButtonVisible, "Nor offers to");
-    ok(ui.switchVisible, "The switch offers the menu instead");
+    ok(!ui.buttonVisible, "Nor shows the Fold button");
+    await TestUtils.waitForCondition(
+      async () => (await pageState(browser)).shown,
+      "The page shows its own sidebar without room for the column"
+    );
     ui.minPageWidth = minPageWidth;
-    ui.updateSwitch({ animate: false });
+    ui.update({ animate: false });
     ok(ui.docked, "With room again the menu docks");
+    await TestUtils.waitForCondition(
+      async () => !(await pageState(browser)).shown,
+      "And the page's sidebar is folded"
+    );
   });
 });

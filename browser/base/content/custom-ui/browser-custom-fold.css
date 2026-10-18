@@ -7,8 +7,6 @@
 /* The site menu reuses the archive's sections, headings and rows, so a
    transcribed sidebar looks and collapses like the rest of the sidebar. */
 
-#custom-fold,
-#custom-fold-switch,
 #custom-fold-dock,
 #custom-fold-splitter {
   display: none;
@@ -16,32 +14,15 @@
 
 @media (-moz-pref("sidebar.verticalTabs")) {
   :root[custom-ui]:not([customizing], [inDOMFullscreen], [fullscreenNavToolboxHidden]) {
-    /* Covers the tab list and notice rows like the archive; the address and
-       the switch above stay. */
-    #sidebar-container:not([hidden]) > #custom-fold {
-      grid-row: 4 / 6;
-    }
-
-    /* The archive's icon-tab track, under the address. */
-    #custom-fold-switch {
-      display: grid;
-      margin: 0 var(--space-custom-edge) var(--space-small);
-
-      &[hidden] {
-        display: none;
-      }
-
-      /* Folds with its height while it appears or goes away. */
-      &[animating] {
-        box-sizing: border-box;
-        overflow: clip;
-      }
-    }
-
     /* After the reload button, shaped like the navigation buttons. Its width
-       unfolds as it appears, so the buttons before it slide aside. */
-    #custom-fold-dock-button {
+       unfolds as it appears, so the buttons before it slide aside. With Fold
+       off, a slash crosses the icon. */
+    #custom-fold-button {
       background-image: url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg");
+
+      &.custom-fold-off {
+        background-image: url("chrome://browser/content/custom-ui/resources/fold/sidebar-off.svg");
+      }
 
       &[hidden] {
         display: none;
@@ -76,7 +57,7 @@
     }
 
     /* Lined up with the tab sidebar's header: the same top gap and height,
-       so the site's icon and the close button sit level with its buttons. */
+       so the site's icon and name sit level with its logo and buttons. */
     #custom-fold-dock-header {
       display: flex;
       flex: none;
@@ -84,7 +65,7 @@
       gap: var(--space-custom-gap);
       min-height: var(--size-item-large);
       margin-block: var(--space-custom-gap) var(--space-custom-inset);
-      padding-inline: var(--space-custom-padding) 0;
+      padding-inline: var(--space-custom-padding);
     }
 
     #custom-fold-dock-icon {
@@ -104,67 +85,10 @@
       mask-image: linear-gradient(to left, transparent, black var(--size-custom-text-fade));
     }
 
-    #custom-fold-dock-close {
-      flex: none;
-      width: var(--size-custom-navigation-control);
-      height: var(--size-custom-navigation-control);
-      margin: 0;
-      padding: 0;
-      border: 0;
-      border-radius: var(--border-radius-custom-tab);
-      background: transparent url("chrome://browser/content/custom-ui/resources/fold/sidebar.svg") center / var(--icon-size-small) no-repeat;
-      color: var(--custom-muted);
-      -moz-context-properties: fill;
-      fill: currentColor;
-      appearance: none;
-
-      &:hover {
-        background-color: var(--custom-hover);
-        color: var(--custom-ink);
-      }
-
-      &:focus-visible {
-        outline: var(--focus-outline);
-        outline-offset: var(--focus-outline-inset);
-      }
-    }
-
-    #custom-fold-switch-tabs {
-      --custom-archive-tab-icon: url("chrome://browser/skin/tabs.svg");
-    }
-
-    #custom-fold-switch-site {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: none;
-    }
-
-    #custom-fold-switch-icon {
-      position: relative;
-      width: var(--icon-size-small);
-      height: var(--icon-size-small);
-    }
-
-    #sidebar-container:not([custom-fold]) > #custom-fold,
-    #sidebar-container[custom-fold] > :is(sidebar-main, #custom-notice-sidebar) {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    #custom-fold {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      min-height: 0;
-      padding-inline: var(--space-custom-edge);
-    }
-
     /* Pinned sections (a rule's "bottom" extras, like the account and its
        settings) stick to the bottom of the scrolling menu, and the menu
        scrolls under them. */
-    .custom-fold-menu {
+    #custom-fold-menu {
       display: flex;
       flex-direction: column;
       padding-block-end: 0;

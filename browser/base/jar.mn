@@ -92,6 +92,7 @@ browser.jar:
         content/browser/custom-ui/resources/fold/school.svg (content/custom-ui/resources/fold/school.svg)
         content/browser/custom-ui/resources/fold/settings.svg (content/custom-ui/resources/fold/settings.svg)
         content/browser/custom-ui/resources/fold/sidebar.svg (content/custom-ui/resources/fold/sidebar.svg)
+        content/browser/custom-ui/resources/fold/sidebar-off.svg (content/custom-ui/resources/fold/sidebar-off.svg)
         content/browser/custom-ui/resources/fold/star.svg (content/custom-ui/resources/fold/star.svg)
         content/browser/custom-ui/resources/fold/star-filled.svg (content/custom-ui/resources/fold/star-filled.svg)
         content/browser/custom-ui/resources/fold/trending.svg (content/custom-ui/resources/fold/trending.svg)

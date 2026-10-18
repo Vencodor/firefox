@@ -360,17 +360,6 @@ custom-ui-archive-remove-bookmark =
 ## Variables:
 ##   $site (String) - The site name, such as "Reddit".
 
-custom-ui-fold-switch =
-    .aria-label = 사이드바 보기
-
-custom-ui-fold-switch-tabs =
-    .aria-label = 탭
-    .title = 탭
-
-custom-ui-fold-switch-site =
-    .aria-label = { $site } 메뉴
-    .title = { $site } 메뉴
-
 custom-ui-fold-menu =
     .aria-label = { $site } 메뉴
 
@@ -385,14 +374,15 @@ custom-ui-fold-more =
     .aria-label = { $item } 더 보기
     .title = { $item } 더 보기
 
-# The site menu docked beside the tab list.
-custom-ui-fold-dock-close =
-    .aria-label = Fold 닫기
-    .title = Fold 닫기
+# The button after the reload button that turns Fold on or off for the
+# selected page's site.
+custom-ui-fold-turn-off =
+    .aria-label = Fold 끄기
+    .title = Fold 끄기
 
-custom-ui-fold-dock-open =
-    .aria-label = Fold 펼치기
-    .title = Fold 펼치기
+custom-ui-fold-turn-on =
+    .aria-label = Fold 켜기
+    .title = Fold 켜기
 
 custom-ui-fold-dock-resize =
     .aria-label = Fold 폭 조절
