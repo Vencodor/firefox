@@ -1,13 +1,14 @@
 {
   "id": "fold-test",
   "name": "Fold test",
-  "description": "The test site of browser_fold.js: a search field and an icon-only button above the links, a section whose title sits in a button, rows with a menu button and a checkbox, and an account link pinned under the menu.",
+  "description": "The test site of browser_fold.js: a search field and an icon-only button above the links, a section whose title sits in a button, rows with a menu button and a checkbox, and an account link pinned under the menu. Its menu and dialog open with a backdrop.",
   "matches": [
     "https://example.com/browser/browser/components/fold/tests/browser/*"
   ],
   "root": ["#sidebar nav"],
   "hide": ["#sidebar"],
   "remove": ["#open-nav"],
+  "overlays": "#backdrop",
   "css": [
     "body { grid-template-columns: minmax(0, 1fr) !important; }",
     "main { grid-column: 1 / -1 !important; }"

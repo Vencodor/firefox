@@ -744,6 +744,7 @@ function selectorsOf(rule) {
     ...(rule.extras ?? []).map(extra => extra.items),
     rule.currentSelector,
     rule.popups,
+    rule.overlays,
     groups.each,
     groups.heading,
     groups.items,

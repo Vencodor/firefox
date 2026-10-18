@@ -131,6 +131,8 @@
       menuTarget = more;
       more.setAttribute("aria-expanded", "true");
       menu.hidden = false;
+      // Whether the menu is drawn as soon as it opens.
+      document.body.dataset.menuShownAtOpen = getComputedStyle(menu).visibility;
       return;
     }
     let item = event.target.closest("[role='menuitem']");
@@ -142,6 +144,9 @@
         document.getElementById("rename-input").value = name;
         rename.hidden = false;
         backdrop.hidden = false;
+        document.body.dataset.renameShownAtOpen = [rename, backdrop]
+          .map(node => getComputedStyle(node).visibility)
+          .join(" ");
       } else {
         document.body.dataset.lastAction = `delete ${name}`;
       }

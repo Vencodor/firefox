@@ -152,6 +152,15 @@ add_task(async function test_menu() {
       ["Rename", "Delete"],
       "The row's menu button shows the site's menu"
     );
+    is(
+      await SpecialPowers.spawn(
+        browser,
+        [],
+        () => content.document.body.dataset.menuShownAtOpen
+      ),
+      "hidden",
+      "The site's menu is concealed from the moment it opens"
+    );
     let hidden = BrowserTestUtils.waitForPopupEvent(ui.popup, "hidden");
     ui.popup.activateItem(ui.popup.children[0]);
     await hidden;
@@ -176,6 +185,15 @@ add_task(async function test_menu() {
         })
       )),
       "The site's dialog is concealed on the page"
+    );
+    is(
+      await SpecialPowers.spawn(
+        browser,
+        [],
+        () => content.document.body.dataset.renameShownAtOpen
+      ),
+      "hidden hidden",
+      "The site's dialog and its backdrop are concealed from the moment they open"
     );
     name.focus();
     name.select();

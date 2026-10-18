@@ -38,6 +38,11 @@
  * - popups: a selector of buttons that open a site menu without saying so
  *   with aria-haspopup on themselves or a close wrapper. Their menu is shown
  *   as a Mono menu, and a dialog its items open as a Mono dialog.
+ * - overlays: a selector of the layers the site opens with its menus and
+ *   dialogs that aren't menus or dialogs themselves, such as the backdrop
+ *   dimming the page. Like menus and dialogs, they're concealed from the
+ *   moment the Mono sidebar clicks something, so nothing it opens is drawn
+ *   on the page, and stay concealed while it's shown in the Mono sidebar.
  * - customIcons: { name: "<svg ...>" }, icons for this site's items, named
  *   like the Mono icons. The SVG holds shapes only.
  * - siteIcons: false to not use the site's own SVG icons for items with no
@@ -330,6 +335,7 @@ const RULE_KEYS = new Set([
   "currentIgnoresSearch",
   "exclude",
   "popups",
+  "overlays",
   "customIcons",
   "siteIcons",
   "main",
@@ -472,6 +478,10 @@ export function validateRule(rule) {
   check(
     rule.popups == undefined || isString(rule.popups),
     "popups must be a selector"
+  );
+  check(
+    rule.overlays == undefined || isString(rule.overlays),
+    "overlays must be a selector"
   );
   check(
     rule.currentIgnoresSearch == undefined ||

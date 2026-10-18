@@ -29,10 +29,13 @@ const POPUP_INTERVAL = 50;
 const POPUP_TIMEOUT = 1500;
 const DIALOG_TIMEOUT = 1000;
 const RELAY = "data-mono-fold-relay";
+const KEEP = "data-mono-fold-keep";
+const UNRELAY_DELAY = 500;
 const DIALOGS = "[role='dialog'], [role='alertdialog'], dialog[open]";
 const MENU_ITEMS = "[role^='menuitem'], [role='option']";
 const POPUPS =
   "[role='menu'], [role='listbox'], [role='dialog'], dialog[open], [popover]";
+const OPENED = `${POPUPS}, [role='alertdialog']`;
 const WATCHED_ATTRIBUTES = [
   "aria-checked",
   "aria-current",
@@ -73,6 +76,7 @@ export class FoldChild extends JSWindowActorChild {
   #sheet = null;
   #timer = null;
   #pending = null;
+  #opening = null;
   #popup = null;
   #dialog = null;
   #sent = "";
@@ -252,6 +256,7 @@ export class FoldChild extends JSWindowActorChild {
 
   didDestroy() {
     this.#destroyed = true;
+    this.#stopOpening();
     this.#stopWatching();
     if (this.#rule) {
       for (let pref of lazy.FOLD_PREFS) {
@@ -343,6 +348,7 @@ export class FoldChild extends JSWindowActorChild {
     this.#generation++;
     this.#closePopup();
     this.#endDialog();
+    this.#stopOpening();
     this.#stopWatching();
     if (!lazy.isFoldEnabled(this.#getRule())) {
       this.#unfold();
@@ -465,27 +471,148 @@ export class FoldChild extends JSWindowActorChild {
       return null;
     }
     let before = this.#visible(element, DIALOGS);
-    // The user clicked in the Mono sidebar, so the page may act as on its
-    // own click, such as opening a new window.
-    this.document.notifyUserGestureActivation();
-    element.click();
-    if (id.startsWith("popup/")) {
-      this.#closePopup({ dismiss: false });
-    }
-    let deadline = Date.now() + DIALOG_TIMEOUT;
-    while (Date.now() < deadline) {
-      await new Promise(resolve => setTimeout(resolve, POPUP_INTERVAL));
-      if (this.#destroyed || !this.#active) {
-        return null;
+    let opening = this.#startOpening(element);
+    try {
+      // The user clicked in the Mono sidebar, so the page may act as on its
+      // own click, such as opening a new window.
+      this.document.notifyUserGestureActivation();
+      element.click();
+      if (id.startsWith("popup/")) {
+        this.#closePopup({ dismiss: false });
       }
-      let dialog = [...this.#visible(element, DIALOGS)].find(
-        candidate => !before.has(candidate)
+      let deadline = Date.now() + DIALOG_TIMEOUT;
+      while (Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, POPUP_INTERVAL));
+        if (this.#destroyed || !this.#active) {
+          return null;
+        }
+        let dialog = [...this.#visible(element, DIALOGS)].find(
+          candidate => !before.has(candidate)
+        );
+        if (dialog) {
+          return {
+            dialog: this.#relayDialog(dialog, this.#openedOverlays(element)),
+          };
+        }
+      }
+      return null;
+    } finally {
+      this.#endOpening(opening);
+    }
+  }
+
+  /**
+   * Conceals what the page opens from now on, until #endOpening, so a menu
+   * or dialog opened from the Mono sidebar is never drawn on the page, not
+   * even before it's found and relayed. What's open already stays shown.
+   *
+   * @param {Element} element The element about to be clicked.
+   * @returns {object} The opening to end.
+   */
+  #startOpening(element) {
+    if (this.#opening) {
+      this.#opening.count++;
+      return this.#opening;
+    }
+    let selector = this.#openedSelector();
+    let kept = [...this.#visible(element, selector)];
+    for (let node of kept) {
+      node.setAttribute(KEEP, "");
+    }
+    let style = `:is(${selector}):not([${KEEP}]) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+:is(dialog, [popover]):not([${KEEP}])::backdrop {
+  background: transparent !important;
+}
+`;
+    let uri = `data:text/css;charset=utf-8,${encodeURIComponent(style)}`;
+    try {
+      this.contentWindow.windowUtils.loadSheetUsingURIString(
+        uri,
+        Ci.nsIDOMWindowUtils.USER_SHEET
       );
-      if (dialog) {
-        return { dialog: this.#relayDialog(dialog) };
-      }
+    } catch (e) {
+      lazy.log.error("concealing what opens failed", e);
+      uri = null;
     }
-    return null;
+    this.#opening = { count: 1, uri, kept };
+    return this.#opening;
+  }
+
+  /**
+   * @param {object} opening What #startOpening returned.
+   */
+  #endOpening(opening) {
+    if (opening === this.#opening && --opening.count == 0) {
+      this.#stopOpening();
+    }
+  }
+
+  #stopOpening() {
+    let opening = this.#opening;
+    if (!opening) {
+      return;
+    }
+    this.#opening = null;
+    for (let node of opening.kept) {
+      node.removeAttribute(KEEP);
+    }
+    if (!opening.uri) {
+      return;
+    }
+    try {
+      this.contentWindow?.windowUtils.removeSheetUsingURIString(
+        opening.uri,
+        Ci.nsIDOMWindowUtils.USER_SHEET
+      );
+    } catch {
+      // The document is already gone.
+    }
+  }
+
+  #openedSelector() {
+    let overlays = this.#getRule()?.overlays;
+    return overlays ? `${OPENED}, ${overlays}` : OPENED;
+  }
+
+  /**
+   * The rule's overlay layers, such as backdrops, that the page opened since
+   * #startOpening.
+   *
+   * @param {Element} element
+   * @returns {Element[]}
+   */
+  #openedOverlays(element) {
+    let overlays = this.#getRule()?.overlays;
+    if (!overlays) {
+      return [];
+    }
+    return [...this.#visible(element, overlays)].filter(
+      node => !node.hasAttribute(KEEP)
+    );
+  }
+
+  /**
+   * Shows nodes concealed for a relay again, a little later so what the site
+   * animates away after closing it isn't drawn.
+   *
+   * @param {Element[]} nodes
+   */
+  #unrelay(nodes) {
+    setTimeout(() => {
+      let current = new Set([
+        ...(this.#dialog?.concealed ?? []),
+        ...(this.#popup?.concealed ?? []),
+      ]);
+      for (let node of nodes) {
+        if (!current.has(node)) {
+          node.removeAttribute(RELAY);
+        }
+      }
+    }, UNRELAY_DELAY);
   }
 
   /**
@@ -493,11 +620,14 @@ export class FoldChild extends JSWindowActorChild {
    * and reads it for the Mono sidebar.
    *
    * @param {Element} element The site's dialog.
+   * @param {Element[]} [overlays] The rule's overlays opened with it.
    * @returns {object} The dialog as readDialog reads it.
    */
-  #relayDialog(element) {
+  #relayDialog(element, overlays = []) {
     this.#endDialog();
-    let concealed = [element, ...this.#backdrops(element)];
+    let concealed = [
+      ...new Set([element, ...this.#backdrops(element), ...overlays]),
+    ];
     for (let node of concealed) {
       node.setAttribute(RELAY, "");
     }
@@ -560,9 +690,7 @@ export class FoldChild extends JSWindowActorChild {
     for (let id of relay.ids) {
       this.#elements.delete(id);
     }
-    for (let node of relay.concealed) {
-      node.removeAttribute(RELAY);
-    }
+    this.#unrelay(relay.concealed);
   }
 
   /**
@@ -694,34 +822,44 @@ export class FoldChild extends JSWindowActorChild {
     }
     this.#closePopup();
     let before = this.#openPopups(trigger);
-    this.document.notifyUserGestureActivation();
-    trigger.click();
-    let popup = null;
-    let deadline = Date.now() + POPUP_TIMEOUT;
-    while (!popup && Date.now() < deadline) {
-      await new Promise(resolve => setTimeout(resolve, POPUP_INTERVAL));
-      if (this.#destroyed || !this.#active) {
+    let opening = this.#startOpening(trigger);
+    try {
+      this.document.notifyUserGestureActivation();
+      trigger.click();
+      let popup = null;
+      let deadline = Date.now() + POPUP_TIMEOUT;
+      while (!popup && Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, POPUP_INTERVAL));
+        if (this.#destroyed || !this.#active) {
+          return null;
+        }
+        popup =
+          [...this.#openPopups(trigger)].find(
+            element => !before.has(element)
+          ) ?? null;
+      }
+      if (!popup) {
+        lazy.log.debug(`no menu opened from ${id}`);
         return null;
       }
-      popup =
-        [...this.#openPopups(trigger)].find(element => !before.has(element)) ??
-        null;
+      let overlays = this.#openedOverlays(trigger);
+      // A button may open a dialog with fields rather than a menu.
+      if (popup.matches(DIALOGS) && !popup.querySelector(MENU_ITEMS)) {
+        return { dialog: this.#relayDialog(popup, overlays) };
+      }
+      let concealed = [...new Set([popup, ...overlays])];
+      for (let node of concealed) {
+        node.setAttribute(RELAY, "");
+      }
+      let { items, elements } = lazy.readMenu(this.document, popup);
+      for (let [itemId, entry] of elements) {
+        this.#elements.set(itemId, entry);
+      }
+      this.#popup = { popup, trigger, concealed, ids: [...elements.keys()] };
+      return { items };
+    } finally {
+      this.#endOpening(opening);
     }
-    if (!popup) {
-      lazy.log.debug(`no menu opened from ${id}`);
-      return null;
-    }
-    // A button may open a dialog with fields rather than a menu.
-    if (popup.matches(DIALOGS) && !popup.querySelector(MENU_ITEMS)) {
-      return { dialog: this.#relayDialog(popup) };
-    }
-    popup.setAttribute(RELAY, "");
-    let { items, elements } = lazy.readMenu(this.document, popup);
-    for (let [itemId, entry] of elements) {
-      this.#elements.set(itemId, entry);
-    }
-    this.#popup = { popup, trigger, ids: [...elements.keys()] };
-    return { items };
   }
 
   /**
@@ -760,6 +898,6 @@ export class FoldChild extends JSWindowActorChild {
       }
     }
     // Shown again only once the site has closed it.
-    setTimeout(() => popup.removeAttribute(RELAY), 500);
+    this.#unrelay(relay.concealed);
   }
 }
