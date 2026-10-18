@@ -121,16 +121,20 @@ export class FoldChild extends JSWindowActorChild {
         break;
       }
       case "DOMContentLoaded":
-        if (event.target == this.document && this.#folded) {
+        if (event.target != this.document) {
+          break;
+        }
+        if (this.#folded) {
           this.#check();
         }
-        this.#refreshSoon();
+        this.#announce();
         break;
       // A page brought back from back/forward navigation follows the current
       // setting.
       case "pageshow":
         if (event.target == this.document && event.persisted) {
           this.#syncFold();
+          this.#announce();
         }
         break;
       case "pagehide":
@@ -144,6 +148,19 @@ export class FoldChild extends JSWindowActorChild {
 
   observe() {
     this.#syncFold();
+  }
+
+  /**
+   * Tells the browser a page with a rule is ready to be read, so a Fold
+   * menu showing the tab reads the new page, however long it took to load.
+   */
+  #announce() {
+    if (
+      this.browsingContext == this.browsingContext.top &&
+      lazy.isFoldEnabled(this.#getRule())
+    ) {
+      this.sendAsyncMessage("Fold:Ready");
+    }
   }
 
   /**

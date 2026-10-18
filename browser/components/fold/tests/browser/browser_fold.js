@@ -231,6 +231,30 @@ add_task(async function test_menu() {
         "false"
     );
 
+    // After a reload the menu reads the new page, and keeps reading it when
+    // the site draws its sidebar anew, which the observer doesn't see.
+    let loaded = BrowserTestUtils.browserLoaded(browser);
+    BrowserCommands.reload();
+    await loaded;
+    await TestUtils.waitForCondition(
+      () => row("Dark theme"),
+      "The reloaded page's menu is read"
+    );
+    await SpecialPowers.spawn(browser, [], () => {
+      let doc = content.document;
+      let nav = doc.querySelector("#sidebar nav");
+      let copy = nav.cloneNode(true);
+      let late = doc.createElement("li");
+      late.className = "row";
+      late.innerHTML = '<a href="?view=late">Late chat</a>';
+      copy.querySelector(".items").append(late);
+      nav.replaceWith(copy);
+    });
+    await TestUtils.waitForCondition(
+      () => row("Late chat"),
+      "A sidebar drawn anew is read again"
+    );
+
     ui.setOpen(false, { animate: false });
     ok(!(await pageState(browser)).shown, "Closing the menu keeps it folded");
   });

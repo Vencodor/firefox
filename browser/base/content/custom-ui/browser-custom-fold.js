@@ -385,6 +385,17 @@ var CustomFoldUI = {
   },
 
   /**
+   * A page of the tab finished loading, such as after a reload. The menu
+   * asks it for its sidebar, which also has it keep reading the sidebar
+   * while it fills in.
+   */
+  onPageReady(browser) {
+    if (this.open && browser == this.browser) {
+      this.reload();
+    }
+  },
+
+  /**
    * A change of the site menu reported by the page as it happens.
    */
   onUpdate(browser, model) {

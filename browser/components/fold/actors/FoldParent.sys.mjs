@@ -9,16 +9,20 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 /**
- * Passes changes of a page's site menu to the window showing that page.
+ * Passes changes of a page's site menu, and a newly loaded page being ready
+ * to be read, to the window showing that page.
  */
 export class FoldParent extends JSWindowActorParent {
   receiveMessage({ name, data }) {
-    if (name == "Fold:Update") {
-      let browser = this.browsingContext.top.embedderElement;
-      browser?.ownerGlobal?.CustomFoldUI?.onUpdate(
-        browser,
-        lazy.cleanModel(data?.model)
-      );
+    let browser = this.browsingContext.top.embedderElement;
+    let ui = browser?.ownerGlobal?.CustomFoldUI;
+    switch (name) {
+      case "Fold:Update":
+        ui?.onUpdate(browser, lazy.cleanModel(data?.model));
+        break;
+      case "Fold:Ready":
+        ui?.onPageReady(browser);
+        break;
     }
     return null;
   }
