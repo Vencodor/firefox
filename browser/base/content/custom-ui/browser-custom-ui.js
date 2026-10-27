@@ -4,6 +4,7 @@
 
 var CustomBrowserUI = {
   pref: "browser.customUI.enabled",
+  themePref: "browser.customUI.theme",
 
   // The new tab search only offers the typed search, the agent chat row and
   // a few search engine suggestions.
@@ -13,6 +14,10 @@ var CustomBrowserUI = {
     "UrlbarProviderSearchSuggestions",
   ],
   newTabMaxSuggestions: 4,
+
+  selectionSlideDuration: 240,
+  // Farther jumps switch in place; a long glide would sweep across the list.
+  selectionSlideMaxDistance: 360,
 
   tabStripEvents: [
     "TabOpen",
@@ -38,6 +43,7 @@ var CustomBrowserUI = {
     this.closeButton.addEventListener("click", this);
     this.panel.addEventListener("keydown", this);
     Services.prefs.addObserver(this.pref, this);
+    Services.prefs.addObserver(this.themePref, this);
     Services.prefs.addObserver("sidebar.verticalTabs", this);
     Services.prefs.addObserver("browser.newtabpage.enabled", this);
     gBrowser.tabContainer.addEventListener("TabSelect", this);
@@ -52,12 +58,19 @@ var CustomBrowserUI = {
       },
     };
     gBrowser.addTabsProgressListener(this.progressListener);
+    this.visualTab = gBrowser.selectedTab;
+    // The pinned tile grid balances its columns by the number of tiles.
+    this.pinnedTabs = document.getElementById("pinned-tabs-container");
+    this.pinnedObserver = new MutationObserver(() => this.updatePinCount());
+    this.pinnedObserver.observe(this.pinnedTabs, { childList: true });
+    this.updatePinCount();
     this.urlbarListener = {
       onQueryStarted: queryContext => this.limitNewTabQuery(queryContext),
     };
     gURLBar.controller.addListener(this.urlbarListener);
     window.addEventListener("unload", this, { once: true });
     this.updateEnabled();
+    this.ensureDefaultTheme().catch(console.error);
     if (
       this.enabled &&
       CustomizableUI.getPlacementOfWidget("stop-reload-button")?.area !==
@@ -78,12 +91,37 @@ var CustomBrowserUI = {
   updateEnabled() {
     this.enabled = Services.prefs.getBoolPref(this.pref, false);
     document.documentElement.toggleAttribute("custom-ui", this.enabled);
+    document.documentElement.setAttribute(
+      "custom-theme",
+      Services.prefs.getStringPref(this.themePref, "mono")
+    );
     if (!this.enabled) {
       this.setPanelOpen(false);
     }
     this.updateNewTab();
     this.updateNewTabButtons();
     this.scheduleTabGroupUpdate();
+  },
+
+  /**
+   * Mono has its own themes (browser.customUI.theme). A Firefox theme left on
+   * from before paints its colors over them and keeps the window opaque, off
+   * the acrylic, so Firefox's default theme is put back.
+   */
+  async ensureDefaultTheme() {
+    const DEFAULT_THEME = "default-theme@mozilla.org";
+    if (
+      !this.enabled ||
+      Services.prefs.getStringPref("extensions.activeThemeID", DEFAULT_THEME) ==
+        DEFAULT_THEME
+    ) {
+      return;
+    }
+    let { AddonManager } = ChromeUtils.importESModule(
+      "resource://gre/modules/AddonManager.sys.mjs"
+    );
+    let theme = await AddonManager.getAddonByID(DEFAULT_THEME);
+    await theme?.enable();
   },
 
   updateNewTab() {
@@ -157,6 +195,13 @@ var CustomBrowserUI = {
       this.newTabMaxSuggestions;
   },
 
+  updatePinCount() {
+    this.pinnedTabs.setAttribute(
+      "custom-pin-count",
+      this.pinnedTabs.querySelectorAll(":scope > .tabbrowser-tab").length
+    );
+  },
+
   updateNewTabButtons() {
     let l10nId =
       this.enabled && Services.prefs.getBoolPref("sidebar.verticalTabs", false)
@@ -220,6 +265,74 @@ var CustomBrowserUI = {
     });
   },
 
+  /**
+   * Glides the selected tab's surface over from the tab that was shown
+   * before, so selection travels along the list instead of jumping. Runs when
+   * the tab switcher shows the new tab, between tabs of the same list.
+   *
+   * @param {MozTabbrowserTab} tab The tab now shown as selected.
+   * @param {MozTabbrowserTab} previousTab The tab shown as selected before.
+   */
+  slideSelection(tab, previousTab) {
+    let container = gBrowser.tabContainer;
+    if (
+      !this.enabled ||
+      window.gReduceMotion ||
+      !container.verticalMode ||
+      !Services.prefs.getBoolPref("sidebar.animation.enabled", true) ||
+      !previousTab?.isConnected ||
+      previousTab == tab ||
+      previousTab.closing ||
+      previousTab.pinned != tab.pinned ||
+      tab.multiselected ||
+      container.hasAttribute("movingtab")
+    ) {
+      return;
+    }
+    container.setAttribute("custom-selection-sliding", "");
+    let surface = tab.querySelector(".tab-background");
+    // Read the previous surface before cancelling its own slide, so a quick
+    // second switch starts from where the surface is on screen.
+    let from = previousTab
+      .querySelector(".tab-background")
+      .getBoundingClientRect();
+    let to = surface.getBoundingClientRect();
+    this.selectionSlide?.cancel();
+    let dx = from.x + from.width / 2 - (to.x + to.width / 2);
+    let dy = from.y + from.height / 2 - (to.y + to.height / 2);
+    if (
+      !from.height ||
+      !to.height ||
+      Math.hypot(dx, dy) > this.selectionSlideMaxDistance
+    ) {
+      container.removeAttribute("custom-selection-sliding");
+      return;
+    }
+    tab.setAttribute("custom-sliding", "");
+    let animation = surface.animate(
+      [
+        {
+          translate: `${dx}px ${dy}px`,
+          scale: `${from.width / to.width} ${from.height / to.height}`,
+        },
+        { translate: "0 0", scale: "1 1" },
+      ],
+      {
+        duration: this.selectionSlideDuration,
+        easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+      }
+    );
+    this.selectionSlide = animation;
+    let done = () => {
+      tab.removeAttribute("custom-sliding");
+      if (this.selectionSlide == animation) {
+        this.selectionSlide = null;
+        container.removeAttribute("custom-selection-sliding");
+      }
+    };
+    animation.finished.then(done, done);
+  },
+
   animate(element, attribute) {
     if (
       !this.enabled ||
@@ -248,6 +361,13 @@ var CustomBrowserUI = {
       case "TabAttrModified":
         if (event.target.group && event.detail.changed.includes("image")) {
           this.scheduleTabGroupUpdate();
+        }
+        if (
+          event.detail.changed.includes("visuallyselected") &&
+          event.target.hasAttribute("visuallyselected")
+        ) {
+          this.slideSelection(event.target, this.visualTab);
+          this.visualTab = event.target;
         }
         break;
       case "TabClose":
@@ -295,6 +415,7 @@ var CustomBrowserUI = {
         break;
       case "unload":
         Services.prefs.removeObserver(this.pref, this);
+        Services.prefs.removeObserver(this.themePref, this);
         Services.prefs.removeObserver("sidebar.verticalTabs", this);
         Services.prefs.removeObserver("browser.newtabpage.enabled", this);
         gBrowser.tabContainer.removeEventListener("TabSelect", this);
@@ -302,6 +423,7 @@ var CustomBrowserUI = {
           gBrowser.tabContainer.removeEventListener(type, this);
         }
         gBrowser.removeTabsProgressListener(this.progressListener);
+        this.pinnedObserver.disconnect();
         gURLBar.controller.removeListener(this.urlbarListener);
         PanelUI.panel.removeEventListener("popupshown", this);
         PanelUI.panel.removeEventListener("popuphidden", this);

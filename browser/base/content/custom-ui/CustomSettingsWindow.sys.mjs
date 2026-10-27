@@ -65,7 +65,7 @@ export const CustomSettingsWindow = {
         null,
         AppConstants.BROWSER_CHROME_URL,
         "_blank",
-        "chrome,dialog=no,resizable,centerscreen,non-private,toolbar=no,location=no,menubar=no,status=no,width=1100,height=800",
+        "chrome,dialog=no,resizable,centerscreen,non-private,toolbar=no,location=no,menubar=no,status=no,width=880,height=640",
         args
       );
       const pending = waitForWindow(win);

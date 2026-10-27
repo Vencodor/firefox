@@ -1186,7 +1186,7 @@ pref("browser.tabs.tooltipsShowPidAndActiveness", true);
 pref("browser.tabs.tooltipsShowPidAndActiveness", false);
 #endif
 
-pref("browser.tabs.hoverPreview.enabled", true);
+pref("browser.tabs.hoverPreview.enabled", false);
 pref("browser.tabs.hoverPreview.showThumbnails", true);
 
 pref("browser.tabs.groups.enabled", true);
@@ -2347,12 +2347,59 @@ pref("sidebar.installed.extensions", "");
 pref("browser.customUI.enabled", true);
 // Drives the agent UI with a built-in mock agent so every state can be seen.
 pref("browser.customUI.agentMock", false);
+pref("browser.agent.provider", "deepseek");
 pref("browser.agent.apiKey", "");
 pref("browser.agent.apiBaseUrl", "https://api.deepseek.com");
 pref("browser.agent.model", "deepseek-flash");
 pref("browser.agent.thinking", true);
-pref("browser.agent.searchUrlTemplate", "https://www.google.com/search?q={searchTerms}&gbv=1");
-pref("browser.agent.headlessPageTimeoutMs", 4000);
+pref("browser.agent.finalThinking", false);
+pref("browser.agent.mercury.apiKey", "");
+pref("browser.agent.mercury.apiBaseUrl", "https://api.inceptionlabs.ai/v1");
+pref("browser.agent.mercury.model", "mercury-3");
+pref("browser.agent.mercury.reasoningEffort", "medium");
+// Rounds that may call tools think less; for a hard question the model calls
+// think_deeply and the answer is written with reasoningEffort.
+pref("browser.agent.mercury.toolReasoningEffort", "low");
+// Streams Mercury's intermediate denoising steps so the answer refines live.
+pref("browser.agent.mercury.diffusing", false);
+// Character budget for the page text sent to the model per web_search call.
+pref("browser.agent.contextCharBudget", 6000);
+// Searches per web_search call. Google rate-limits quickly, so one query
+// should cover several needs.
+pref("browser.agent.maxSearchQueries", 2);
+// The chat's 깊게 mode: search rounds per answer, and the percent a need must
+// reach before the search stops.
+pref("browser.agent.deep.maxSearchRounds", 4);
+pref("browser.agent.deep.coverageThreshold", 70);
+// Character budget for the search result snippets of one web_search call,
+// shared by its queries.
+pref("browser.agent.serpOverviewCharBudget", 1600);
+// Mercury Decide (on by default) filters search results by their snippets
+// before pages are opened. The API key falls back to
+// browser.agent.mercury.apiKey; without a key the search runs unfiltered and
+// the debug card says so.
+pref("browser.agent.decide.enabled", true);
+pref("browser.agent.decide.apiKey", "");
+pref("browser.agent.decide.apiBaseUrl", "https://api.inceptionlabs.ai/v1");
+pref("browser.agent.decide.model", "mercury-decide");
+pref("browser.agent.decide.timeoutMs", 2500);
+// Percent probabilities. Results below relevanceThreshold are not opened
+// (minKeep results per query always are); snippets at or above
+// snippetsSufficientThreshold answer without opening pages.
+pref("browser.agent.decide.relevanceThreshold", 50);
+pref("browser.agent.decide.snippetsSufficientThreshold", 85);
+pref("browser.agent.decide.minKeep", 2);
+// Top results opened by search rank while the decision is pending.
+pref("browser.agent.decide.speculativeVisits", 2);
+// Results judged per query; later ones stay as a fallback.
+pref("browser.agent.decide.maxResults", 6);
+// After the pages are read, judges each information need of the queries;
+// a need below coverageThreshold (percent) triggers one more search.
+pref("browser.agent.decide.coverage", true);
+pref("browser.agent.decide.coverageThreshold", 50);
+pref("browser.agent.searchUrlTemplate", "https://www.google.com/search?q={searchTerms}&hl=ko");
+pref("browser.agent.headlessPageTimeoutMs", 3000);
+pref("browser.agent.headlessResultBudgetMs", 2500);
 pref("browser.agent.headlessMinConcurrency", 3);
 pref("browser.agent.headlessMaxConcurrency", 8);
 // A new-feature notice card, as JSON: { id, title, description, label }.
@@ -2361,6 +2408,7 @@ pref("browser.customUI.notice", "");
 pref("browser.customUI.noticeDismissed", "[]");
 // Fold: on sites with a site rule (browser/components/fold/rules), folds the
 // page's own sidebar away as it loads and offers its menu in the tab sidebar.
+pref("browser.customUI.theme", "mono");
 pref("browser.customUI.fold.enabled", true);
 // A JSON array of the site rule ids Fold is turned off for.
 pref("browser.customUI.fold.disabledSites", "[]");
@@ -2374,6 +2422,13 @@ pref("browser.customUI.fold.loglevel", "Warn");
 // milliseconds without scrolling: half the Windows default of 2500. The
 // engine has a single delay for all scrollbars, web pages' included.
 pref("ui.scrollbarFadeBeginDelay", 1250);
+#ifdef XP_WIN
+// Mono's window shows the Windows 11 acrylic backdrop (2 = acrylic) under a
+// soft tint of the theme; see design-tokens.css. Earlier Windows versions keep
+// the opaque theme gradient.
+pref("widget.windows.mica", true);
+pref("widget.windows.mica.toplevel-backdrop", 2);
+#endif
 pref("browser.newtabpage.enabled", false);
 pref("sidebar.verticalTabs", true);
 pref("sidebar.verticalTabs.dragToPinPromo.dismissed", false);

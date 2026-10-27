@@ -15,4 +15,16 @@
       <html:button class="custom-notice-close" type="button" data-l10n-id="custom-ui-notice-close"></html:button>
     </html:aside>
   </html:div>
+  <html:aside id="custom-due-card" aria-labelledby="custom-due-title" hidden="">
+    <html:div class="custom-due-header">
+      <html:span class="custom-due-icon" aria-hidden="true"/>
+      <html:h2 id="custom-due-title">
+        <html:span data-l10n-id="custom-ui-due-title"/>
+        <html:span id="custom-due-count" class="custom-calendar-count"/>
+      </html:h2>
+      <html:button id="custom-due-close" type="button" data-l10n-id="custom-ui-due-close"/>
+    </html:div>
+    <html:ul id="custom-due-list"/>
+    <html:button id="custom-due-open" type="button"/>
+  </html:aside>
 </html:div>

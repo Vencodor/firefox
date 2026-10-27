@@ -15,6 +15,7 @@
   --custom-address-top: max(var(--space-xxlarge), var(--size-custom-address-offset));
   --size-custom-window-hotspot-inline: 160px;
   --size-custom-window-hotspot-block: 56px;
+  --box-shadow-custom-address: var(--custom-glass-rim), var(--custom-glass-caustic), var(--box-shadow-custom-float);
 
   #custom-sidebar-header {
     gap: var(--space-small);
@@ -48,17 +49,28 @@
     -moz-window-dragging: no-drag;
 
     &:enabled:hover {
-      background-color: var(--custom-hover);
+      background-color: var(--custom-tab-hover, var(--button-background-color-ghost-hover));
       color: var(--custom-ink);
     }
 
     &:enabled:active {
-      background-color: var(--custom-accent-subtle);
+      background-color: var(--custom-glass-film-strong, var(--button-background-color-ghost-active));
     }
 
     &:focus-visible {
       outline: var(--focus-outline);
       outline-offset: var(--focus-outline-inset);
+    }
+  }
+
+  /* These two sit on glass, not on the window background. */
+  :is(#custom-page-settings-button, #custom-window-controls > button) {
+    &:enabled:hover {
+      background-color: var(--custom-glass-film, var(--button-background-color-ghost-hover));
+    }
+
+    &:enabled:active {
+      background-color: var(--custom-glass-film-strong, var(--button-background-color-ghost-active));
     }
   }
 
@@ -99,13 +111,15 @@
     margin-inline: var(--space-custom-edge);
     margin-block-end: var(--space-small);
     padding-inline-end: var(--space-small);
-    border: var(--border-width) solid transparent;
+    border: var(--border-width) solid var(--custom-glass-border, var(--border-color));
     border-radius: var(--border-radius-custom-tab);
-    background-color: var(--custom-pin-background);
+    background-color: var(--custom-glass-background-faint, var(--background-color-box));
+    box-shadow: var(--custom-glass-edge, var(--box-shadow-level-1));
+    backdrop-filter: var(--custom-glass-filter);
 
     &:hover,
     &:focus-within {
-      background-color: var(--custom-hover);
+      background-color: var(--custom-glass-background-strong, var(--background-color-box));
     }
   }
 
@@ -116,7 +130,7 @@
     flex: 1;
     min-width: 0;
     margin: 0;
-    padding: var(--space-custom-inset) var(--custom-domain-end) var(--space-custom-inset) var(--space-custom-padding);
+    padding: var(--space-custom-inset) var(--custom-domain-end) var(--space-custom-inset) calc(var(--space-custom-padding) - var(--border-width));
     overflow: hidden;
     border: 0;
     border-radius: inherit;
@@ -140,6 +154,14 @@
       outline: var(--focus-outline);
       outline-offset: var(--focus-outline-inset);
     }
+  }
+
+  #custom-sidebar-domain[placeholder] {
+    color: var(--custom-muted);
+  }
+
+  #custom-sidebar-address:is(:hover, :focus-within) #custom-sidebar-domain[placeholder] {
+    color: var(--custom-ink);
   }
 
   #custom-page-settings-button {
@@ -178,17 +200,54 @@
 
     #custom-sidebar-address {
       flex-direction: column;
+      align-items: center;
+      gap: 0;
+      padding: 0;
+      border-color: transparent;
+      background-color: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+
+      &:hover,
+      &:focus-within {
+        background-color: transparent;
+      }
     }
 
     #custom-sidebar-domain {
-      width: var(--size-custom-control);
-      padding-inline: var(--space-small);
+      flex: none;
+      width: var(--size-custom-navigation-control);
+      height: var(--size-custom-navigation-control);
+      padding: 0;
+      font-size: 0;
+      mask-image: none;
+      border-radius: var(--border-radius-custom-tab);
+      background: url("chrome://global/skin/icons/search-glass.svg") center / var(--icon-size-small) no-repeat;
+      -moz-context-properties: fill;
+      fill: var(--custom-muted);
+
+      &:hover {
+        background-color: var(--custom-tab-hover, var(--button-background-color-ghost-hover));
+        fill: var(--custom-ink);
+      }
+
+      &:active {
+        background-color: var(--custom-glass-film-strong, var(--button-background-color-ghost-active));
+      }
+    }
+
+    #custom-page-settings-button {
+      opacity: 1;
+
+      &:enabled:hover {
+        background-color: var(--custom-tab-hover, var(--button-background-color-ghost-hover));
+      }
     }
   }
 
   #tabbrowser-tabbox {
     grid-row: 1 / 3;
-    border-block-start: var(--border-width) solid var(--custom-line);
+    border-block-start: var(--border-width) solid var(--custom-page-border, var(--custom-line));
     border-radius: var(--border-radius-custom-page);
   }
 
@@ -227,10 +286,13 @@
       position: fixed;
       grid-area: auto;
       place-self: auto;
-      inset-inline: 0;
+      inset-inline: var(--custom-page-inline-start, 0) var(--custom-page-inline-end, 0);
       inset-block-start: var(--custom-address-top);
       z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 3);
-      width: min(var(--size-custom-address-modal), calc(100% - 48px));
+      width: min(
+        var(--size-custom-address-modal),
+        calc(100% - var(--custom-page-inline-start, 0px) - var(--custom-page-inline-end, 0px) - var(--size-item-xlarge))
+      );
       height: auto;
       margin-inline: auto;
       overflow: visible;
@@ -265,22 +327,30 @@
       --urlbarview-row-border-radius: var(--border-radius-custom-page);
       --urlbar-input-growth-open-inline: 0px;
       --urlbar-input-growth-open-block: 0px;
-      --urlbar-background-color: var(--custom-surface);
-      --urlbar-background-color-focus: var(--custom-surface);
-      --toolbar-field-border-color: var(--custom-line);
-      --toolbar-field-border-color-focus: var(--custom-line);
+      --urlbar-background-color: var(--custom-glass-background-dense);
+      --urlbar-background-color-focus: var(--custom-glass-background-dense);
+      --toolbar-field-border-color: var(--custom-glass-border);
+      --toolbar-field-border-color-focus: var(--custom-glass-border);
       --urlbar-background-border-focused: var(--urlbar-background-border);
       --urlbar-background-outline-focused: none;
       --urlbar-input-container-outline-open: none;
       --urlbar-input-container-outline-open-focused: none;
-      --urlbar-background-box-shadow-open: var(--box-shadow-custom-float);
+      --urlbar-background-box-shadow-open: var(--box-shadow-custom-address);
       --link-color: var(--custom-muted);
       font-size: var(--font-size-custom-title);
     }
 
     #urlbar:not([popover-open]) .urlbar-background {
       clip-path: none;
-      box-shadow: var(--box-shadow-custom-float);
+      box-shadow: var(--box-shadow-custom-address);
+    }
+
+    #urlbar .urlbar-background {
+      background-image: var(--custom-glass-sheen);
+    }
+
+    #urlbar :is(.urlbar-background, .urlbarView-background) {
+      backdrop-filter: var(--custom-glass-filter);
     }
 
     #urlbar .urlbar-input-container {
@@ -402,8 +472,10 @@
     }
 
     &[revealed] {
-      background: var(--custom-surface);
-      box-shadow: var(--box-shadow-custom-tab);
+      background-color: var(--custom-glass-background-strong, var(--background-color-box));
+      background-image: var(--custom-glass-sheen);
+      box-shadow: var(--custom-glass-edge), var(--box-shadow-custom-tab);
+      backdrop-filter: var(--custom-glass-filter);
     }
   }
 
@@ -420,14 +492,21 @@
       0 0,
       100% 0,
       100% 100%,
-      calc(100% - var(--space-custom-edge)) 100%,
-      calc(100% - var(--space-custom-edge)) var(--space-custom-window-top),
+      calc(100% - var(--space-custom-frame, var(--space-custom-edge))) 100%,
+      calc(100% - var(--space-custom-frame, var(--space-custom-edge))) var(--space-custom-window-top),
       0 var(--space-custom-window-top)
     );
     -moz-window-dragging: no-drag;
 
     &:dir(rtl) {
-      clip-path: polygon(0 0, 100% 0, 100% var(--space-custom-window-top), var(--space-custom-edge) var(--space-custom-window-top), var(--space-custom-edge) 100%, 0 100%);
+      clip-path: polygon(
+        0 0,
+        100% 0,
+        100% var(--space-custom-window-top),
+        var(--space-custom-frame, var(--space-custom-edge)) var(--space-custom-window-top),
+        var(--space-custom-frame, var(--space-custom-edge)) 100%,
+        0 100%
+      );
     }
   }
 
@@ -782,7 +861,14 @@
 
 @media (prefers-reduced-motion: no-preference) {
   :root[custom-ui][custom-sidebar-navigation] {
-    :is(#custom-sidebar-navigation > button, #custom-sidebar-address, #custom-page-settings-button, #custom-window-controls, #custom-window-controls > button) {
+    :is(
+      #custom-sidebar-navigation > button,
+      #custom-sidebar-address,
+      #custom-sidebar-domain,
+      #custom-page-settings-button,
+      #custom-window-controls,
+      #custom-window-controls > button
+    ) {
       transition:
         opacity 140ms ease,
         color 140ms ease,

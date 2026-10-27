@@ -4,6 +4,8 @@
 
 var CustomSettingsWindowController = {
   ready: false,
+  width: 880,
+  height: 640,
 
   init() {
     this.ready = true;
@@ -44,6 +46,9 @@ var CustomSettingsWindowController = {
 
   navigate(paneID, extraArgs) {
     const browser = window.gBrowser.selectedBrowser;
+    // The settings page paints its own see-through navigation over the
+    // window's acrylic, so the browser draws no backdrop of its own.
+    browser.setAttribute("transparent", "true");
     const currentURL = browser.currentURI.spec;
     const isSettings = /^about:(preferences|settings)([?#]|$)/.test(currentURL);
     if (isSettings && !paneID && !extraArgs?.urlParams) {
@@ -204,9 +209,19 @@ var CustomSettingsWindowController = {
     root.setAttribute("customtitlebar", "true");
     root.removeAttribute("retargetdocumentfocus");
     root.removeAttribute("persist");
+    // The browser window's saved position is loaded onto this same document;
+    // without it the window is centered on the screen each time it opens.
+    root.removeAttribute("screenX");
+    root.removeAttribute("screenY");
     root.setAttribute("sizemode", "normal");
-    root.setAttribute("width", Math.min(screen.availWidth, 1100));
-    root.setAttribute("height", Math.min(screen.availHeight, 800));
+    root.setAttribute(
+      "width",
+      Math.min(screen.availWidth, CustomSettingsWindowController.width)
+    );
+    root.setAttribute(
+      "height",
+      Math.min(screen.availHeight, CustomSettingsWindowController.height)
+    );
     window.CustomTitlebar.allowedBy("custom-settings-window", true);
     const ensureCustomTitlebar = () => {
       if (root.getAttribute("customtitlebar") != "true") {

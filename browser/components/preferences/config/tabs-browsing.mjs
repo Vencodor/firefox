@@ -712,6 +712,10 @@ SettingGroupManager.registerGroups({
             l10nId: "ctrl-tab-recently-used-order",
           },
           {
+            id: "tabHoverPreview",
+            l10nId: "settings-tabs-show-preview-on-hover",
+          },
+          {
             id: "tabPreviewShowThumbnails",
             l10nId: "settings-tabs-show-image-in-preview",
           },

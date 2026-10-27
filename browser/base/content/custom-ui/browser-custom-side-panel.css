@@ -22,8 +22,8 @@
       min-height: 0;
       margin-block-start: calc(var(--space-custom-edge, var(--space-small)) - var(--space-custom-window-top, var(--space-small)));
       padding-inline: var(--space-custom-edge);
-      border-inline-start: var(--border-width) solid var(--custom-line);
-      background: var(--custom-background);
+      border-inline-start: var(--border-width) solid var(--custom-glass-line);
+      background: transparent;
       color: var(--custom-ink);
     }
 

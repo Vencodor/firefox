@@ -342,6 +342,9 @@ containers-remove-alert-msg =
 containers-remove-ok-button = Remove this Container
 containers-remove-cancel-button = Don’t remove this Container
 
+settings-tabs-show-preview-on-hover =
+    .label = Show a preview when you hover on a tab
+
 settings-tabs-show-image-in-preview =
     .label = Show an image preview when you hover on a tab
     .accessKey = h

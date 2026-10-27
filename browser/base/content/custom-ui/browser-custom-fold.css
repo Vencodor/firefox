@@ -72,9 +72,11 @@
       height: var(--icon-size-small);
     }
 
+    /* Not drawn at all while hidden; see the same rule for the archive. */
     #sidebar-container:not([custom-fold]) > #custom-fold,
     #sidebar-container[custom-fold] > :is(sidebar-main, #custom-notice-sidebar) {
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
     }
 
@@ -103,11 +105,18 @@
       margin-block-start: auto;
       margin-inline: calc(-1 * var(--space-custom-edge));
       padding: var(--space-small) var(--space-custom-edge);
-      border-block-start: var(--border-width) solid var(--custom-line);
-      background-color: var(--custom-background);
+      border-block-start: var(--border-width) solid var(--custom-glass-line);
+      background-color: var(--custom-glass-background);
+      backdrop-filter: var(--custom-glass-filter);
 
       > .custom-archive-section:last-child {
         margin-block-end: 0;
+      }
+
+      /* The strip is glass, so hover reads as a film instead of the lighter
+         window-background hover. */
+      .custom-archive-row:not(.custom-fold-current):hover {
+        background-color: var(--custom-glass-film);
       }
     }
 
@@ -147,11 +156,12 @@
       }
 
       &:hover {
-        background-color: var(--button-background-color-ghost-hover);
+        background-color: var(--custom-tab-hover);
         color: var(--custom-ink);
       }
 
       &[aria-pressed="true"] {
+        background-color: var(--custom-glass-film-strong);
         color: var(--custom-ink);
       }
 
@@ -181,11 +191,13 @@
 
     /* The current page reads like the selected tab. */
     .custom-fold-current {
-      background-color: var(--custom-surface);
-      box-shadow: var(--box-shadow-custom-tab);
+      background-color: var(--custom-selected-background, var(--background-color-box));
+      background-image: var(--custom-selected-sheen);
+      box-shadow: var(--box-shadow-custom-selected);
+      backdrop-filter: var(--custom-selected-filter);
 
       &:hover {
-        background-color: var(--custom-surface);
+        background-color: var(--custom-selected-background, var(--background-color-box));
       }
 
       > .custom-archive-label {
@@ -209,18 +221,19 @@
       width: var(--icon-size-small);
       height: var(--icon-size-small);
       border-radius: var(--border-radius-circle);
-      background-color: var(--custom-accent-subtle);
+      background-color: var(--custom-glass-film-strong);
       color: var(--custom-ink);
       font-size: var(--font-size-custom-shortcut);
       font-weight: var(--font-weight-semibold);
       line-height: 1;
     }
 
-    /* Same pill as the archive's time. */
+    /* The archive's time pill, as a film since it's always shown. */
     .custom-fold-badge {
       flex: none;
       padding: 0 var(--space-small);
-      border: var(--border-width) solid var(--custom-line);
+      border: var(--border-width) solid var(--custom-glass-border);
+      background-color: var(--custom-glass-film);
       border-radius: var(--border-radius-circle);
       color: var(--custom-muted);
       font-family: "IBM Plex Mono", ui-monospace, monospace;
@@ -275,7 +288,7 @@
       }
 
       &:hover {
-        background-color: var(--button-background-color-ghost-hover);
+        background-color: var(--custom-glass-film);
         color: var(--button-text-color-ghost-hover);
       }
 
@@ -313,7 +326,7 @@
       height: var(--icon-size-small);
       margin-inline-start: auto;
       border-radius: var(--border-radius-circle);
-      background-color: var(--custom-line-strong);
+      background-color: var(--custom-glass-film-strong);
 
       &::after {
         content: "";
@@ -323,15 +336,18 @@
         width: calc(var(--icon-size-small) - var(--space-xsmall));
         height: calc(var(--icon-size-small) - var(--space-xsmall));
         border-radius: var(--border-radius-circle);
-        background-color: var(--custom-surface);
+        background-color: var(--custom-selected-background);
+        box-shadow: var(--custom-glass-edge), var(--box-shadow-custom-tab);
       }
 
       [aria-checked="true"] > & {
-        background-color: var(--custom-accent);
+        background-color: var(--custom-ink);
 
         &::after {
           inset-inline-start: auto;
           inset-inline-end: var(--space-xxsmall);
+          background-color: var(--custom-accent-ink);
+          box-shadow: none;
         }
       }
     }
@@ -339,9 +355,11 @@
     /* A field item is the archive's search field in a row. */
     .custom-fold-field-row {
       padding-inline-end: 0;
+      background-color: var(--custom-glass-background);
+      box-shadow: var(--custom-glass-edge);
 
-      &:focus-within {
-        background-color: var(--custom-hover);
+      &:is(:hover, :focus-within) {
+        background-color: var(--custom-glass-background-strong);
       }
     }
 

@@ -66,11 +66,7 @@ export class AgentObservationSession {
     if (this.tabbrowser) {
       this.progressListener = {
         onLocationChange: (changedBrowser, webProgress) => {
-          if (
-            changedBrowser === browser &&
-            webProgress.isTopLevel &&
-            this.id
-          ) {
+          if (changedBrowser === browser && webProgress.isTopLevel && this.id) {
             this.invalidate("navigation");
           }
         },
@@ -93,6 +89,24 @@ export class AgentObservationSession {
         Ci.nsIWebProgress.NOTIFY_LOCATION
       );
     }
+  }
+
+  async extractPageData(options = {}) {
+    if (this.destroyed) {
+      throw new Error("Observation session is closed");
+    }
+    const top = this.browser.browsingContext;
+    const global = top?.currentWindowGlobal;
+    if (!global) {
+      return null;
+    }
+    const actor = global.getActor("AgentObservation");
+    return query(
+      actor,
+      "AgentObservation:ExtractPage",
+      options,
+      options.timeoutMs || 4500
+    );
   }
 
   async observe(options = {}) {
@@ -240,7 +254,10 @@ export class AgentObservationSession {
         if (snapshot.state_signals) {
           stateSignals.hasAlert ||= Boolean(snapshot.state_signals.hasAlert);
           stateSignals.hasDialog ||= Boolean(snapshot.state_signals.hasDialog);
-          if (!stateSignals.primaryHeading && snapshot.state_signals.primaryHeading) {
+          if (
+            !stateSignals.primaryHeading &&
+            snapshot.state_signals.primaryHeading
+          ) {
             stateSignals.primaryHeading = snapshot.state_signals.primaryHeading;
           }
         }
@@ -312,9 +329,9 @@ export class AgentObservationSession {
       const selectedContextSet = new Set(
         (rankedContext?.selectedBlocks || []).map(block => block.node_id)
       );
-      const sortedContextBlocks = [...(rankedContext?.allScoredBlocks || [])].sort(
-        (a, b) => b.score - a.score || a.order - b.order
-      );
+      const sortedContextBlocks = [
+        ...(rankedContext?.allScoredBlocks || []),
+      ].sort((a, b) => b.score - a.score || a.order - b.order);
       const contextElements = sortedContextBlocks.map((block, index) => ({
         index: String(index + 1),
         node_id: block.node_id,
@@ -341,22 +358,24 @@ export class AgentObservationSession {
         }
         return a.order - b.order;
       });
-      const translationElements = sortedTranslationBlocks.map((block, index) => ({
-        index: String(index + 1),
-        node_id: block.node_id,
-        name: block.text,
-        label: block.text,
-        role: block.role || block.tag,
-        tag: block.tag,
-        card_subrole: block.card_subrole || null,
-        translation: {
-          included: Boolean(block.translation?.included),
-          reason: block.translation?.reason || "other",
-        },
-        rect: block.rect,
-        frame: block.frame,
-        handle: handles.get(block.node_id),
-      }));
+      const translationElements = sortedTranslationBlocks.map(
+        (block, index) => ({
+          index: String(index + 1),
+          node_id: block.node_id,
+          name: block.text,
+          label: block.text,
+          role: block.role || block.tag,
+          tag: block.tag,
+          card_subrole: block.card_subrole || null,
+          translation: {
+            included: Boolean(block.translation?.included),
+            reason: block.translation?.reason || "other",
+          },
+          rect: block.rect,
+          frame: block.frame,
+          handle: handles.get(block.node_id),
+        })
+      );
 
       const filtered = filterCandidates(
         { candidates: rows },

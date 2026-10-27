@@ -2,15 +2,57 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* Appended to the shadow roots of moz-page-nav, of each moz-page-nav-button
+   and of the privacy status card: what outside CSS can't reach. */
+
 :host([custom-ui]) {
-  .page-nav-heading-wrapper > .logo {
-    background-image: url("chrome://browser/content/custom-ui/resources/mono/logo/mono-glyph-context.svg");
-    -moz-context-properties: fill;
-    fill: var(--custom-ink, var(--icon-color));
+  /* The window has no title: the categories start at the top. */
+  .page-nav-heading-wrapper {
+    display: none;
   }
 
-  .page-nav-heading {
-    font-size: var(--font-size-large);
-    letter-spacing: -0.02em;
+  nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: var(--space-xxsmall);
   }
+
+  /* The extensions link sits at the bottom of the column, below the line. */
+  #secondary-nav-group {
+    margin-block-start: auto;
+  }
+
+  hr {
+    margin-block-start: auto;
+  }
+
+  hr + #secondary-nav-group {
+    margin-block-start: 0;
+  }
+}
+
+/* The selected category: a short bar at the start of the light film. */
+button::before {
+  inset-block: calc(50% - var(--size-custom-settings-indicator, var(--space-large)) / 2);
+  border-radius: var(--border-radius-circle);
+}
+
+button[selected] {
+  font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+}
+
+/* While one of its sub-pages is open, the category stays marked. */
+:host([custom-current]) button {
+  background-color: var(--page-nav-button-background-color-selected);
+  color: var(--page-nav-button-text-color-selected);
+  font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+
+  &::before {
+    background-color: var(--page-nav-button-indicator-background-color);
+  }
+}
+
+/* The privacy status card's Firefox illustration has no part to hide it by. */
+.status-image {
+  display: none;
 }

@@ -30,6 +30,7 @@ DIRS += [
     "asrouter",
     "attribution",
     "backup",
+    "calendar",
     "contentanalysis",
     "contextualidentity",
     "controlcenter",

@@ -1,0 +1,47 @@
+{
+  "id": "gmail",
+  "name": "Gmail",
+  "description": "Gmail's left navigation sidebar. The Compose (편지쓰기) button sits at the top as an extra action. Mail folders and user labels are read through their row containers (div.TO), with row menu popups (div.pM) recognized as actions. Expand/collapse buttons (더보기) are read as actions. The current folder is identified by Gmail's active marker class (.ain, .nZ). The navigation sidebar is hidden, leaving the flex content area to expand.",
+  "matches": ["*://mail.google.com/*"],
+  "root": [
+    "div[role='navigation'].aeN",
+    ".aeN[role='navigation']",
+    ".aeN",
+    "div[role='navigation']"
+  ],
+  "hide": [
+    "div[role='navigation'].aeN",
+    ".aeN"
+  ],
+  "ready": { "minItems": 5, "timeoutMs": 5000 },
+  "current": "marker",
+  "currentSelector": ".ain, .nZ",
+  "extras": [
+    {
+      "items": ".z0 > [role='button'], [role='button'].T-I-KE",
+      "at": "start",
+      "kind": "action"
+    },
+    {
+      "items": ".aAu[role='button']",
+      "at": "end",
+      "kind": "action"
+    }
+  ],
+  "groups": {
+    "each": "div.yJ",
+    "items": "a[href], [role='button'], div.pM",
+    "container": "div.TO, div.aim",
+    "kinds": [
+      { "text": "^(더보기|간략히|more|less)", "kind": "action" },
+      { "text": "^(새 라벨 만들기|create new label)", "kind": "action" }
+    ],
+    "icons": [
+      { "text": "^(편지쓰기|compose)", "icon": "add" },
+      { "text": "^(새 라벨 만들기|create new label)", "icon": "add" },
+      { "text": "^(더보기|간략히|more|less)", "icon": "more" },
+      { "text": "^(다시 알림|snoozed)", "icon": "schedule" },
+      { "text": "^(받은편지함|inbox)", "icon": "home" }
+    ]
+  }
+}

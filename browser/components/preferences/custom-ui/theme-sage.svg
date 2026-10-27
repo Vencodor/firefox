@@ -1,0 +1,15 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<svg viewBox="0 0 96 64" xmlns="http://www.w3.org/2000/svg">
+<style>
+.a{stop-color:#eef2ea}.b{stop-color:#e1eadc}.p{fill:rgb(255 255 255 / 62%);stroke:rgb(255 255 255 / 85%);stroke-width:.8}.t{fill:rgb(255 255 255 / 60%);stroke:rgb(255 255 255 / 70%);stroke-width:.7;filter:url(#s)}.h{fill:rgb(255 255 255 / 30%)}.f{flood-color:#1b1d21;flood-opacity:.16}
+@media (prefers-color-scheme: dark){.a{stop-color:#2a3326}.b{stop-color:#324030}.p{fill:rgb(255 255 255 / 11%);stroke:rgb(255 255 255 / 14%)}.t{fill:rgb(255 255 255 / 14%);stroke:rgb(255 255 255 / 12%)}.h{fill:rgb(255 255 255 / 6%)}.f{flood-color:#000;flood-opacity:.3}}
+</style>
+<linearGradient id="g" x2="0.27" y2="1"><stop class="a" offset="0"/><stop class="b" offset="1"/></linearGradient>
+<filter id="s" x="-15%" y="-60%" width="130%" height="220%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2"/><feOffset dy="1.2" result="o"/><feFlood class="f"/><feComposite in2="o" operator="in"/><feComposite in2="SourceAlpha" operator="out" result="sh"/><feMerge><feMergeNode in="sh"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<rect width="96" height="64" fill="url(#g)"/>
+<rect class="t" x="6" y="18" width="28" height="9" rx="3.5"/>
+<rect class="h" x="6" y="31" width="28" height="9" rx="3.5"/>
+<rect class="p" x="40.25" y="6.25" width="49.5" height="51.5" rx="6"/>
+</svg>

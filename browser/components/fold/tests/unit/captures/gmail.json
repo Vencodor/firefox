@@ -1,0 +1,1152 @@
+{
+  "format": "mono-fold-capture",
+  "version": 1,
+  "url": "https://mail.google.com/mail/u/0/#inbox",
+  "title": "받은편지함 (4,771) - user@example.com - Gmail",
+  "note": "Gmail's sidebar as captured in Capture Fold, anonymized: the account email is replaced. Structure and counts are kept.",
+  "viewport": {
+    "width": 1302.4000244140625,
+    "height": 896.7999877929688
+  },
+  "rule": null,
+  "candidates": [
+    {
+      "path": "div.tVu25 > div.nH > div.nH > div.nH.aqk.aql > div.aeN.WR.baA",
+      "links": 7,
+      "score": 6.4,
+      "reasons": [
+        "left column",
+        "role=navigation",
+        "7 links"
+      ],
+      "rect": {
+        "x": 0,
+        "y": 64,
+        "width": 256,
+        "height": 833
+      },
+      "position": "relative"
+    },
+    {
+      "path": "div.tVu25 > div.nH > div.nH > div.nH > div.w-asV.bbg.aiw > div#:h > div > div.a3I",
+      "links": 4,
+      "score": 0.2,
+      "reasons": [
+        "4 links"
+      ],
+      "rect": {
+        "x": -10000,
+        "y": -10000,
+        "width": 1,
+        "height": 1
+      },
+      "position": "absolute"
+    }
+  ],
+  "containers": [
+    {
+      "path": "div.tVu25 > div.nH > div.nH > div.nH.aqk.aql > div.aeN.WR.baA",
+      "ancestors": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "tVu25"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "nH"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "nH"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "nH aqk aql bkL"
+          }
+        }
+      ],
+      "layout": [
+        {
+          "node": "div.nH.aqk.aql",
+          "display": "flex",
+          "position": "relative",
+          "width": 1302,
+          "direction": "row"
+        },
+        {
+          "node": "div.nH",
+          "display": "block",
+          "position": "relative",
+          "width": 1302
+        },
+        {
+          "node": "div.nH",
+          "display": "block",
+          "position": "static",
+          "width": 1302
+        },
+        {
+          "node": "div.tVu25",
+          "display": "block",
+          "position": "relative",
+          "width": 1302
+        },
+        {
+          "node": "body.aAU",
+          "display": "block",
+          "position": "static",
+          "width": 1302
+        }
+      ],
+      "siblings": [
+        {
+          "node": "div.aeN.WR.baA",
+          "rect": {
+            "x": 0,
+            "y": 64,
+            "width": 256,
+            "height": 833
+          },
+          "self": true
+        },
+        {
+          "node": "div.nH.bkK",
+          "rect": {
+            "x": 256,
+            "y": 64,
+            "width": 990,
+            "height": 833
+          }
+        },
+        {
+          "node": "div.nH",
+          "rect": {
+            "x": 1246,
+            "y": 64,
+            "width": 56,
+            "height": 833
+          }
+        }
+      ],
+      "tree": {
+        "tag": "div",
+        "attrs": {
+          "class": "aeN WR baA nH oy8Mbf",
+          "role": "navigation"
+        },
+        "kids": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "aic"
+            },
+            "kids": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "z0"
+                },
+                "kids": [
+                  {
+                    "tag": "div",
+                    "attrs": {
+                      "class": "T-I T-I-KE L3",
+                      "role": "button"
+                    },
+                    "kids": [
+                      "편지쓰기"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "V3 aam"
+            },
+            "kids": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "at9"
+                },
+                "kids": [
+                  {
+                    "tag": "div",
+                    "attrs": {
+                      "class": "Ls77Lb aZ6"
+                    },
+                    "kids": [
+                      {
+                        "tag": "div",
+                        "attrs": {
+                          "class": "pp"
+                        },
+                        "kids": [
+                          {
+                            "tag": "div",
+                            "attrs": {
+                              "id": ":l4"
+                            },
+                            "kids": [
+                              {
+                                "tag": "div",
+                                "attrs": {
+                                  "class": "nM"
+                                },
+                                "kids": [
+                                  {
+                                    "tag": "div",
+                                    "attrs": {
+                                      "id": ":ku",
+                                      "class": "aic"
+                                    }
+                                  },
+                                  {
+                                    "tag": "div",
+                                    "attrs": {
+                                      "class": "yJ"
+                                    },
+                                    "kids": [
+                                      {
+                                        "tag": "div",
+                                        "attrs": {
+                                          "class": "ajl aib aZ6",
+                                          "aria-labelledby": ":lh"
+                                        },
+                                        "kids": [
+                                          {
+                                            "tag": "h2",
+                                            "attrs": {
+                                              "class": "aWk",
+                                              "id": ":lh"
+                                            },
+                                            "kids": [
+                                              "라벨"
+                                            ]
+                                          },
+                                          {
+                                            "tag": "div",
+                                            "attrs": {
+                                              "class": "wT"
+                                            },
+                                            "kids": [
+                                              {
+                                                "tag": "div",
+                                                "attrs": {
+                                                  "id": ":l5",
+                                                  "class": "n3"
+                                                },
+                                                "kids": [
+                                                  {
+                                                    "tag": "div",
+                                                    "attrs": {
+                                                      "class": "byl"
+                                                    },
+                                                    "kids": [
+                                                      {
+                                                        "tag": "div",
+                                                        "attrs": {
+                                                          "class": "TK"
+                                                        },
+                                                        "kids": [
+                                                          {
+                                                            "tag": "div",
+                                                            "attrs": {
+                                                              "class": "aim ain"
+                                                            },
+                                                            "kids": [
+                                                              {
+                                                                "tag": "div",
+                                                                "attrs": {
+                                                                  "class": "TO aBP nZ aiq",
+                                                                  "id": ":lk"
+                                                                },
+                                                                "kids": [
+                                                                  {
+                                                                    "tag": "div",
+                                                                    "attrs": {
+                                                                      "class": "TN bzz aHS-bnt"
+                                                                    },
+                                                                    "kids": [
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "aio UKr6le"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "span",
+                                                                            "attrs": {
+                                                                              "class": "nU n1"
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "a",
+                                                                                "attrs": {
+                                                                                  "href": "https://mail.google.com/mail/u/0/#inbox",
+                                                                                  "target": "_top",
+                                                                                  "class": "J-Ke n0",
+                                                                                  "aria-label": "받은편지함 메일 4771개 읽지 않음"
+                                                                                },
+                                                                                "kids": [
+                                                                                  "받은편지함"
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          },
+                                                                          {
+                                                                            "tag": "div",
+                                                                            "attrs": {
+                                                                              "class": "bsU"
+                                                                            },
+                                                                            "kids": [
+                                                                              "4,771"
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "tag": "div",
+                                                            "attrs": {
+                                                              "class": "aim"
+                                                            },
+                                                            "kids": [
+                                                              {
+                                                                "tag": "div",
+                                                                "attrs": {
+                                                                  "class": "TO",
+                                                                  "id": ":ll"
+                                                                },
+                                                                "kids": [
+                                                                  {
+                                                                    "tag": "div",
+                                                                    "attrs": {
+                                                                      "class": "TN bzz aHS-bnw"
+                                                                    },
+                                                                    "kids": [
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "aio UKr6le"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "span",
+                                                                            "attrs": {
+                                                                              "class": "nU "
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "a",
+                                                                                "attrs": {
+                                                                                  "href": "https://mail.google.com/mail/u/0/#starred",
+                                                                                  "target": "_top",
+                                                                                  "class": "J-Ke n0",
+                                                                                  "aria-label": "별표편지함"
+                                                                                },
+                                                                                "kids": [
+                                                                                  "별표편지함"
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "tag": "div",
+                                                            "attrs": {
+                                                              "class": "aim"
+                                                            },
+                                                            "kids": [
+                                                              {
+                                                                "tag": "div",
+                                                                "attrs": {
+                                                                  "class": "TO",
+                                                                  "id": ":lm"
+                                                                },
+                                                                "kids": [
+                                                                  {
+                                                                    "tag": "div",
+                                                                    "attrs": {
+                                                                      "class": "TN bzz aHS-bu1"
+                                                                    },
+                                                                    "kids": [
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "aio UKr6le"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "span",
+                                                                            "attrs": {
+                                                                              "class": "nU "
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "a",
+                                                                                "attrs": {
+                                                                                  "href": "https://mail.google.com/mail/u/0/#snoozed",
+                                                                                  "target": "_top",
+                                                                                  "class": "J-Ke n0",
+                                                                                  "aria-label": "다시 알림 항목"
+                                                                                },
+                                                                                "kids": [
+                                                                                  "다시 알림 항목"
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "tag": "div",
+                                                            "attrs": {
+                                                              "class": "aim"
+                                                            },
+                                                            "kids": [
+                                                              {
+                                                                "tag": "div",
+                                                                "attrs": {
+                                                                  "class": "TO",
+                                                                  "id": ":lp"
+                                                                },
+                                                                "kids": [
+                                                                  {
+                                                                    "tag": "div",
+                                                                    "attrs": {
+                                                                      "class": "TN bzz aHS-bnu"
+                                                                    },
+                                                                    "kids": [
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "aio UKr6le"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "span",
+                                                                            "attrs": {
+                                                                              "class": "nU "
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "a",
+                                                                                "attrs": {
+                                                                                  "href": "https://mail.google.com/mail/u/0/#sent",
+                                                                                  "target": "_top",
+                                                                                  "class": "J-Ke n0",
+                                                                                  "aria-label": "보낸편지함"
+                                                                                },
+                                                                                "kids": [
+                                                                                  "보낸편지함"
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "tag": "div",
+                                                            "attrs": {
+                                                              "class": "aim"
+                                                            },
+                                                            "kids": [
+                                                              {
+                                                                "tag": "div",
+                                                                "attrs": {
+                                                                  "class": "TO",
+                                                                  "id": ":lr"
+                                                                },
+                                                                "kids": [
+                                                                  {
+                                                                    "tag": "div",
+                                                                    "attrs": {
+                                                                      "class": "TN bzz aHS-bnq"
+                                                                    },
+                                                                    "kids": [
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "aio UKr6le"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "span",
+                                                                            "attrs": {
+                                                                              "class": "nU n1"
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "a",
+                                                                                "attrs": {
+                                                                                  "href": "https://mail.google.com/mail/u/0/#drafts",
+                                                                                  "target": "_top",
+                                                                                  "class": "J-Ke n0",
+                                                                                  "aria-label": "임시보관함 메일 24개 읽지 않음"
+                                                                                },
+                                                                                "kids": [
+                                                                                  "임시보관함"
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          },
+                                                                          {
+                                                                            "tag": "div",
+                                                                            "attrs": {
+                                                                              "class": "bsU"
+                                                                            },
+                                                                            "kids": [
+                                                                              "24"
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "tag": "div",
+                                                    "attrs": {
+                                                      "class": "byl aJZ a0L"
+                                                    },
+                                                    "kids": [
+                                                      {
+                                                        "tag": "div",
+                                                        "attrs": {
+                                                          "class": "TK"
+                                                        },
+                                                        "kids": [
+                                                          {
+                                                            "tag": "div",
+                                                            "attrs": {
+                                                              "class": "aim"
+                                                            },
+                                                            "kids": [
+                                                              {
+                                                                "tag": "div",
+                                                                "attrs": {
+                                                                  "class": "TO UV",
+                                                                  "id": ":lw"
+                                                                },
+                                                                "kids": [
+                                                                  {
+                                                                    "tag": "div",
+                                                                    "attrs": {
+                                                                      "class": "TN aY7xie aEc aHS-ZMUDhf"
+                                                                    },
+                                                                    "kids": [
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "aio aip"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "span",
+                                                                            "attrs": {
+                                                                              "class": "nU n1"
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "a",
+                                                                                "attrs": {
+                                                                                  "href": "https://mail.google.com/mail/u/0/#category/purchases",
+                                                                                  "target": "_top",
+                                                                                  "class": "J-Ke n0",
+                                                                                  "aria-label": "구매 메일 244개 읽지 않음 메뉴 있음"
+                                                                                },
+                                                                                "kids": [
+                                                                                  "구매"
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          },
+                                                                          {
+                                                                            "tag": "div",
+                                                                            "attrs": {
+                                                                              "class": "bsU"
+                                                                            },
+                                                                            "kids": [
+                                                                              "244"
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      },
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "nL aig"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "div",
+                                                                            "attrs": {
+                                                                              "class": "pM aj0",
+                                                                              "aria-haspopup": "true",
+                                                                              "aria-hidden": "true"
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "div",
+                                                                                "attrs": {
+                                                                                  "class": "p6"
+                                                                                },
+                                                                                "kids": [
+                                                                                  {
+                                                                                    "tag": "div",
+                                                                                    "attrs": {
+                                                                                      "class": "p8"
+                                                                                    },
+                                                                                    "kids": [
+                                                                                      "▼"
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ],
+                                                                            "shown": false
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "tag": "div",
+                                                    "attrs": {
+                                                      "class": "n6"
+                                                    },
+                                                    "kids": [
+                                                      {
+                                                        "tag": "span",
+                                                        "attrs": {
+                                                          "role": "button",
+                                                          "class": "J-Ke n4 ah9",
+                                                          "id": ":ld",
+                                                          "aria-label": "라벨 더보기"
+                                                        },
+                                                        "kids": [
+                                                          {
+                                                            "tag": "span",
+                                                            "attrs": {
+                                                              "class": "CJ"
+                                                            },
+                                                            "kids": [
+                                                              "더보기"
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "tag": "div",
+                                                    "attrs": {
+                                                      "id": ":kw"
+                                                    },
+                                                    "kids": [
+                                                      {
+                                                        "tag": "div",
+                                                        "attrs": {
+                                                          "id": ":ky",
+                                                          "class": "n3"
+                                                        }
+                                                      }
+                                                    ],
+                                                    "shown": false
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "tag": "div",
+                                    "attrs": {
+                                      "class": "aAw FgKVne"
+                                    },
+                                    "kids": [
+                                      {
+                                        "tag": "span",
+                                        "attrs": {
+                                          "class": "aAv",
+                                          "role": "heading"
+                                        },
+                                        "kids": [
+                                          "라벨"
+                                        ]
+                                      },
+                                      {
+                                        "tag": "div",
+                                        "attrs": {
+                                          "class": "aAu arN",
+                                          "aria-label": "새 라벨 만들기",
+                                          "role": "button",
+                                          "type": "button"
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "tag": "div",
+                                    "attrs": {
+                                      "class": "yJ"
+                                    },
+                                    "kids": [
+                                      {
+                                        "tag": "div",
+                                        "attrs": {
+                                          "class": "ajl aib aZ6",
+                                          "aria-labelledby": ":li"
+                                        },
+                                        "kids": [
+                                          {
+                                            "tag": "h2",
+                                            "attrs": {
+                                              "class": "aWk",
+                                              "id": ":li"
+                                            },
+                                            "kids": [
+                                              "라벨"
+                                            ]
+                                          },
+                                          {
+                                            "tag": "div",
+                                            "attrs": {
+                                              "class": "wT"
+                                            },
+                                            "kids": [
+                                              {
+                                                "tag": "div",
+                                                "attrs": {
+                                                  "id": ":l6",
+                                                  "class": "n3"
+                                                },
+                                                "kids": [
+                                                  {
+                                                    "tag": "div",
+                                                    "attrs": {
+                                                      "class": "zw"
+                                                    },
+                                                    "kids": [
+                                                      {
+                                                        "tag": "div",
+                                                        "attrs": {
+                                                          "class": "TK"
+                                                        },
+                                                        "kids": [
+                                                          {
+                                                            "tag": "div",
+                                                            "attrs": {
+                                                              "class": "aim"
+                                                            },
+                                                            "kids": [
+                                                              {
+                                                                "tag": "div",
+                                                                "attrs": {
+                                                                  "class": "TO",
+                                                                  "id": ":m1"
+                                                                },
+                                                                "kids": [
+                                                                  {
+                                                                    "tag": "div",
+                                                                    "attrs": {
+                                                                      "class": "TN aY7xie aEc aHS-bnr"
+                                                                    },
+                                                                    "kids": [
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "aio aip"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "span",
+                                                                            "attrs": {
+                                                                              "class": "nU "
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "a",
+                                                                                "attrs": {
+                                                                                  "href": "https://mail.google.com/mail/u/0/#label/Unwanted",
+                                                                                  "target": "_top",
+                                                                                  "class": "J-Ke n0",
+                                                                                  "aria-label": "Unwanted 메뉴 있음"
+                                                                                },
+                                                                                "kids": [
+                                                                                  "Unwanted"
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      },
+                                                                      {
+                                                                        "tag": "div",
+                                                                        "attrs": {
+                                                                          "class": "nL aig"
+                                                                        },
+                                                                        "kids": [
+                                                                          {
+                                                                            "tag": "div",
+                                                                            "attrs": {
+                                                                              "class": "pM aj0",
+                                                                              "aria-haspopup": "true",
+                                                                              "aria-hidden": "true"
+                                                                            },
+                                                                            "kids": [
+                                                                              {
+                                                                                "tag": "div",
+                                                                                "attrs": {
+                                                                                  "class": "p6"
+                                                                                },
+                                                                                "kids": [
+                                                                                  {
+                                                                                    "tag": "div",
+                                                                                    "attrs": {
+                                                                                      "class": "p8"
+                                                                                    },
+                                                                                    "kids": [
+                                                                                      "▼"
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ],
+                                                                            "shown": false
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "tag": "div",
+                                                    "attrs": {
+                                                      "class": "n6"
+                                                    },
+                                                    "kids": [
+                                                      {
+                                                        "tag": "span",
+                                                        "attrs": {
+                                                          "role": "button",
+                                                          "class": "J-Ke n4 ah9",
+                                                          "id": ":le",
+                                                          "aria-label": "라벨 더보기"
+                                                        },
+                                                        "kids": [
+                                                          {
+                                                            "tag": "span",
+                                                            "attrs": {
+                                                              "class": "CJ"
+                                                            },
+                                                            "kids": [
+                                                              "더보기"
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ],
+                                                    "shown": false
+                                                  },
+                                                  {
+                                                    "tag": "div",
+                                                    "attrs": {
+                                                      "id": ":kx"
+                                                    },
+                                                    "kids": [
+                                                      {
+                                                        "tag": "div",
+                                                        "attrs": {
+                                                          "id": ":kz",
+                                                          "class": "n3"
+                                                        }
+                                                      }
+                                                    ],
+                                                    "shown": false
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "path": "div.tVu25 > div.nH > div.nH > div.nH > div.w-asV.bbg.aiw > div#:h > div > div.a3I",
+      "ancestors": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "tVu25"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "nH"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "nH"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "nH"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "w-asV bbg aiw"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "id": ":h"
+          }
+        },
+        {
+          "tag": "div",
+          "attrs": {}
+        }
+      ],
+      "layout": [
+        {
+          "node": "div",
+          "display": "block",
+          "position": "static",
+          "width": 1302
+        },
+        {
+          "node": "div#:h",
+          "display": "block",
+          "position": "static",
+          "width": 1302
+        },
+        {
+          "node": "div.w-asV.bbg.aiw",
+          "display": "block",
+          "position": "relative",
+          "width": 1302
+        },
+        {
+          "node": "div.nH",
+          "display": "block",
+          "position": "static",
+          "width": 1302
+        },
+        {
+          "node": "div.nH",
+          "display": "block",
+          "position": "relative",
+          "width": 1302
+        },
+        {
+          "node": "div.nH",
+          "display": "block",
+          "position": "static",
+          "width": 1302
+        },
+        {
+          "node": "div.tVu25",
+          "display": "block",
+          "position": "relative",
+          "width": 1302
+        },
+        {
+          "node": "body.aAU",
+          "display": "block",
+          "position": "static",
+          "width": 1302
+        }
+      ],
+      "siblings": [
+        {
+          "node": "div.a3I",
+          "rect": {
+            "x": -10000,
+            "y": -10000,
+            "width": 1,
+            "height": 1
+          },
+          "self": true
+        }
+      ],
+      "tree": {
+        "tag": "div",
+        "attrs": {
+          "class": "a3I"
+        },
+        "kids": [
+          {
+            "tag": "a",
+            "attrs": {
+              "href": "",
+              "target": "_top",
+              "class": "J-Ke",
+              "id": ":o"
+            },
+            "kids": [
+              "콘텐츠로 건너뛰기"
+            ]
+          },
+          {
+            "tag": "a",
+            "attrs": {
+              "href": "",
+              "target": "_top",
+              "class": "J-Ke",
+              "id": ":p",
+              "aria-expanded": "false",
+              "aria-controls": ":q"
+            },
+            "kids": [
+              "스크린 리더로 Gmail 사용하기"
+            ]
+          },
+          {
+            "tag": "div",
+            "attrs": {
+              "id": ":q"
+            },
+            "kids": [
+              {
+                "tag": "a",
+                "attrs": {
+                  "href": "",
+                  "target": "_top",
+                  "class": "J-Ke",
+                  "id": ":m"
+                },
+                "kids": [
+                  "키보드 단축키"
+                ]
+              },
+              {
+                "tag": "a",
+                "attrs": {
+                  "href": "https://support.google.com/mail/answer/90559?hl=ko",
+                  "target": "_top",
+                  "class": "J-Ke",
+                  "id": ":n"
+                },
+                "kids": [
+                  "Gmail (표준 보기) 가이드"
+                ]
+              }
+            ],
+            "shown": false
+          }
+        ]
+      }
+    }
+  ],
+  "overlays": [],
+  "main": {
+    "path": "div.tVu25 > div.nH > div.nH > div.nH.aqk.aql > div.nH.bkK > div.nH > div.nH.ar4.z > div > div.AO > div#:3.Tm.aeJ > div#:1.aeF > div.nH > div.bGI.nH.oy8Mbf",
+    "rect": {
+      "x": 256,
+      "y": 64,
+      "width": 990,
+      "height": 2304
+    }
+  },
+  "truncated": false,
+  "expect": {
+    "minItems": 8,
+    "labels": [
+      "편지쓰기",
+      "받은편지함",
+      "별표편지함",
+      "다시 알림 항목",
+      "보낸편지함",
+      "임시보관함",
+      "구매",
+      "새 라벨 만들기",
+      "Unwanted"
+    ],
+    "current": "받은편지함"
+  }
+}

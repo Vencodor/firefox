@@ -32,11 +32,56 @@ observation/ObservationOverlay.sys.mjs
   Gecko의 anonymous content 표시층. 사이트 DOM/스타일은 수정하지 않으며
   pointer-events:none으로 클릭을 가로채지 않는다.
 AgentHeadless.sys.mjs
-  HiddenBrowserManager(WindowlessBrowser)를 사용해 화면 없는 브라우저에서
-  검색 및 URL 로드를 수행하고 AgentObservationSession으로 본문과 링크를 수집한다.
+  HiddenFrame(WindowlessBrowser)에서 화면 없는 브라우저로 검색 및 URL 로드를
+  수행하고 AgentObservationSession으로 본문과 링크를 수집한다.
+  문서 커밋 직후 DOMContentLoaded 기준으로 추출하며(본문이 짧으면 load까지 한 번 더),
+  이미지/미디어/폰트/비콘(결과 페이지는 스타일시트 포함)을 차단한다.
+  문서 응답이 첨부(Content-Disposition: attachment)이거나 HTML·텍스트가 아니면(PDF 등)
+  응답 단계에서 취소해 다운로드나 PDF 탭이 생기지 않게 하고, 그래도 시작된 다운로드는
+  파일과 함께 목록에서 지운다. 확장자가 파일인 검색 결과는 열지 않고 스니펫만 쓴다.
+  Readability는 각 콘텐츠 프로세스에서 실행한다. 첫 SERP가 도착하면 결과 방문을
+  시작하고, 목표 페이지 수 또는 결과 예산(browser.agent.headlessResultBudgetMs)
+  경과 후 유효 페이지 1개 이상이면 나머지를 취소한다. 창은 60초간 재사용한다.
 AgentRuntime.sys.mjs
-  에이전트 채팅 탭(CustomAgentUI.connect)과 LLM API(DeepSeek 호환)를 연결하며,
+  에이전트 채팅 탭(CustomAgentUI.connect)과 OpenAI 호환 LLM API를 연결하며,
   LLM의 web_search / read_web_page 도구 호출을 AgentHeadless로 실행해 응답한다.
+  공급자(browser.agent.provider: deepseek | mercury)별 차이는 PROVIDERS에 둔다.
+  Mercury의 diffusing 모드에서는 청크마다 답변 전체가 오므로 answer_refine 이벤트로
+  화면 텍스트를 교체하고, 이때는 도구를 스트림 도중에 미리 시작하지 않는다.
+  Mercury의 도구 라운드는 toolReasoningEffort(low)로 요청하고 think_deeply 도구를 함께 준다.
+  모델이 이 도구를 부르면 도구를 실행하지 않고 같은 대화를 reasoningEffort(medium)로
+  다시 요청한다. web_search와 함께 부르면 검색 후 답변 턴을 reasoningEffort로 생각한다.
+AgentDecide.sys.mjs
+  Inception Mercury Decide(/v1/decisions) 클라이언트. 기본으로 켜져 있으며(browser.agent.decide.enabled)
+  Mercury API 키가 있으면 search()가 SERP의 제목·스니펫만으로 결과별 관련성과 "스니펫만으로 충분"을
+  한 번에 판단한다. 판단을 기다리는 동안 상위 speculativeVisits개는 순위대로 방문하고,
+  관련성 낮은 결과는 열지 않거나 방문을 취소하며 요약에서도 뺀다(쿼리당 최소
+  minKeep개 유지). 모든 SERP가 충분 판정이면 페이지를 열지 않는다. 실패나
+  시간 초과 시에는 모든 결과를 방문하는 기존 동작으로 돌아간다.
+  쿼리당 상위 maxResults개만 판단하고 나머지는 뒤에 예비로 남긴다. 영상 페이지는
+  열지 않고 스니펫만 쓰며, 네이버 블로그는 iframe이 없는 모바일 주소로 연다.
+  web_search의 queries는 {query, needs} 항목이며 호출당 최대 2개다(browser.agent.
+  maxSearchQueries, 구글 검색 제한 대응). 페이지 수집 후 need별로 스니펫과
+  본문 일부만 넣어 "이 정보를 찾았는가"를 한 번에 판단한다(coverage). 검색별 근거는
+  한 번만 보내고 need는 search_ids로 가리킨다. 재검색은 쿼리 1개다.
+  기준 미만 need가 있으면 AgentRuntime이 한 번 더 검색한다: 그 계획 턴에는 압축
+  보고(스니펫, 읽은 문서 제목, 부족한 need)만 보내고, 계획 턴의 글은 표시하지 않으며,
+  답변 턴 전에 전체 보고로 되돌린다. 재검색은 Decide를 거치지 않는다.
+깊게 모드
+  채팅의 모드 스위치가 깊게이면 chat({mode: "deep"})으로 요청한다. 최신 사용자 메시지에
+  research_mode 안내를 붙여(시스템 프롬프트는 그대로) needs를 넓게 계획하게 하고,
+  need 충분성 판단(기준 browser.agent.deep.coverageThreshold, 70%)을 통과할 때까지
+  browser.agent.deep.maxSearchRounds(4)회까지 검색한다. 매 재검색도 Decide를 거치며,
+  계획 턴은 모든 압축 보고를, 답변 턴은 모든 전체 보고를 받는다. 추론 강도는
+  보통과 같다(think_deeply를 부를 때만 medium).
+출처 번호
+  검색 보고와 read_web_page 결과의 문서·스니펫에 답변 단위로 [n] 번호를 붙인다
+  (같은 페이지는 같은 번호). 모델은 번호만 인용하고, URL 목록은 sources 이벤트로
+  채팅 UI에 직접 전달되어 인용 칩과 답변 아래 출처 목록이 된다.
+observation/TextRelevance.sys.mjs
+  질의어와 겹치는 줄을 우선해 본문을 줄이는 순수 함수. 페이지별 제한
+  (selectRelevantText)과 검색 1회의 전체 본문 예산(fitPagesToBudget,
+  browser.agent.contextCharBudget)에 쓴다.
 browser/base/content/custom-ui/browser-custom-observation.*
   관찰 API를 소비하는 검사 UI. 기존 CustomAgentUI의 실행/상태 연결과 분리된다.
 

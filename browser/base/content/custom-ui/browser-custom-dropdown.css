@@ -1,0 +1,268 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* stylelint-disable stylelint-plugin-mozilla/use-design-tokens -- Mono custom tokens are defined in design-tokens.css. */
+
+/* CustomDropdown: a floating glass menu in the window's document, so unlike
+   XUL popups it blurs the sidebar and page behind it. */
+.custom-dropdown {
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: max(200px, var(--custom-dropdown-anchor-width, 0px));
+  max-width: calc(100vw - 16px);
+  padding: var(--space-xsmall);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  border: var(--border-width) solid var(--custom-glass-border);
+  border-radius: var(--border-radius-custom-page);
+  background-color: var(--custom-dropdown-background);
+  background-image: var(--custom-glass-sheen);
+  box-shadow: var(--box-shadow-custom-glass), var(--custom-glass-caustic);
+  backdrop-filter: var(--custom-glass-filter);
+  color: var(--custom-ink);
+  font-family: var(--font-family-custom);
+  font-size: var(--font-size-custom-label);
+  outline: none;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.custom-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxsmall);
+}
+
+/* One surface follows the hovered or focused item, like the switch
+   indicator, instead of each item lighting up on its own. */
+.custom-dropdown-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: calc(var(--border-radius-custom-page) - var(--space-xsmall));
+  background-color: var(--custom-glass-film-strong);
+  box-shadow: var(--custom-glass-edge);
+  opacity: 0;
+  pointer-events: none;
+
+  &[visible] {
+    opacity: 1;
+  }
+}
+
+.custom-dropdown-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-custom-gap);
+  min-height: var(--size-custom-control);
+  padding-inline: var(--space-custom-padding) var(--space-custom-inset);
+  border-radius: calc(var(--border-radius-custom-page) - var(--space-xsmall));
+  white-space: nowrap;
+  cursor: default;
+  outline: none;
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-inset);
+  }
+
+  &[aria-disabled="true"] {
+    opacity: 0.4;
+  }
+
+  &[aria-checked="true"] {
+    font-weight: var(--font-weight-semibold);
+
+    > .custom-dropdown-icon {
+      color: var(--custom-ink);
+    }
+
+    > .custom-dropdown-check {
+      visibility: visible;
+    }
+  }
+}
+
+.custom-dropdown-icon {
+  flex: none;
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
+  background: var(--custom-dropdown-icon) center / var(--icon-size-small) no-repeat;
+  color: var(--custom-muted);
+  -moz-context-properties: fill, stroke;
+  fill: currentColor;
+  stroke: currentColor;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.custom-dropdown-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to left, transparent, black var(--size-custom-text-fade));
+
+  &:dir(rtl) {
+    mask-image: linear-gradient(to right, transparent, black var(--size-custom-text-fade));
+  }
+}
+
+.custom-dropdown-detail {
+  flex: none;
+  color: var(--custom-muted);
+  font-size: var(--font-size-custom-small);
+  font-weight: var(--font-weight);
+}
+
+.custom-dropdown-check {
+  flex: none;
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
+  background: url("chrome://global/skin/icons/check.svg") center / 12px no-repeat;
+  -moz-context-properties: fill;
+  fill: currentColor;
+  visibility: hidden;
+}
+
+/* CustomDatePicker: a month grid in the dropdown's glass. The chosen day is
+   filled with the ink color, today has a thin ring. */
+.custom-datepicker {
+  padding: var(--space-small);
+}
+
+.custom-datepicker-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xsmall);
+  margin-block-end: var(--space-xsmall);
+}
+
+.custom-datepicker-month {
+  flex: 1;
+  text-align: center;
+  font-weight: var(--font-weight-semibold);
+}
+
+.custom-datepicker-nav {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--border-radius-custom-tab) - 2px);
+  background: transparent url("chrome://global/skin/icons/arrow-left.svg") center / 12px no-repeat;
+  color: var(--custom-muted);
+  -moz-context-properties: fill;
+  fill: currentColor;
+  appearance: none;
+
+  &[data-step="1"] {
+    background-image: url("chrome://global/skin/icons/arrow-right.svg");
+  }
+
+  &:dir(rtl) {
+    scale: -1 1;
+  }
+
+  &:hover {
+    background-color: var(--custom-glass-film-strong);
+    color: var(--custom-ink);
+  }
+}
+
+.custom-datepicker-weekdays,
+.custom-datepicker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 2px;
+}
+
+.custom-datepicker-weekdays > span {
+  line-height: 24px;
+  color: var(--custom-muted);
+  font-size: var(--font-size-custom-small);
+  text-align: center;
+}
+
+.custom-datepicker-day {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--border-radius-custom-tab) - 2px);
+  background: transparent;
+  color: var(--custom-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  appearance: none;
+
+  &:hover {
+    background-color: var(--custom-glass-film-strong);
+  }
+
+  &[outside] {
+    color: var(--custom-muted);
+  }
+
+  &[aria-current="date"] {
+    box-shadow: inset 0 0 0 var(--border-width) var(--custom-muted);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &[aria-pressed="true"] {
+    background-color: var(--custom-ink);
+    box-shadow: none;
+    color: var(--custom-accent-ink);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-inset);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .custom-dropdown-highlight {
+    transition:
+      translate 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      height 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 140ms ease;
+
+    &[instant] {
+      transition: opacity 140ms ease;
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .custom-dropdown {
+    border-color: CanvasText;
+  }
+
+  .custom-dropdown-highlight {
+    background-color: Highlight;
+  }
+
+  .custom-dropdown-item:hover,
+  .custom-dropdown-item:focus {
+    color: HighlightText;
+  }
+
+  .custom-datepicker-day[aria-pressed="true"] {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

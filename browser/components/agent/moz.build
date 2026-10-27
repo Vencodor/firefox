@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 EXTRA_JS_MODULES.agent += [
+    "AgentDecide.sys.mjs",
     "AgentHeadless.sys.mjs",
     "AgentObservation.sys.mjs",
     "AgentRuntime.sys.mjs",
@@ -12,6 +13,7 @@ EXTRA_JS_MODULES.agent.observation += [
     "observation/DOMHeuristics.sys.mjs",
     "observation/DOMObservation.sys.mjs",
     "observation/ObservationOverlay.sys.mjs",
+    "observation/TextRelevance.sys.mjs",
 ]
 FINAL_TARGET_FILES.actors += [
     "actors/AgentObservationChild.sys.mjs",

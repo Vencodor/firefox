@@ -2,15 +2,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* import-globals-from browser-custom-switch.js */
+/* import-globals-from browser-custom-dropdown.js */
+/* import-globals-from browser-custom-calendar.js */
 
 /**
- * The sidebar archive: the bottom sidebar button slides the tab list out for
- * history (with recently closed tabs), bookmarks and downloads. Entries are
- * read from the existing Places, SessionStore and Downloads data.
+ * The sidebar archive: the bottom sidebar button opens a menu of views, and
+ * choosing one slides the tab list out for history (with recently closed
+ * tabs), bookmarks, downloads or the calendar. Entries are read from the
+ * existing Places, SessionStore and Downloads data, and tasks from
+ * CalendarStore.
+ * The view title switches views while the archive is open.
  */
 var CustomArchiveUI = {
-  views: ["history", "bookmarks", "downloads"],
+  views: ["history", "bookmarks", "downloads", "calendar"],
+  viewIcons: {
+    history: "chrome://browser/skin/history.svg",
+    bookmarks: "chrome://browser/skin/bookmark-hollow.svg",
+    downloads: "chrome://browser/skin/downloads/downloads.svg",
+    calendar:
+      "chrome://browser/content/custom-ui/resources/archive/calendar.svg",
+  },
   historyDays: 30,
   historyLimit: 300,
   closedTabsLimit: 5,
@@ -33,7 +44,10 @@ var CustomArchiveUI = {
 
   init() {
     ChromeUtils.defineESModuleGetters(this.lazy, {
-      Downloads: "resource://gre/modules/Downloads.sys.mjs",
+      DownloadPaths: "resource://gre/modules/DownloadPaths.sys.mjs",
+      DownloadsCommon:
+        "moz-src:///browser/components/downloads/DownloadsCommon.sys.mjs",
+      FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
       PlacesTransactions: "resource://gre/modules/PlacesTransactions.sys.mjs",
       DownloadsViewUI:
         "moz-src:///browser/components/downloads/DownloadsViewUI.sys.mjs",
@@ -43,30 +57,33 @@ var CustomArchiveUI = {
     this.container = document.getElementById("sidebar-container");
     this.archive = document.getElementById("custom-archive");
     this.button = document.getElementById("custom-archive-button");
-    this.tablist = document.getElementById("custom-archive-tabs");
-    this.title = document.getElementById("custom-archive-title");
-    this.address = document.getElementById("custom-sidebar-address");
+    this.titleButton = document.getElementById("custom-archive-title");
+    this.title = document.getElementById("custom-archive-title-text");
+    this.menu = new CustomDropdown({ id: "custom-archive-menu" });
     this.search = document.getElementById("custom-archive-search");
     this.searchInput = document.getElementById("custom-archive-search-input");
     this.clearButton = document.getElementById("custom-archive-search-clear");
     this.tabLayer = [
       ...this.container.querySelectorAll(
-        ":scope > :is(#custom-sidebar-address, #custom-fold-switch, sidebar-main, #custom-notice-sidebar)"
+        ":scope > :is(#custom-fold-switch, sidebar-main, #custom-notice-sidebar)"
       ),
     ];
-    this.archiveLayer = [this.search, this.archive];
+    this.archiveLayer = [this.archive];
     this.view = "history";
     this.query = "";
     this.open = false;
     this.dirty = new Set(this.views);
     this.slideAnimations = [];
-    this.downloads = [];
+    this.downloads = new Set();
     this.downloadRows = new Map();
+    this.rowDownloads = new WeakMap();
+    this.refreshedDownloads = new WeakSet();
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     this.button.addEventListener("click", this);
     this.button.addEventListener("pointerenter", this);
     this.button.addEventListener("focus", this);
+    this.titleButton.addEventListener("click", this);
     this.archive.addEventListener("keydown", this);
     this.archive.addEventListener("click", this);
     this.archive.addEventListener("auxclick", this);
@@ -93,27 +110,29 @@ var CustomArchiveUI = {
         "sidebar-launcher-drag-active",
       ],
     });
-    this.switch = new CustomSwitch({
-      tablist: this.tablist,
-      areas: [this.archive],
-      onSelect: index => this.setView(this.views[index]),
-    });
+    CustomCalendarUI.init({ onChange: () => this.invalidate("calendar") });
 
     this.bookmarksListener = () => this.loadBookmarks();
     this.downloadView = {
       onDownloadAdded: download => {
-        this.downloads.push(download);
+        this.downloads.add(download);
         this.invalidate("downloads");
       },
       onDownloadChanged: download => this.onDownloadChanged(download),
       onDownloadRemoved: download => {
-        let index = this.downloads.indexOf(download);
-        if (index != -1) {
-          this.downloads.splice(index, 1);
-        }
+        this.downloads.delete(download);
         this.invalidate("downloads");
       },
     };
+
+    this.activeDownloads = new Set();
+    this.progressView = {
+      onDownloadAdded: download => this.trackDownload(download),
+      onDownloadChanged: download => this.trackDownload(download),
+      onDownloadRemoved: download => this.trackDownload(download, true),
+    };
+    this.progressData = this.lazy.DownloadsCommon.getData(window);
+    this.progressData.addView(this.progressView);
   },
 
   get available() {
@@ -144,7 +163,9 @@ var CustomArchiveUI = {
     switch (event.type) {
       case "click":
         if (event.currentTarget === this.button) {
-          this.setOpen(!this.open);
+          this.onButtonClick(event);
+        } else if (event.currentTarget === this.titleButton) {
+          this.openViewMenu(this.titleButton, event, "bottom-start");
         } else if (event.currentTarget === this.clearButton) {
           this.clearSearch();
           this.searchInput.focus();
@@ -167,6 +188,12 @@ var CustomArchiveUI = {
       case "input":
         this.setQuery(this.searchInput.value);
         break;
+      case "command":
+        this.onDownloadCommand(event.target.dataset.action);
+        break;
+      case "popuphidden":
+        this.onDownloadMenuHidden();
+        break;
       case "unload":
         this.uninit();
         break;
@@ -176,6 +203,20 @@ var CustomArchiveUI = {
   onKeyDown(event) {
     if (
       event.currentTarget === this.archive &&
+      this.search.contains(event.target)
+    ) {
+      if (event.key == "ArrowDown") {
+        document
+          .getElementById(`custom-archive-${this.view}`)
+          .querySelector(".custom-archive-link")
+          ?.focus();
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      return;
+    }
+    if (
+      event.currentTarget === this.archive &&
       [
         "ArrowLeft",
         "ArrowRight",
@@ -183,6 +224,9 @@ var CustomArchiveUI = {
         "ArrowDown",
         "Enter",
         "Delete",
+        "F2",
+        "ContextMenu",
+        " ",
       ].includes(event.key)
     ) {
       this.onArchiveKey(event);
@@ -197,6 +241,159 @@ var CustomArchiveUI = {
     }
   },
 
+  /**
+   * While the archive is closed the button opens the view menu above it;
+   * while it's open the button brings the tabs back.
+   */
+  onButtonClick(event) {
+    if (this.button.hasAttribute("custom-downloading")) {
+      this.showDownloads();
+    } else if (this.open) {
+      this.setOpen(false);
+    } else {
+      this.openViewMenu(this.button, event, "top-start");
+    }
+  },
+
+  /**
+   * While a download runs the button skips the view menu and goes straight
+   * to the downloads view; a second click brings the tabs back.
+   */
+  showDownloads() {
+    if (this.open && this.view == "downloads") {
+      this.setOpen(false);
+      return;
+    }
+    this.ensureData();
+    this.setView("downloads");
+    this.setOpen(true);
+    if (this.open) {
+      document.getElementById("custom-archive-downloads").focus();
+    }
+  },
+
+  trackDownload(download, removed = false) {
+    if (removed || download.stopped) {
+      if (this.activeDownloads.delete(download) && download.succeeded) {
+        this.downloadSucceeded = true;
+      }
+    } else {
+      this.activeDownloads.add(download);
+    }
+    if (this.downloadButtonPending) {
+      return;
+    }
+    this.downloadButtonPending = true;
+    requestAnimationFrame(() => {
+      this.downloadButtonPending = false;
+      this.updateDownloadButton();
+    });
+  },
+
+  /**
+   * Shows the overall progress of running downloads as a ring around a
+   * download icon. When the last one finishes the ring completes before the
+   * archive icon comes back.
+   */
+  updateDownloadButton() {
+    let button = this.button;
+    let state = button.getAttribute("custom-downloading");
+    clearTimeout(this.downloadDoneTimer);
+
+    if (!this.activeDownloads.size) {
+      if (!state) {
+        return;
+      }
+      let succeeded = this.downloadSucceeded;
+      this.downloadSucceeded = false;
+      if (succeeded && state != "done") {
+        button.style.setProperty("--custom-download-progress", "1");
+        button.setAttribute("custom-downloading", "done");
+        document.l10n.setAttributes(
+          button,
+          "custom-ui-archive-button-downloaded"
+        );
+        this.downloadDoneTimer = setTimeout(
+          () => this.clearDownloadButton(),
+          this.reducedMotion.matches ? 600 : 1200
+        );
+      } else {
+        this.clearDownloadButton();
+      }
+      return;
+    }
+
+    let current = 0;
+    let total = 0;
+    for (let download of this.activeDownloads) {
+      if (download.hasProgress) {
+        current += download.currentBytes;
+        total += download.totalBytes;
+      }
+    }
+    let progress = total ? Math.min(current / total, 1) : 0;
+    if (!state || state == "done") {
+      // Sets the starting point before the ring shows so it doesn't sweep
+      // back from the last download's full ring.
+      button.style.setProperty("--custom-download-progress", progress);
+      getComputedStyle(button).getPropertyValue("--custom-download-progress");
+    }
+    button.style.setProperty("--custom-download-progress", progress);
+    button.setAttribute(
+      "custom-downloading",
+      total ? "progress" : "indeterminate"
+    );
+    let percent = Math.floor(progress * 100);
+    if (!total) {
+      document.l10n.setAttributes(
+        button,
+        "custom-ui-archive-button-downloading-unknown"
+      );
+    } else if (state != "progress" || this.downloadPercent != percent) {
+      document.l10n.setAttributes(
+        button,
+        "custom-ui-archive-button-downloading",
+        { percent }
+      );
+    }
+    this.downloadPercent = total ? percent : -1;
+  },
+
+  clearDownloadButton() {
+    this.button.removeAttribute("custom-downloading");
+    this.downloadPercent = -1;
+    document.l10n.setAttributes(this.button, "custom-ui-archive-button");
+  },
+
+  openViewMenu(anchor, event, position) {
+    this.ensureData();
+    this.menu.toggle(
+      anchor,
+      this.views.map(view => ({
+        id: view,
+        l10nId: `custom-ui-archive-title-${view}`,
+        icon: this.viewIcons[view],
+        checked: this.open && view == this.view,
+      })),
+      {
+        position,
+        keyboard: event.detail == 0,
+        onSelect: view => {
+          this.setView(view);
+          this.setOpen(true);
+          if (!this.open) {
+            return;
+          }
+          if (view == "calendar") {
+            CustomCalendarUI.focusComposer();
+          } else if (anchor === this.button) {
+            document.getElementById(`custom-archive-${view}`).focus();
+          }
+        },
+      }
+    );
+  },
+
   moveView(step) {
     let index = this.views.indexOf(this.view) + step;
     if (index >= 0 && index < this.views.length) {
@@ -206,10 +403,17 @@ var CustomArchiveUI = {
 
   /**
    * Left and right move between views, up and down between rows, Enter opens
-   * the focused row and Delete removes it.
+   * the focused row and Delete removes it. F2 renames a download's file and
+   * the context menu key opens its menu. Calendar rows handle their own keys
+   * first.
    */
   onArchiveKey(event) {
     let row = event.target.closest?.(".custom-archive-row");
+    if (row && CustomCalendarUI.onRowKey(event, row)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     switch (event.key) {
       case "ArrowLeft":
       case "ArrowRight":
@@ -228,10 +432,30 @@ var CustomArchiveUI = {
         break;
       }
       case "Enter":
+        if (this.rowDownloads.has(row)) {
+          this.openDownload(this.rowDownloads.get(row));
+          break;
+        }
         if (!this.rowEntries.has(row)) {
           return;
         }
         this.openEntry(this.rowEntries.get(row), event);
+        break;
+      case "F2":
+        if (!this.rowDownloads.has(row)) {
+          return;
+        }
+        this.startRename(row, this.rowDownloads.get(row));
+        break;
+      case "ContextMenu":
+        if (!this.rowDownloads.has(row)) {
+          return;
+        }
+        this.openDownloadMenu(
+          row.querySelector(".custom-archive-more"),
+          row,
+          this.rowDownloads.get(row)
+        );
         break;
       case "Delete":
         if (!this.rowEntries.has(row)) {
@@ -239,6 +463,8 @@ var CustomArchiveUI = {
         }
         this.removeEntry(row);
         break;
+      default:
+        return;
     }
     event.preventDefault();
     event.stopPropagation();
@@ -246,6 +472,15 @@ var CustomArchiveUI = {
 
   onRowClick(event) {
     let row = event.target.closest(".custom-archive-row");
+    if (row?.classList.contains("custom-calendar-row")) {
+      CustomCalendarUI.onRowClick(event, row);
+      return;
+    }
+    let download = row && this.rowDownloads.get(row);
+    if (download) {
+      this.onDownloadClick(event, row, download);
+      return;
+    }
     let entry = row && this.rowEntries.get(row);
     if (!entry) {
       return;
@@ -428,8 +663,10 @@ var CustomArchiveUI = {
     if (open) {
       this.ensureData();
       this.renderIfDirty(this.view);
-      this.switch.updateIndicator();
     } else {
+      if (this.menu.anchor === this.titleButton) {
+        this.menu.close({ animate: false, restoreFocus: false });
+      }
       if (hadFocus) {
         this.button.focus();
       }
@@ -489,9 +726,7 @@ var CustomArchiveUI = {
 
   /**
    * Pushes the tab list and the archive past each other. The hidden layer
-   * fades out for the length of its exit animation. The address and search
-   * boxes share one place and surface, so they swap in place and only the
-   * new box's content fades in.
+   * fades out for the length of its exit animation.
    */
   slide(open) {
     this.cancelSlide();
@@ -499,27 +734,16 @@ var CustomArchiveUI = {
       return;
     }
     let shift = (open ? -1 : 1) * this.slideDistance * (this.isRTL() ? -1 : 1);
-    let box = open ? this.search : this.address;
-    for (let element of box.children) {
-      this.slideAnimations.push(
-        element.animate([{ opacity: 0 }, { opacity: 1 }], {
-          duration: 240,
-          delay: 40,
-          easing: "ease-out",
-          fill: "backwards",
-        })
-      );
-    }
-    let sliding = element =>
-      element !== this.address && element !== this.search;
-    let outgoing = (open ? this.tabLayer : this.archiveLayer).filter(sliding);
-    let incoming = (open ? this.archiveLayer : this.tabLayer).filter(sliding);
+    let outgoing = open ? this.tabLayer : this.archiveLayer;
+    let incoming = open ? this.archiveLayer : this.tabLayer;
     for (let element of outgoing) {
+      // The stylesheet hides the outgoing layer at once; it stays visible
+      // until its fade ends.
       this.slideAnimations.push(
         element.animate(
           [
-            { opacity: 1, translate: "0 0" },
-            { opacity: 0, translate: `${shift}px 0` },
+            { opacity: 1, translate: "0 0", visibility: "visible" },
+            { opacity: 0, translate: `${shift}px 0`, visibility: "visible" },
           ],
           { duration: 160, easing: "ease-in" }
         )
@@ -545,7 +769,6 @@ var CustomArchiveUI = {
     let direction =
       this.views.indexOf(view) > this.views.indexOf(this.view) ? 1 : -1;
     this.view = view;
-    this.switch.select(this.views.indexOf(view));
     let panel;
     for (let name of this.views) {
       let element = document.getElementById(`custom-archive-${name}`);
@@ -560,7 +783,7 @@ var CustomArchiveUI = {
       `custom-ui-archive-search-${view}`
     );
     this.renderIfDirty(view);
-    if (!this.reducedMotion.matches) {
+    if (this.open && !this.reducedMotion.matches) {
       let shift = direction * this.switchDistance * (this.isRTL() ? -1 : 1);
       panel.animate(
         [
@@ -607,16 +830,10 @@ var CustomArchiveUI = {
     );
     this.loadBookmarks();
 
-    let listType = PrivateBrowsingUtils.isWindowPrivate(window)
-      ? this.lazy.Downloads.PRIVATE
-      : this.lazy.Downloads.PUBLIC;
-    this.lazy.Downloads.getList(listType).then(list => {
-      if (this.unloaded) {
-        return;
-      }
-      this.downloadList = list;
-      list.addView(this.downloadView);
-    }, console.error);
+    // Like the Library, this includes downloads from earlier sessions, which
+    // are only kept in history.
+    this.downloadData = this.lazy.DownloadsCommon.getData(window, true);
+    this.downloadData.addView(this.downloadView);
   },
 
   async loadBookmarks() {
@@ -658,6 +875,9 @@ var CustomArchiveUI = {
         break;
       case "downloads":
         this.renderDownloads();
+        break;
+      case "calendar":
+        CustomCalendarUI.render();
         break;
     }
   },
@@ -737,32 +957,25 @@ var CustomArchiveUI = {
     return { section, list };
   },
 
-  renderHistory() {
-    let panel = document.getElementById("custom-archive-history");
-    let closed = this.renderClosedTabs();
-
-    let fragment = document.createDocumentFragment();
-    let now = new Date();
-    let today = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    ).getTime();
-    let relative = new Intl.RelativeTimeFormat(this.locales, {
-      numeric: "auto",
-    });
-    let dayFormat = new Intl.DateTimeFormat(this.locales, {
-      month: "long",
-      day: "numeric",
-      weekday: "short",
-    });
-    let timeFormat = new Intl.DateTimeFormat(this.locales, {
+  get timeFormat() {
+    return new Intl.DateTimeFormat(this.locales, {
       hour: "numeric",
       minute: "2-digit",
     });
+  },
+
+  /**
+   * Groups items that are already sorted by date under the start of their
+   * day, keeping their order.
+   *
+   * @param {object[]} items
+   * @param {Function} dateOf Returns an item's Date.
+   * @returns {Map<number, object[]>}
+   */
+  groupByDay(items, dateOf) {
     let days = new Map();
-    for (let visit of this.historyVisits().slice(0, this.historyLimit)) {
-      let date = visit.date;
+    for (let item of items) {
+      let date = dateOf(item);
       let day = new Date(
         date.getFullYear(),
         date.getMonth(),
@@ -771,13 +984,49 @@ var CustomArchiveUI = {
       if (!days.has(day)) {
         days.set(day, []);
       }
-      days.get(day).push(visit);
+      days.get(day).push(item);
     }
+    return days;
+  },
+
+  /**
+   * Returns the title of a day section: today, yesterday or the date.
+   */
+  dayHeading(day) {
+    let now = new Date();
+    let today = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    ).getTime();
+    let age = Math.round((today - day) / 86400000);
+    let text =
+      age < 2
+        ? new Intl.RelativeTimeFormat(this.locales, { numeric: "auto" }).format(
+            -age,
+            "day"
+          )
+        : new Intl.DateTimeFormat(this.locales, {
+            month: "long",
+            day: "numeric",
+            weekday: "short",
+          }).format(day);
+    return text.charAt(0).toLocaleUpperCase() + text.slice(1);
+  },
+
+  renderHistory() {
+    let panel = document.getElementById("custom-archive-history");
+    let closed = this.renderClosedTabs();
+
+    let fragment = document.createDocumentFragment();
+    let timeFormat = this.timeFormat;
+    let days = this.groupByDay(
+      this.historyVisits().slice(0, this.historyLimit),
+      visit => visit.date
+    );
     for (let [day, visits] of days) {
-      let age = Math.round((today - day) / 86400000);
-      let text = age < 2 ? relative.format(-age, "day") : dayFormat.format(day);
       let { section, list } = this.createSection({
-        text: text.charAt(0).toLocaleUpperCase() + text.slice(1),
+        text: this.dayHeading(day),
       });
       for (let visit of visits) {
         list.append(
@@ -946,26 +1195,43 @@ var CustomArchiveUI = {
 
   renderDownloads() {
     let panel = document.getElementById("custom-archive-downloads");
-    let downloads = this.downloads
+    let downloads = [...this.downloads]
       .filter(download =>
         this.matches(
           download.target.path && PathUtils.filename(download.target.path),
           download.source.url
         )
       )
-      .sort((a, b) => b.startTime - a.startTime)
+      .sort((a, b) => this.downloadTime(b) - this.downloadTime(a))
       .slice(0, this.downloadsLimit);
     let rows = new Map();
     for (let download of downloads) {
       let row = this.downloadRows.get(download) ?? this.createDownloadRow();
+      this.rowDownloads.set(row, download);
       this.updateDownloadRow(row, download);
       rows.set(download, row);
+      // Checks once whether the file was moved or deleted outside Firefox.
+      if (!this.refreshedDownloads.has(download)) {
+        this.refreshedDownloads.add(download);
+        download.refresh?.().catch(console.error);
+      }
     }
     this.downloadRows = rows;
     panel
       .querySelector(".custom-archive-list")
       .replaceChildren(...rows.values());
     this.updateEmpty(panel, !!rows.size);
+  },
+
+  /**
+   * Returns when a download started. Downloads from earlier sessions only
+   * know the time of their history visit.
+   */
+  downloadTime(download) {
+    if (download.startTime) {
+      return download.startTime.getTime();
+    }
+    return download.placesNode?.time / 1000 || download.endTime || 0;
   },
 
   createDownloadRow() {
@@ -983,9 +1249,15 @@ var CustomArchiveUI = {
       element("span", "custom-archive-progress-bar")
     );
     progress.setAttribute("aria-hidden", "true");
-    return element(
+    let more = element("button", "custom-archive-more");
+    more.type = "button";
+    more.tabIndex = -1;
+    more.setAttribute("aria-haspopup", "menu");
+    more.setAttribute("aria-expanded", "false");
+    document.l10n.setAttributes(more, "custom-ui-archive-download-more");
+    let row = element(
       "li",
-      "custom-archive-row custom-archive-download",
+      "custom-archive-row custom-archive-link custom-archive-download",
       image,
       element(
         "span",
@@ -993,8 +1265,11 @@ var CustomArchiveUI = {
         element("span", "custom-archive-label"),
         element("span", "custom-archive-status")
       ),
-      progress
+      progress,
+      more
     );
+    row.tabIndex = -1;
+    return row;
   },
 
   updateDownloadRow(row, download) {
@@ -1080,10 +1355,252 @@ var CustomArchiveUI = {
     }
   },
 
+  canOpenDownload(download) {
+    return (
+      download.succeeded &&
+      download.target.exists &&
+      !download.deleted &&
+      !!download.target.path
+    );
+  },
+
+  canShowDownload(download) {
+    let { target } = download;
+    return (
+      !download.deleted &&
+      !!target.path &&
+      !!(target.exists || target.partFileExists)
+    );
+  },
+
+  openDownload(download) {
+    if (this.canOpenDownload(download)) {
+      this.lazy.DownloadsCommon.openDownload(download, { openWhere: "tab" });
+    }
+  },
+
+  /**
+   * A click runs the file, except on the more button, which opens the row's
+   * menu, and in the field of a rename in progress.
+   */
+  onDownloadClick(event, row, download) {
+    if (event.button != 0 || event.target.closest(".custom-archive-rename")) {
+      return;
+    }
+    let more = event.target.closest(".custom-archive-more");
+    if (more) {
+      this.openDownloadMenu(more, row, download);
+      return;
+    }
+    if (!row.hasAttribute("renaming")) {
+      this.openDownload(download);
+    }
+  },
+
+  get downloadMenu() {
+    if (!this._downloadMenu) {
+      let popup = document.createXULElement("menupopup");
+      popup.id = "custom-archive-download-menu";
+      for (let action of ["rename", "show", "delete"]) {
+        let item = document.createXULElement("menuitem");
+        item.dataset.action = action;
+        document.l10n.setAttributes(
+          item,
+          `custom-ui-archive-download-${action}`
+        );
+        popup.append(item);
+      }
+      popup.addEventListener("command", this);
+      popup.addEventListener("popuphidden", this);
+      document.getElementById("mainPopupSet").append(popup);
+      this._downloadMenu = popup;
+    }
+    return this._downloadMenu;
+  },
+
+  openDownloadMenu(anchor, row, download) {
+    let popup = this.downloadMenu;
+    if (popup.state != "closed") {
+      popup.hidePopup();
+      return;
+    }
+    let enabled = {
+      rename: this.canOpenDownload(download),
+      show: this.canShowDownload(download),
+      delete: true,
+    };
+    for (let item of popup.children) {
+      item.disabled = !enabled[item.dataset.action];
+    }
+    this.menuTarget = { anchor, row, download };
+    anchor.setAttribute("aria-expanded", "true");
+    popup.openPopup(anchor, "after_end");
+  },
+
+  /**
+   * Renaming waits for the menu to close, so the menu doesn't take the focus
+   * back from the name field.
+   */
+  onDownloadCommand(action) {
+    let { row, download } = this.menuTarget ?? {};
+    if (!download) {
+      return;
+    }
+    switch (action) {
+      case "rename":
+        this.menuTarget.rename = true;
+        break;
+      case "show":
+        this.lazy.DownloadsCommon.showDownloadedFile(
+          new this.lazy.FileUtils.File(download.target.path)
+        );
+        break;
+      case "delete":
+        this.deleteDownload(row, download);
+        break;
+    }
+  },
+
+  onDownloadMenuHidden() {
+    let target = this.menuTarget;
+    this.menuTarget = null;
+    target?.anchor.setAttribute("aria-expanded", "false");
+    if (target?.rename && target.row.isConnected) {
+      this.startRename(target.row, target.download);
+    }
+  },
+
+  /**
+   * Deletes the file and removes the download from the list and history.
+   */
+  deleteDownload(row, download) {
+    if (row.isConnected && row.contains(document.activeElement)) {
+      let next = row.nextElementSibling ?? row.previousElementSibling;
+      (next ?? document.getElementById("custom-archive-downloads")).focus();
+    }
+    this.lazy.DownloadsCommon.deleteDownloadFiles(download, 2).catch(
+      console.error
+    );
+  },
+
+  /**
+   * Turns the file name into a field in place, like renaming a tab. The base
+   * name is selected so typing keeps the extension. Enter or leaving the field
+   * renames the file and Escape keeps the old name.
+   */
+  startRename(row, download) {
+    if (
+      row.hasAttribute("renaming") ||
+      !this.canOpenDownload(download) ||
+      !this.container.hasAttribute("sidebar-launcher-expanded")
+    ) {
+      return;
+    }
+    let label = row.querySelector(".custom-archive-label");
+    let name = PathUtils.filename(download.target.path);
+    let input = document.createElement("input");
+    input.className = "custom-archive-rename";
+    input.type = "text";
+    input.value = name;
+    input.spellcheck = false;
+    input.autocomplete = "off";
+    document.l10n.setAttributes(
+      input,
+      "custom-ui-archive-download-rename-field"
+    );
+    let rename = { row, download, input, label };
+    this.renaming = rename;
+    input.addEventListener("keydown", event => {
+      event.stopPropagation();
+      if (event.key == "Enter") {
+        event.preventDefault();
+        this.commitRename(rename, { keepOnError: true });
+      } else if (event.key == "Escape") {
+        event.preventDefault();
+        this.endRename(rename);
+      }
+    });
+    input.addEventListener("input", () =>
+      input.removeAttribute("aria-invalid")
+    );
+    input.addEventListener("blur", () => this.commitRename(rename));
+    row.toggleAttribute("renaming", true);
+    label.hidden = true;
+    label.after(input);
+    input.focus();
+    let [base] = this.lazy.DownloadPaths.splitBaseNameAndExtension(name);
+    input.setSelectionRange(0, (base || name).length);
+  },
+
+  async commitRename(rename, { keepOnError = false } = {}) {
+    if (this.renaming !== rename || rename.busy) {
+      return;
+    }
+    let { download, input } = rename;
+    let path = download.target.path;
+    let name = this.lazy.DownloadPaths.sanitize(input.value.trim());
+    if (!name || name == PathUtils.filename(path)) {
+      this.endRename(rename);
+      return;
+    }
+    let newPath = PathUtils.join(PathUtils.parent(path), name);
+    // A change of case only is the same file on case-insensitive systems.
+    let sameFile = newPath.toLowerCase() == path.toLowerCase();
+    rename.busy = true;
+    try {
+      await IOUtils.move(path, newPath, { noOverwrite: !sameFile });
+    } catch (e) {
+      rename.busy = false;
+      if (keepOnError && this.renaming === rename) {
+        input.setAttribute("aria-invalid", "true");
+        input.select();
+      } else {
+        this.endRename(rename);
+      }
+      return;
+    }
+    download.target.path = newPath;
+    this.endRename(rename);
+    if (!download.source.isPrivate) {
+      PlacesUtils.history
+        .update({
+          url: download.source.originalUrl || download.source.url,
+          annotations: new Map([
+            ["downloads/destinationFileURI", PathUtils.toFileURI(newPath)],
+          ]),
+        })
+        .catch(console.error);
+    }
+    // Session downloads only tell their views about changes of state, so the
+    // new name is announced here.
+    await download.refresh();
+    download._notifyChange?.();
+  },
+
+  endRename(rename) {
+    if (this.renaming !== rename) {
+      return;
+    }
+    this.renaming = null;
+    let { row, download, input, label } = rename;
+    let hadFocus = input.matches(":focus");
+    row.removeAttribute("renaming");
+    input.remove();
+    label.hidden = false;
+    if (row.isConnected) {
+      this.updateDownloadRow(row, download);
+      if (hadFocus) {
+        row.focus();
+      }
+    }
+  },
+
   uninit() {
     this.unloaded = true;
     Services.prefs.removeObserver("sidebar.verticalTabs", this);
     this.rootObserver.disconnect();
+    clearTimeout(this.downloadDoneTimer);
+    this.progressData.removeView(this.progressView);
     if (this.dataRequested) {
       Services.obs.removeObserver(this, "sessionstore-closed-objects-changed");
       PlacesUtils.observers.removeListener(
@@ -1092,7 +1609,7 @@ var CustomArchiveUI = {
       );
       this.placesQuery.close();
       this.placesQuery = null;
-      this.downloadList?.removeView(this.downloadView);
+      this.downloadData.removeView(this.downloadView);
     }
   },
 };

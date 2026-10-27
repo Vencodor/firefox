@@ -28,26 +28,48 @@
   --toolbar-color: var(--custom-ink, var(--text-color));
   --toolbarbutton-icon-fill: var(--custom-muted);
   --tab-background-color-selected: var(--custom-surface);
-  --tab-background-color-hover: var(--custom-hover);
+  --tab-background-color-hover: var(--custom-tab-hover);
   --tab-text-color: var(--custom-ink, var(--text-color));
   --tab-text-color-hover: var(--custom-ink);
   --tab-text-color-selected: var(--custom-ink);
+  --tab-icon-fill-loading: var(--custom-muted);
   color: var(--custom-ink, var(--text-color));
   font-family: var(--font-family-custom);
 
-  body,
-  #browser {
-    background: var(--custom-background);
+  body {
+    background: var(--custom-window-backdrop, var(--custom-window-background));
+
+    /* Behind an inactive window Windows draws a flat color instead of
+       acrylic, so the window keeps its full theme gradient meanwhile. */
+    &:-moz-window-inactive {
+      background: var(--custom-window-background);
+    }
+  }
+
+  /* Firefox lays a white or black wash over the acrylic backdrop; Mono's own
+     theme tint on the body replaces it. */
+  @media (-moz-windows-mica) and (prefers-reduced-transparency: no-preference) and (not (forced-colors: active)) {
+    &[customtitlebar]:not([lwtheme]) {
+      background-color: transparent;
+    }
+  }
+
+  @media not (forced-colors: active) {
+    ::selection {
+      background-color: color-mix(in srgb, var(--custom-ink) 16%, transparent);
+      color: var(--custom-ink);
+    }
   }
 
   #browser {
     position: relative;
+    background: none;
   }
 
   #sidebar-container {
     flex-direction: column;
     min-height: 0;
-    background: var(--custom-background);
+    background: none;
     color: var(--custom-ink, var(--text-color));
   }
 
@@ -98,13 +120,13 @@
     -moz-window-dragging: no-drag;
 
     &:hover {
-      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+      background-color: var(--custom-tab-hover, var(--background-color-list-item-hover));
       color: var(--text-color-list-item-hover);
     }
 
     &:active,
     &[aria-expanded="true"] {
-      background-color: var(--custom-surface);
+      background-color: var(--custom-glass-film-strong, transparent);
     }
   }
 
@@ -114,7 +136,9 @@
     align-items: center;
     gap: var(--space-custom-gap, var(--space-medium));
     min-height: var(--size-item-large);
-    padding-inline: calc(var(--space-custom-edge, var(--space-small)) + var(--space-custom-inset, var(--space-small)));
+    /* The logo sits on the same column as the tab icons below it. */
+    padding-inline: calc(var(--space-custom-edge, var(--space-small)) + var(--space-custom-padding, var(--space-medium)))
+      calc(var(--space-custom-edge, var(--space-small)) + var(--space-custom-inset, var(--space-small)));
     margin-block-start: var(--space-custom-gap, var(--space-medium));
     margin-block-end: var(--space-custom-section, var(--space-large));
     -moz-window-dragging: drag;
@@ -151,7 +175,7 @@
     -moz-window-dragging: no-drag;
 
     &:hover {
-      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+      background-color: var(--custom-glass-film, var(--background-color-list-item-hover));
       color: var(--custom-ink, var(--text-color));
     }
   }
@@ -187,7 +211,7 @@
     --tab-height-with-margin-padding: calc(var(--tab-min-height) + 2px);
     --icon-size: var(--icon-size-small);
     --tab-border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-    --tab-box-shadow-selected: var(--box-shadow-custom-tab);
+    --tab-box-shadow-selected: var(--box-shadow-custom-selected);
     --tab-padding-block-start: 1px;
     --tab-padding-block-end: 1px;
     --tab-group-label-container-size: 32px;
@@ -209,9 +233,26 @@
     }
 
     .tab-background:is([selected], [multiselected]) {
-      background: var(--custom-surface);
+      background-color: var(--custom-selected-background, var(--background-color-box));
+      background-image: var(--custom-selected-sheen);
       border-color: transparent;
-      box-shadow: var(--box-shadow-custom-tab, var(--box-shadow-level-1));
+      box-shadow: var(--box-shadow-custom-selected, var(--box-shadow-level-1));
+      backdrop-filter: var(--custom-selected-filter);
+    }
+
+    /* The selected surface slides over from the previously selected tab and
+       passes under the titles on its way; see CustomBrowserUI.slideSelection. */
+    &[custom-selection-sliding] .tabbrowser-tab .tab-background {
+      transition: none;
+    }
+
+    .tabbrowser-tab[custom-sliding] {
+      overflow: visible;
+
+      > .tab-stack > .tab-background {
+        position: relative;
+        z-index: -1;
+      }
     }
 
     .tabbrowser-tab:not(:hover, :focus-within) .tab-close-button[selected] {
@@ -355,7 +396,7 @@
       }
 
       .tab-group-label-hover-highlight:hover {
-        background-color: var(--custom-hover, var(--background-color-list-item-hover));
+        background-color: var(--custom-tab-hover, var(--background-color-list-item-hover));
         color: var(--text-color-list-item-hover);
       }
 
@@ -418,16 +459,27 @@
     }
   }
 
+  /* Up to three tiles a row, balanced so no row is left with a lone tile:
+     1 and 2 fill the row, 4 make two pairs. */
   &:not([sidebar-expand-on-hover]) #tabbrowser-tabs[orient="vertical"][expanded] > #pinned-tabs-container[orient="vertical"] {
-    --custom-pin-columns: 2;
+    --custom-pin-columns: 3;
     --custom-pin-gap: 6px;
-    --custom-pin-height: clamp(44px, calc(22.5cqi - 4px), 68px);
-    --custom-pin-icon: clamp(18px, calc(7cqi + 4.6px), 24px);
+    --custom-pin-height: clamp(44px, calc(15cqi + 8px), 56px);
+    --custom-pin-icon: clamp(18px, calc(4cqi + 10px), 20px);
     --tab-min-height: var(--custom-pin-height);
     --tab-height-with-margin-padding: calc(var(--custom-pin-height) + var(--custom-pin-gap));
     --tab-margin-inline-pinned-expanded: calc(var(--custom-pin-gap) / 2);
     --tab-container-margin-inline-pinned-expanded: calc(var(--space-custom-edge) - var(--custom-pin-gap) / 2);
-    --tab-attention-dot-color: var(--custom-ink, var(--text-color));
+    --tab-attention-dot-color: var(--custom-muted, var(--text-color-deemphasized));
+    --tab-background-color-hover: var(--custom-pin-hover);
+
+    &[custom-pin-count="1"] {
+      --custom-pin-columns: 1;
+    }
+
+    &:is([custom-pin-count="2"], [custom-pin-count="4"]) {
+      --custom-pin-columns: 2;
+    }
 
     &::part(items-wrapper) {
       grid-template-columns: repeat(var(--custom-pin-columns), minmax(0, 1fr));
@@ -460,9 +512,9 @@
     }
 
     .tabbrowser-tab > .tab-stack > .tab-content:is([titlechanged], [attention]):not([selected]) {
-      background-image: radial-gradient(circle, var(--tab-attention-dot-color) 3px, transparent 3.5px);
+      background-image: radial-gradient(circle, var(--tab-attention-dot-color) 2.5px, transparent 3px);
       background-position: right 9px top 9px;
-      background-size: 7px 7px;
+      background-size: 6px 6px;
       background-repeat: no-repeat;
 
       &:-moz-locale-dir(rtl) {
@@ -471,8 +523,22 @@
     }
   }
 
+  #vertical-pinned-tabs-splitter {
+    background-image: none;
+
+    &:hover {
+      background-color: var(--custom-glass-film-strong, var(--focus-outline-color));
+    }
+
+    #tabbrowser-tabs:not([expanded]) > & {
+      background-image: linear-gradient(var(--custom-glass-line), var(--custom-glass-line));
+      background-position: center;
+      background-size: var(--icon-size-small) var(--border-width);
+    }
+  }
+
   #vertical-tabs #tabbrowser-tabs[orient="vertical"] :is(#tabs-newtab-button, #vertical-tabs-newtab-button) {
-    color: var(--custom-muted, var(--text-color-deemphasized));
+    color: var(--custom-faint, var(--text-color-deemphasized));
     fill: currentColor;
     font-size: var(--font-size-custom-label, var(--font-size-small));
 
@@ -506,11 +572,13 @@
     min-width: 0;
     padding: 0;
     overflow: hidden;
-    border: var(--border-width) solid var(--custom-line);
+    border: var(--border-width) solid var(--custom-glass-border, var(--border-color));
     border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
-    background-color: var(--custom-surface);
+    background-color: var(--custom-glass-background-strong, var(--background-color-box));
+    background-image: var(--custom-glass-sheen);
     color: var(--custom-ink, var(--text-color));
-    box-shadow: var(--box-shadow-custom-float, var(--box-shadow-level-3));
+    box-shadow: var(--box-shadow-custom-glass, var(--box-shadow-level-3));
+    backdrop-filter: var(--custom-glass-filter);
     color-scheme: var(--toolbar-color-scheme);
   }
 
@@ -581,9 +649,9 @@
     width: var(--size-custom-control, var(--size-item-large));
     min-height: var(--size-custom-control, var(--size-item-large));
     padding: 0;
-    border: var(--border-width) solid var(--custom-line-strong);
+    border: var(--border-width) solid var(--custom-glass-line, var(--border-color));
     border-radius: var(--border-radius-medium);
-    background-color: var(--custom-surface-subtle, var(--background-color-box));
+    background-color: var(--custom-glass-film, var(--background-color-box));
     color: var(--custom-muted, var(--text-color-deemphasized));
     font: inherit;
 
@@ -601,6 +669,24 @@
   :is(#custom-brand-button, #custom-ai-close):focus-visible {
     outline: var(--focus-outline);
     outline-offset: var(--focus-outline-offset);
+  }
+
+  /* Link targets and loading status float as a small glass pill inside the
+     page's corner instead of a box glued to the page edge. */
+  #statuspanel:not([hidden]) {
+    padding: 2em var(--space-custom-inset) var(--space-custom-inset);
+  }
+
+  #statuspanel > #statuspanel-label {
+    margin: 0;
+    padding: var(--space-xsmall) var(--space-custom-gap);
+    border: var(--border-width) solid var(--custom-glass-border);
+    border-radius: var(--border-radius-custom-tab);
+    background-color: var(--custom-glass-background-dense);
+    color: var(--custom-muted);
+    font-size: var(--font-size-custom-small);
+    box-shadow: var(--custom-glass-edge), var(--box-shadow-custom-tab);
+    backdrop-filter: var(--custom-glass-filter);
   }
 
   @media (max-width: 720px) {
@@ -641,7 +727,7 @@
     body {
       display: grid;
       box-sizing: border-box;
-      padding: var(--space-custom-edge, var(--space-small));
+      padding: var(--space-custom-frame, var(--space-small));
       padding-block-start: var(--space-custom-window-top, var(--space-small));
       grid-template-columns: max-content max-content max-content max-content minmax(0, 1fr) max-content max-content;
       grid-template-rows: auto minmax(0, 1fr);
@@ -663,7 +749,7 @@
       grid-area: 1 / 5 / 2 / -1;
       min-width: 0;
       z-index: var(--browser-area-z-index-toolbox-while-animating);
-      border: var(--border-width) solid var(--custom-line);
+      border: var(--border-width) solid var(--custom-page-border);
       border-radius: var(--border-radius-custom-page, var(--border-radius-medium)) var(--border-radius-custom-page, var(--border-radius-medium)) 0 0;
       background: var(--custom-surface);
       box-shadow: none;
@@ -718,7 +804,7 @@
     }
 
     :is(#sidebar-container, #sidebar-launcher-splitter) {
-      margin-block-start: calc(var(--space-custom-edge, var(--space-small)) - var(--space-custom-window-top, var(--space-small)));
+      margin-block-start: calc(var(--space-custom-frame, var(--space-small)) - var(--space-custom-window-top, var(--space-small)));
     }
 
     #sidebar-container {
@@ -744,7 +830,7 @@
       min-width: 0;
       min-height: 0;
       margin: 0;
-      border: var(--border-width) solid var(--custom-line);
+      border: var(--border-width) solid var(--custom-page-border);
       border-block-start: none;
       border-radius: 0 0 var(--border-radius-custom-page, var(--border-radius-medium)) var(--border-radius-custom-page, var(--border-radius-medium));
       outline: none;
@@ -789,12 +875,13 @@
       --space-custom-search-tools: 10px;
       --border-radius-custom-search: 20px;
       --font-size-custom-search: 16px;
-      --box-shadow-custom-search: 0 2px 8px light-dark(rgb(0 0 0 / 4%), rgb(0 0 0 / 16%)), 0 16px 40px -12px light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 32%));
-      --custom-search-background: light-dark(#f8f9fb, #202329);
+      --box-shadow-custom-search:
+        var(--custom-composer-rim), 0 2px 8px light-dark(rgb(0 0 0 / 4%), rgb(0 0 0 / 16%)), 0 16px 40px -12px light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 32%));
+      --custom-search-background: var(--custom-newtab-background);
 
       #tabbrowser-tabbox {
         grid-row: 1 / 3;
-        border-block-start: var(--border-width) solid var(--custom-line);
+        border-block-start: var(--border-width) solid var(--custom-page-border);
         border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
       }
 
@@ -812,7 +899,7 @@
           position: absolute;
           inset: 0;
           z-index: calc(var(--browser-area-z-index-tabbox) + 1);
-          border: var(--border-width) solid var(--custom-line);
+          border: var(--border-width) solid var(--custom-page-border);
           border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
           background: var(--custom-search-background);
         }
@@ -894,16 +981,18 @@
         --urlbarview-row-min-height: var(--size-custom-search-suggestion);
         --urlbarview-row-padding-inline: var(--space-custom-suggestion-inline);
         --urlbarview-row-padding-block: var(--space-xsmall);
-        --urlbarview-background-color-hover: var(--custom-hover);
-        --urlbarview-background-color-selected: var(--custom-line);
+        --urlbarview-background-color-hover: var(--custom-composer-row-hover);
+        --urlbarview-background-color-selected: var(--custom-composer-row-selected);
         --urlbarview-text-color-hover: var(--custom-ink);
         --urlbarview-text-color-selected: var(--custom-ink);
         --urlbarview-text-color-action: var(--custom-muted);
         --urlbarview-text-color-secondary: var(--custom-muted);
-        --urlbarview-separator-color: var(--custom-line);
+        --urlbarview-separator-color: var(--custom-composer-line);
         --urlbarview-small-font-size: var(--font-size-custom-small, var(--font-size-small));
-        --toolbar-field-border-color: var(--custom-line);
-        --toolbar-field-border-color-focus: var(--custom-line);
+        --toolbar-field-border-color: var(--custom-composer-border);
+        --toolbar-field-border-color-focus: var(--custom-composer-border);
+        --urlbar-background-color: var(--custom-composer-background);
+        --urlbar-background-color-focus: var(--custom-composer-background);
         --focus-outline-color: var(--custom-muted, var(--text-color-deemphasized));
         --link-color: var(--custom-muted, var(--text-color-deemphasized));
         font-size: var(--font-size-custom-search, var(--font-size-large));
@@ -938,6 +1027,16 @@
         box-shadow: var(--box-shadow-custom-search, var(--box-shadow-level-2));
       }
 
+      /* The sheen only covers the input row, so it never meets the seam with
+         the suggestion list's half of the background. */
+      #urlbar .urlbar-background {
+        background-image: var(--custom-composer-sheen);
+      }
+
+      #urlbar :is(.urlbar-background, .urlbarView-background) {
+        backdrop-filter: var(--custom-composer-filter);
+      }
+
       /* The composer's input row is the top 52px; its tool row sits below. */
       #urlbar .urlbar-input-container {
         position: relative;
@@ -951,7 +1050,7 @@
         position: absolute;
         inset-block-end: 0;
         inset-inline: var(--space-custom-search-inset, var(--space-medium));
-        border-block-end: var(--border-width) solid var(--custom-line, var(--border-color));
+        border-block-end: var(--border-width) solid var(--custom-composer-line, var(--border-color));
         pointer-events: none;
       }
 
@@ -987,7 +1086,7 @@
       }
 
       #urlbar:not([usertyping]) .urlbar-go-button {
-        background-color: var(--custom-hover, var(--button-background-color));
+        background-color: var(--custom-composer-control, var(--button-background-color));
         color: var(--custom-muted, var(--text-color-deemphasized));
         pointer-events: none;
       }
@@ -1083,11 +1182,18 @@
   }
 }
 
+/* A wide sidebar takes four tiles a row, again without a lone last tile. */
 @container vertical-tabs-container (min-width: 330px) {
   :root[custom-ui]:not([sidebar-expand-on-hover]) #tabbrowser-tabs[orient="vertical"][expanded] > #pinned-tabs-container[orient="vertical"] {
-    --custom-pin-columns: 3;
-    --custom-pin-height: clamp(44px, calc(15cqi - 3.5px), 64px);
-    --custom-pin-icon: clamp(18px, calc(4.6cqi + 5.5px), 24px);
+    --custom-pin-columns: 4;
+
+    &:is([custom-pin-count="3"], [custom-pin-count="5"], [custom-pin-count="6"], [custom-pin-count="9"]) {
+      --custom-pin-columns: 3;
+    }
+
+    &[custom-pin-count="4"] {
+      --custom-pin-columns: 4;
+    }
   }
 }
 

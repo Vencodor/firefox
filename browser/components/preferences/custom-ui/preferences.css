@@ -4,43 +4,100 @@
 
 @import url("chrome://browser/content/custom-ui/design-tokens.css");
 
+/* The settings window is two columns: the categories on the window's acrylic
+   and an opaque page beside them, where each group is a card of rows. */
 :root[custom-ui] {
-  --page-space-block-start: var(--space-xxlarge);
-  --size-sidebar: 252px;
-  --size-custom-settings-content: 55em;
+  --page-space-block-start: var(--space-custom-settings-top);
+  --size-custom-settings-content: 640px;
+  --size-custom-settings-nav: 224px;
+  --size-custom-settings-nav-narrow: 184px;
+  --size-custom-settings-nav-item: 36px;
+  --size-custom-settings-indicator: 16px;
+  --space-custom-settings-page: 40px;
+  --space-custom-settings-top: 48px;
+  --space-custom-settings-group: 28px;
+  --space-custom-settings-row-block: 12px;
+  --space-custom-settings-row-inline: 16px;
+  --custom-settings-content: light-dark(#f5f6f8, #1b1d22);
+  --custom-settings-card: light-dark(#ffffff, #24272e);
+  --custom-settings-line: light-dark(rgb(27 29 33 / 9%), rgb(255 255 255 / 9%));
+  --custom-settings-hover: light-dark(rgb(27 29 33 / 4%), rgb(255 255 255 / 6%));
+  --custom-settings-selected: light-dark(rgb(27 29 33 / 7%), rgb(255 255 255 / 10%));
   --dialog-border-radius: var(--border-radius-custom-page);
   --dialog-padding: var(--space-xlarge);
+  --card-border-radius: var(--border-radius-custom-tab);
+  --card-border-radius-compact: var(--border-radius-custom-tab);
   font-family: var(--font-family-custom);
+
+  @media (forced-colors: active) {
+    --custom-settings-content: Canvas;
+    --custom-settings-card: Canvas;
+    --custom-settings-line: ButtonBorder;
+    --custom-settings-hover: ButtonFace;
+    --custom-settings-selected: SelectedItem;
+  }
 }
 
+/* With icons back, the navigation still never collapses to icons only: the
+   window is narrower than moz-page-nav's breakpoint. */
 :root[custom-ui] #categories {
-  --page-nav-margin-inline-start: calc(var(--space-large) + var(--space-xsmall));
-  --page-nav-margin-block-start: var(--space-xxlarge);
-  --page-nav-gap: calc(var(--space-large) + var(--space-xsmall));
-  --page-nav-button-gap: var(--space-xsmall);
-  --page-nav-heading-logo-size: var(--size-item-medium);
+  --page-nav-margin-inline-start: var(--space-custom-padding);
+  --page-nav-margin-block-start: var(--space-custom-section);
+  --page-nav-gap: var(--space-custom-padding);
+  --page-nav-button-gap: 2px;
+  --page-nav-collapsed: expanded;
   box-sizing: border-box;
-  width: calc(var(--size-sidebar) - var(--size-item-small) * 1.25);
-  padding-inline-end: calc(var(--space-large) + var(--space-xsmall));
+  width: var(--size-custom-settings-nav);
+  padding-inline-end: var(--space-custom-padding);
+  font-size: var(--font-size-custom-title);
 }
 
 :root[custom-ui] moz-page-nav-button {
   --page-nav-button-border-radius: var(--border-radius-custom-tab);
   --page-nav-button-border-radius-focused: var(--border-radius-custom-tab);
-  --page-nav-button-padding: calc(var(--space-small) + var(--space-xxsmall)) var(--space-medium);
-  --page-nav-button-indicator-width: 0;
+  --page-nav-button-padding: 0 var(--space-custom-gap);
+  --page-nav-button-indicator-width: 3px;
+  --icon-size: var(--icon-size-small);
+  --space-medium: var(--space-custom-padding);
+  border-radius: var(--border-radius-custom-tab);
+  font-size: var(--font-size-custom-title);
+
+  &:not([hidden], .hidden-category) {
+    display: grid;
+    min-height: var(--size-custom-settings-nav-item);
+  }
 }
 
+:root[custom-ui] #addonsButton {
+  font-size: var(--font-size-custom-label);
+}
+
+/* The page: opaque, edge to edge beside the categories. */
 :root[custom-ui] .main-content {
+  flex: 1;
   overflow-x: hidden;
-  padding-block-start: var(--space-xlarge);
-  padding-inline: var(--space-xxlarge);
-  padding-block-end: calc(var(--space-xxlarge) + var(--space-small));
+  margin: 0;
+  padding-block: var(--space-custom-settings-top) var(--space-custom-settings-page);
+  padding-inline: var(--space-custom-settings-page);
+  border: none;
+  border-inline-start: var(--border-width) solid var(--custom-settings-line);
+  border-radius: 0;
+  font-size: var(--font-size-custom-title);
+  line-height: 1.5;
+  --font-size-small: var(--font-size-custom-small);
+  --button-font-size: var(--font-size-custom-label);
+  --button-font-weight: var(--font-weight-custom-medium);
+  --button-min-height: var(--size-custom-navigation-control);
+  --button-padding: var(--space-xsmall) var(--space-custom-padding);
+  --button-border-radius: var(--border-radius-custom-tab);
+  --input-min-height: var(--size-custom-navigation-control);
+  --input-border-radius: var(--border-radius-custom-tab);
+  --input-search-border-radius: var(--border-radius-custom-tab);
 }
 
 :root[custom-ui] .pane-container {
   width: 100%;
-  max-width: var(--size-custom-settings-content, var(--size-sidebar));
+  max-width: var(--size-custom-settings-content);
   min-width: 0;
 }
 
@@ -54,59 +111,169 @@
 }
 
 :root[custom-ui] #searchInput {
-  --input-search-border-radius: var(--border-radius-custom-page);
-  --input-min-height: calc(var(--size-item-xlarge) - var(--space-xsmall));
+  --input-search-border-radius: var(--border-radius-custom-tab);
+  --input-min-height: var(--size-custom-settings-nav-item);
   max-width: none;
 }
 
-/* In the navigation, above the categories: it looks like a category until
-   it takes focus, then like the selected one. */
+/* In the navigation, above the categories: quiet until it takes focus. It
+   starts below the strip that drags the window. */
 :root[custom-ui] #categories > #searchInput {
-  --input-search-border-radius: var(--border-radius-custom-tab);
   --input-border-radius: var(--border-radius-custom-tab);
   display: block;
   width: 100%;
-  margin-block-start: var(--space-medium);
+  margin-block-start: var(--space-custom-settings-top);
+  font-size: var(--font-size-custom-label);
 }
 
-@media not (forced-colors) {
-  :root[custom-ui] #categories > #searchInput {
-    --input-border: var(--border-width) solid transparent;
-    --input-background-color: transparent;
-    --input-text-color: var(--custom-ink);
-    --icon-color: var(--custom-muted);
-    --focus-outline: none;
+:root[custom-ui] setting-pane > section {
+  gap: var(--space-custom-settings-group);
+}
 
-    &:hover {
-      --input-background-color: var(--custom-hover);
-    }
+:root[custom-ui] .main-content moz-page-header {
+  --font-size-heading-medium: 22px;
+  --font-size-heading-large: 22px;
+  --font-size-heading-xlarge: 22px;
+  --font-weight-heading: var(--font-weight-semibold);
+}
 
-    &:focus-within {
-      --input-background-color: var(--custom-surface);
-      --icon-color: var(--custom-ink);
+/* A group: its heading and description, then a card of rows. */
+:root[custom-ui] .main-content moz-fieldset {
+  --font-size-heading-medium: var(--font-size-custom-title);
+  --font-size-heading-large: var(--font-size-custom-title);
+  --font-size-heading-xlarge: var(--font-size-custom-title);
+  font-size: var(--font-size-custom-small);
+
+  /* No group icon: it is zeroed for the fieldset's own shadow tree and put
+     back for the controls, which inherit from the inputs part. */
+  --icon-size: 0;
+
+  &::part(label) {
+    gap: 0;
+    font-size: var(--font-size-custom-title);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &::part(inputs) {
+    --icon-size: var(--icon-size-small);
+    row-gap: var(--space-custom-inset);
+    font-size: var(--font-size-custom-title);
+  }
+
+  &[hasheading]::part(inputs) {
+    margin-block-start: var(--space-custom-padding);
+  }
+}
+
+:root[custom-ui] .main-content setting-group > moz-fieldset {
+  &::part(inputs) {
+    row-gap: 0;
+    overflow: clip;
+    border: var(--border-width) solid var(--custom-settings-line);
+    border-radius: var(--border-radius-custom-tab);
+    background-color: var(--custom-settings-card);
+  }
+
+  > setting-control {
+    padding: var(--space-custom-settings-row-block) var(--space-custom-settings-row-inline);
+  }
+
+  > setting-control:not([hidden]) ~ setting-control:not([hidden]) {
+    border-block-start: var(--border-width) solid var(--custom-settings-line);
+  }
+
+  /* Lists and single boxes reach the card's edges; their rows carry the
+     padding and the dividers. */
+  > setting-control > :is(moz-box-group, moz-box-item, moz-box-button, moz-box-link) {
+    margin: calc(-1 * var(--space-custom-settings-row-block)) calc(-1 * var(--space-custom-settings-row-inline));
+  }
+}
+
+:root[custom-ui] .main-content moz-radio-group::part(inputs) {
+  row-gap: var(--space-custom-inset);
+}
+
+:root[custom-ui] .main-content [slot="nested"] {
+  margin-block-start: var(--space-custom-inset);
+}
+
+/* Firefox remnants: "Learn more" links and decorative illustrations. */
+:root[custom-ui] .main-content :is(a[is="moz-support-link"], [slot="support-link"]),
+:root[custom-ui] .main-content ::part(support-link) {
+  display: none;
+}
+
+:root[custom-ui] .ai-controls-description {
+  --ai-controls-description-background-color: transparent;
+  --ai-controls-description-image-margin: 0;
+
+  > img {
+    display: none;
+  }
+}
+
+:root[custom-ui] .main-content :is(moz-box-group, moz-box-button, moz-box-link, moz-box-item) {
+  --box-border-radius: 0;
+}
+
+:root[custom-ui] .main-content :is(moz-box-button, moz-box-link, moz-box-item) {
+  --box-padding: var(--space-custom-settings-row-block) var(--space-custom-settings-row-inline);
+}
+
+:root[custom-ui] .main-content moz-toggle {
+  --toggle-width: 30px;
+  --toggle-height: 18px;
+  --toggle-dot-margin: 1px;
+  --input-height: 18px;
+  --input-nested-offset: var(--space-custom-section);
+
+  &::part(button) {
+    margin-inline-end: 0;
+  }
+
+  /* Without inputlayout="inline-end" the switch comes before the label; this
+     moves it to the end of the row. */
+  &[inputlayout="inline"]:state(has-label) {
+    --input-space-offset: 0px;
+
+    &::part(label) {
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-custom-padding);
     }
   }
 }
 
-:root[custom-ui] :is(moz-card, moz-box-group, moz-box-button, moz-box-link, moz-box-item) {
-  --card-border-radius: var(--border-radius-custom-page);
-  --card-border-radius-compact: var(--border-radius-custom-page);
-  --box-border-radius: var(--border-radius-custom-page);
-}
-
-:root[custom-ui] :is(moz-button, moz-input-text, moz-input-search, moz-input-folder, moz-select) {
-  --button-border-radius: var(--border-radius-custom-tab);
-  --input-border-radius: var(--border-radius-custom-tab);
+:root[custom-ui] .main-content moz-select {
+  --select-min-height: var(--size-custom-navigation-control);
+  --select-border-radius: var(--border-radius-custom-tab);
+  --select-font-size: var(--font-size-custom-label);
+  --select-font-weight: var(--font-weight);
+  --select-space-inline: var(--space-custom-padding);
+  --select-margin-inline: 0;
 }
 
 :root[custom-ui] :is(button, menulist, select, input:not([type="checkbox"], [type="radio"], [type="color"])) {
   border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+  font-family: inherit;
 }
 
 :root[custom-ui] :is(groupbox[data-category], #mainPrefPane > div[data-category]) {
-  padding: var(--space-xlarge);
-  border: var(--border-width) solid var(--border-color);
-  border-radius: var(--border-radius-custom-page, var(--border-radius-large));
+  padding: 0;
+  border: none;
+}
+
+:root[custom-ui] .mono-theme-item {
+  flex: 0 1 132px;
+
+  &::part(image) {
+    width: 100%;
+    margin: 0;
+    border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    box-shadow: none;
+  }
 }
 
 :root[custom-ui] .dialogTitleBar {
@@ -123,7 +290,7 @@
 
 @media not (forced-colors) {
   :root[custom-ui] {
-    --background-color-canvas: var(--custom-background);
+    --background-color-canvas: var(--custom-settings-content);
     --background-color-box: var(--custom-surface);
     --background-color-box-info: var(--custom-surface-subtle);
     --text-color: var(--custom-ink);
@@ -154,43 +321,202 @@
     --dialog-background-color: var(--custom-surface);
     --dialog-border-color: var(--custom-line);
     --dialog-box-shadow: var(--box-shadow-custom-float);
-    background: var(--custom-background, var(--background-color-canvas));
+    /* The categories sit on this: the theme's tint over the window's
+       acrylic, or the lightened theme gradient where there is none. */
+    background: var(--custom-window-backdrop, var(--custom-window-background));
     color: var(--custom-ink, var(--text-color));
     accent-color: var(--custom-accent);
+
+    &:-moz-window-inactive {
+      background: var(--custom-window-background);
+    }
+  }
+
+  :root[custom-ui] .main-content {
+    background-color: var(--custom-settings-content);
+  }
+
+  :root[custom-ui] #search-container {
+    background-color: var(--custom-settings-content);
   }
 
   :root[custom-ui] #categories {
-    --page-nav-border-color: var(--custom-line);
-    --page-nav-hr-background-color: var(--custom-line);
+    --page-nav-border-color: transparent;
+    --page-nav-hr-background-color: var(--custom-settings-line);
   }
 
+  :root[custom-ui] #categories > #searchInput {
+    --input-border: var(--border-width) solid transparent;
+    --input-background-color: transparent;
+    --input-text-color: var(--custom-ink);
+    --icon-color: var(--custom-muted);
+    --focus-outline: none;
+
+    &:hover {
+      --input-background-color: var(--custom-settings-hover);
+    }
+
+    &:focus-within {
+      --input-background-color: var(--custom-settings-card);
+      --input-border: var(--border-width) solid var(--custom-settings-line);
+      --icon-color: var(--custom-ink);
+    }
+  }
+
+  /* A selected category is a light film with a short bar at its start (the
+     bar is drawn inside the button, see navigation.css). */
   :root[custom-ui] moz-page-nav-button {
     --page-nav-button-background-color: transparent;
-    --page-nav-button-background-color-hover: var(--custom-hover);
-    --page-nav-button-background-color-active: var(--custom-line);
-    --page-nav-button-background-color-selected: var(--custom-surface);
-    --page-nav-button-text-color: var(--custom-muted);
+    --page-nav-button-background-color-hover: var(--custom-settings-hover);
+    --page-nav-button-background-color-active: var(--custom-settings-selected);
+    --page-nav-button-background-color-selected: var(--custom-settings-selected);
+    --page-nav-button-indicator-background-color: var(--custom-ink);
+    --page-nav-button-text-color: var(--custom-ink);
     --page-nav-button-text-color-hover: var(--custom-ink);
     --page-nav-button-text-color-active: var(--custom-ink);
     --page-nav-button-text-color-selected: var(--custom-ink);
-    --icon-color: currentColor;
-  }
-
-  :root[custom-ui] :is(moz-card, moz-box-group, moz-box-button, moz-box-link, moz-box-item) {
-    --card-background-color: var(--custom-surface);
-    --card-border: var(--border-width) solid var(--custom-line);
-    --card-box-shadow: none;
-    --box-border-color: var(--custom-line);
-    --box-button-background-color: var(--custom-surface);
-    --box-button-background-color-hover: var(--custom-hover);
-    --box-button-background-color-active: var(--custom-line);
-    --box-button-text-color: var(--custom-ink);
-    --box-button-text-color-hover: var(--custom-ink);
-    --box-button-text-color-active: var(--custom-ink);
+    --icon-color: var(--custom-ink);
   }
 
   :root[custom-ui] :is(groupbox[data-category], #mainPrefPane > div[data-category]) {
-    background: var(--custom-surface, var(--background-color-box));
+    background: transparent;
+  }
+
+  /* On the page: controls are white with a hairline, like the cards; the one
+     primary action is ink. The derived tokens (--button-border, ghost and
+     selected colors) are computed on :root, so each is set again here. */
+  :root[custom-ui] .main-content {
+    --border-color: var(--custom-settings-line);
+    --border-color-deemphasized: var(--custom-settings-line);
+    --border-color-interactive: var(--custom-settings-line);
+    --color-accent-primary: var(--custom-ink);
+    --color-accent-primary-hover: color-mix(in srgb, var(--custom-ink) 85%, var(--custom-accent-ink));
+    --color-accent-primary-active: color-mix(in srgb, var(--custom-ink) 72%, var(--custom-accent-ink));
+    --button-background-color: var(--custom-settings-card);
+    --button-background-color-hover: color-mix(in srgb, var(--custom-ink) 4%, var(--custom-settings-card));
+    --button-background-color-active: color-mix(in srgb, var(--custom-ink) 8%, var(--custom-settings-card));
+    --button-background-color-selected: color-mix(in srgb, var(--custom-ink) 8%, var(--custom-settings-card));
+    --button-background-color-disabled: var(--custom-settings-card);
+    --button-background-color-ghost-hover: var(--custom-settings-hover);
+    --button-background-color-ghost-active: var(--custom-settings-selected);
+    --button-background-color-ghost-selected: var(--custom-settings-selected);
+    --button-background-color-menu-hover: var(--custom-settings-hover);
+    --button-background-color-menu-active: var(--custom-settings-selected);
+    --button-background-color-menu-selected: var(--custom-settings-selected);
+    --button-background-color-primary: var(--custom-ink);
+    --button-background-color-primary-hover: var(--color-accent-primary-hover);
+    --button-background-color-primary-active: var(--color-accent-primary-active);
+    --button-background-color-primary-selected: var(--color-accent-primary-active);
+    --button-background-color-primary-disabled: var(--custom-ink);
+    --button-border: var(--border-width) solid var(--custom-settings-line);
+    --button-border-color: var(--custom-settings-line);
+    --button-border-color-hover: var(--custom-settings-line);
+    --button-border-color-active: var(--custom-settings-line);
+    --button-border-color-selected: var(--custom-settings-line);
+    --button-border-color-disabled: var(--custom-settings-line);
+    --button-border-color-ghost: transparent;
+    --button-border-color-ghost-hover: transparent;
+    --button-border-color-ghost-active: transparent;
+    --button-border-color-ghost-selected: transparent;
+    --button-border-color-menu: transparent;
+    --button-border-color-menu-hover: transparent;
+    --button-border-color-menu-active: transparent;
+    --button-border-color-menu-selected: transparent;
+    --input-background-color: var(--custom-settings-card);
+    --input-background-color-disabled: var(--custom-settings-content);
+    --input-border: var(--border-width) solid var(--custom-settings-line);
+    --input-border-color: var(--custom-settings-line);
+    --input-border-color-disabled: var(--custom-settings-line);
+    --card-background-color: transparent;
+    --card-border: none;
+    --card-box-shadow: none;
+    --card-padding: 0;
+    --card-padding-compact: 0;
+    accent-color: var(--custom-ink);
+  }
+
+  :root[custom-ui] .main-content moz-select {
+    --select-background-color: var(--custom-settings-card);
+    --select-background-color-hover: color-mix(in srgb, var(--custom-ink) 4%, var(--custom-settings-card));
+    --select-background-color-disabled: var(--custom-settings-content);
+    --select-border-color: var(--custom-settings-line);
+    --select-border-color-hover: var(--custom-settings-line);
+    --select-border-color-disabled: var(--custom-settings-line);
+    --select-text-color: var(--custom-ink);
+    --select-icon-fill: var(--custom-muted);
+  }
+
+  :root[custom-ui] .main-content moz-toggle {
+    --toggle-background-color: var(--custom-glass-film-strong);
+    --toggle-background-color-hover: var(--custom-glass-film-strong);
+    --toggle-background-color-active: var(--custom-glass-film-strong);
+    --toggle-background-color-pressed: var(--custom-ink);
+    --toggle-background-color-pressed-hover: var(--color-accent-primary-hover);
+    --toggle-background-color-pressed-active: var(--color-accent-primary-active);
+    --toggle-border-color: transparent;
+    --toggle-dot-background-color: var(--custom-surface);
+    --toggle-dot-background-color-on-pressed: var(--custom-surface);
+
+    &::part(button) {
+      box-shadow: inset 0 0 0 var(--border-width) var(--custom-settings-line);
+    }
+  }
+
+  /* moz-radio has no part for its input, so the ring stays Firefox's; only the
+     accent (checked) color follows. */
+  :root[custom-ui] .main-content :is(moz-radio, moz-checkbox) {
+    accent-color: var(--custom-ink);
+  }
+
+  /* Rows of a list share the card; a hairline between them. */
+  :root[custom-ui] .main-content :is(moz-box-group, moz-box-button, moz-box-link, moz-box-item) {
+    --box-border-color: var(--custom-settings-line);
+    --box-button-background-color: transparent;
+    --box-button-background-color-hover: var(--custom-settings-hover);
+    --box-button-background-color-active: var(--custom-settings-selected);
+    --box-button-text-color: var(--custom-ink);
+    --box-button-text-color-hover: var(--custom-ink);
+    --box-button-text-color-active: var(--custom-ink);
+    background-color: transparent;
+  }
+
+  :root[custom-ui] .main-content setting-group > moz-fieldset > setting-control > :is(moz-box-group, moz-box-item, moz-box-button, moz-box-link) {
+    --box-border-color: transparent;
+    outline: none;
+
+    :is(moz-box-button, moz-box-link, moz-box-item) {
+      --box-border-color: var(--custom-settings-line);
+    }
+  }
+
+  /* A folding card (such as the security warnings) opens from a plain row. */
+  :root[custom-ui] .main-content moz-card[type="accordion"] {
+    --card-header-background-color: transparent;
+    --card-header-background-color-hover: var(--custom-settings-hover);
+    --card-header-background-color-active: var(--custom-settings-selected);
+    --card-header-text-color: var(--custom-ink);
+    --card-header-text-color-hover: var(--custom-ink);
+    --card-header-text-color-active: var(--custom-ink);
+  }
+
+  /* The status card's own moz-card sits in its shadow root, so only inherited
+     tokens reach it. */
+  :root[custom-ui] .main-content security-privacy-card {
+    --card-background-color: transparent;
+    --card-padding: 0;
+  }
+
+  :root[custom-ui] .main-content .mono-theme-item {
+    --background-color-box: var(--custom-settings-card);
+    --border-color-selected: transparent;
+    --visual-picker-item-border-radius: var(--border-radius-custom-tab);
+    border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    box-shadow: inset 0 0 0 var(--border-width) var(--custom-settings-line);
+
+    &[checked] {
+      box-shadow: inset 0 0 0 2px var(--custom-ink);
+      font-weight: var(--font-weight-semibold);
+    }
   }
 
   :root[custom-ui][dialogroot],
@@ -199,21 +525,12 @@
   }
 }
 
-@media (max-width: 950px) {
+@media (max-width: 720px) {
   :root[custom-ui] #categories {
-    --page-nav-margin-inline-start: var(--space-medium);
-    --page-nav-button-padding-small: calc(var(--space-small) + var(--space-xxsmall));
-    width: auto;
-    padding-inline-end: var(--space-medium);
+    width: var(--size-custom-settings-nav-narrow);
   }
-}
 
-@media (max-width: 600px) {
   :root[custom-ui] .main-content {
-    padding-inline: var(--space-large);
-  }
-
-  :root[custom-ui] :is(groupbox[data-category], #mainPrefPane > div[data-category]) {
-    padding: var(--space-large);
+    padding-inline: var(--space-custom-section);
   }
 }

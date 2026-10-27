@@ -14,17 +14,32 @@
 :root[custom-ui] {
   .custom-notice {
     --custom-notice-padding: 18px 20px;
+    --box-shadow-custom-notice: var(--custom-glass-caustic), var(--box-shadow-custom-float);
     position: relative;
     display: flex;
     box-sizing: border-box;
     overflow: hidden;
-    border: var(--border-width) solid var(--custom-line, var(--border-color));
+    border: var(--border-width) solid var(--custom-glass-border, var(--border-color));
     border-radius: var(--border-radius-custom-pin, var(--border-radius-medium));
-    background-color: var(--custom-surface, var(--background-color-box));
+    background-color: var(--custom-glass-background, var(--background-color-box));
+    background-image: var(--custom-glass-sheen);
+    box-shadow: var(--box-shadow-custom-notice, var(--box-shadow-level-2));
+    backdrop-filter: var(--custom-glass-filter);
     color: var(--custom-ink, var(--text-color));
     font-family: var(--font-family-custom);
     font-size: var(--font-size-custom-label, var(--font-size-small));
     pointer-events: auto;
+  }
+
+  /* The rim is drawn above the card's art, which would hide an inset shadow
+     on the card itself. */
+  .custom-notice::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--custom-glass-rim, var(--box-shadow-level-1));
+    pointer-events: none;
   }
 
   .custom-notice-art {
@@ -73,6 +88,7 @@
     height: var(--size-custom-notice-close, var(--size-item-xlarge));
     padding: 0;
     border: 0;
+    border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
     background-color: transparent;
     background-image: url("chrome://global/skin/icons/close.svg");
     background-position: center;
@@ -83,7 +99,12 @@
     fill: currentColor;
 
     &:hover {
+      background-color: var(--custom-glass-film, var(--button-background-color-ghost-hover));
       color: var(--custom-ink, var(--text-color));
+    }
+
+    &:active {
+      background-color: var(--custom-glass-film-strong, var(--button-background-color-ghost-active));
     }
 
     &:focus-visible {
@@ -107,7 +128,12 @@
     max-width: calc(100% - 2 * var(--space-custom-gap, var(--size-item-medium)));
     margin-block-end: var(--space-custom-gap, var(--space-medium));
     border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
+    box-shadow: var(--box-shadow-custom-tab, var(--box-shadow-level-1));
     font-size: var(--font-size-custom-small, var(--font-size-small));
+
+    &::after {
+      box-shadow: var(--custom-glass-edge, var(--box-shadow-level-1));
+    }
 
     .custom-notice-art {
       width: var(--size-custom-notice-small-art, var(--size-item-large));

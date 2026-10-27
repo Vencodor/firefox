@@ -1125,11 +1125,13 @@ var CustomFoldUI = {
     let outgoing = open ? this.tabLayer : [this.section];
     let incoming = open ? [this.section] : this.tabLayer;
     for (let element of outgoing) {
+      // The stylesheet hides the outgoing layer at once; it stays visible
+      // until its fade ends.
       this.slideAnimations.push(
         element.animate(
           [
-            { opacity: 1, translate: "0 0" },
-            { opacity: 0, translate: `${shift}px 0` },
+            { opacity: 1, translate: "0 0", visibility: "visible" },
+            { opacity: 0, translate: `${shift}px 0`, visibility: "visible" },
           ],
           { duration: 160, easing: "ease-in" }
         )

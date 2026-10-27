@@ -1,0 +1,524 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* stylelint-disable stylelint-plugin-mozilla/use-design-tokens -- Mono custom tokens are defined in design-tokens.css. */
+
+@media (-moz-pref("sidebar.verticalTabs")) {
+  :root[custom-ui]:not([customizing], [inDOMFullscreen], [fullscreenNavToolboxHidden]) {
+    /* The composer stays at the top of the calendar and the tasks scroll
+       under its glass, like the new tab and chat composers. */
+    #custom-calendar-composer {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xsmall);
+      margin-block-end: var(--space-custom-groups);
+      padding: var(--space-small) var(--space-small) var(--space-small) var(--space-custom-padding);
+      border: var(--border-width) solid var(--custom-composer-border);
+      border-radius: var(--border-radius-custom-page);
+      background-color: var(--custom-composer-background);
+      background-image: var(--custom-composer-sheen);
+      box-shadow: var(--custom-composer-rim);
+      backdrop-filter: var(--custom-composer-filter);
+
+      &:focus-within {
+        background-color: var(--custom-glass-background-strong);
+      }
+    }
+
+    #custom-calendar-input-row {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-small);
+    }
+
+    #custom-calendar-plus {
+      flex: none;
+      width: var(--icon-size-small);
+      height: calc(1.5em + 2 * var(--space-xsmall));
+      background: url("chrome://global/skin/icons/plus.svg") center / var(--icon-size-small) no-repeat;
+      color: var(--custom-muted);
+      -moz-context-properties: fill;
+      fill: currentColor;
+    }
+
+    #custom-calendar-input {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding: var(--space-xsmall) 0;
+      border: 0;
+      background: transparent;
+      color: var(--custom-ink);
+      font: inherit;
+      font-size: var(--font-size-custom-label);
+      line-height: 1.5;
+      resize: none;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      outline: none;
+
+      &::placeholder {
+        color: var(--custom-muted);
+        opacity: 1;
+      }
+    }
+
+    /* Below the text, as in the chat composer: the due day and time at the
+       start and the primary button at the end. */
+    #custom-calendar-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xsmall);
+      min-width: 0;
+      padding-inline-start: calc(var(--icon-size-small) + var(--space-small));
+    }
+
+    .custom-calendar-chip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xsmall);
+      min-width: 0;
+      height: 28px;
+      margin: 0;
+      padding-inline: var(--space-small);
+      border: var(--border-width) solid var(--custom-glass-line);
+      border-radius: calc(var(--border-radius-custom-tab) - 2px);
+      background-color: var(--custom-glass-film);
+      color: var(--custom-muted);
+      font: inherit;
+      font-size: var(--font-size-custom-small);
+      white-space: nowrap;
+      appearance: none;
+
+      &::before {
+        content: "";
+        flex: none;
+        width: 12px;
+        height: 12px;
+        background: url("chrome://browser/content/custom-ui/resources/archive/calendar.svg") center / 12px no-repeat;
+        -moz-context-properties: fill;
+        fill: currentColor;
+      }
+
+      &:hover,
+      &[aria-expanded="true"] {
+        color: var(--custom-ink);
+      }
+
+      &[aria-pressed="true"] {
+        border-color: transparent;
+        background-color: var(--custom-selected-background, var(--background-color-box));
+        background-image: var(--custom-selected-sheen);
+        box-shadow: var(--box-shadow-custom-selected);
+        color: var(--custom-ink);
+      }
+
+      &[hidden] {
+        display: none;
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-offset);
+      }
+    }
+
+    #custom-calendar-time::before {
+      background-image: url("chrome://browser/content/custom-ui/resources/archive/clock.svg");
+    }
+
+    .custom-calendar-chip-label {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    #custom-calendar-submit {
+      flex: none;
+      width: var(--size-custom-navigation-control);
+      height: var(--size-custom-navigation-control);
+      margin: 0;
+      margin-inline-start: auto;
+      padding: 0;
+      border: 0;
+      border-radius: var(--border-radius-custom-tab);
+      background: var(--custom-ink) url("chrome://global/skin/icons/arrow-up.svg") center / var(--icon-size-small) no-repeat;
+      color: var(--custom-accent-ink);
+      -moz-context-properties: fill;
+      fill: currentColor;
+      appearance: none;
+
+      &:disabled {
+        background-color: var(--custom-glass-film-strong);
+        color: var(--custom-muted);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-offset);
+      }
+    }
+
+    .custom-calendar-count {
+      margin-inline-start: var(--space-xsmall);
+      font-variant-numeric: tabular-nums;
+      opacity: 0.7;
+    }
+
+    .custom-archive-section[overdue] > .custom-archive-heading {
+      color: var(--custom-attention-ink);
+    }
+
+    .custom-calendar-completed-toggle {
+      display: inline-flex;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      appearance: none;
+
+      &::after {
+        content: "";
+        width: 12px;
+        height: 12px;
+        margin-inline-start: var(--space-xsmall);
+        background: url("chrome://global/skin/icons/arrow-down.svg") center / 10px no-repeat;
+        -moz-context-properties: fill;
+        fill: currentColor;
+        rotate: -90deg;
+      }
+
+      &:dir(rtl)::after {
+        rotate: 90deg;
+      }
+
+      &[aria-expanded="true"]::after {
+        rotate: 0deg;
+      }
+
+      &:hover {
+        color: var(--custom-ink);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-offset);
+      }
+    }
+
+    /* A task may run over several lines, so its circle and button stay with
+       the first line. */
+    .custom-calendar-row {
+      align-items: flex-start;
+      padding-block: var(--space-small);
+      line-height: 1.4;
+
+      > .custom-archive-more {
+        align-self: flex-start;
+        margin-block-start: calc((1.4em - var(--tab-content-button-size)) / 2);
+      }
+
+      &[done] .custom-calendar-title {
+        color: var(--custom-muted);
+        text-decoration: line-through;
+      }
+
+      &[overdue] .custom-calendar-due {
+        color: var(--custom-attention-ink);
+      }
+
+      &[editing] {
+        background-color: var(--custom-tab-hover);
+      }
+    }
+
+    .custom-calendar-check {
+      flex: none;
+      box-sizing: border-box;
+      width: 18px;
+      height: 18px;
+      margin: calc((1.4em - 18px) / 2) -1px 0;
+      padding: 0;
+      border: 1.5px solid var(--custom-muted);
+      border-radius: var(--border-radius-circle);
+      background: transparent;
+      color: var(--custom-muted);
+      -moz-context-properties: fill;
+      fill: currentColor;
+      appearance: none;
+
+      &:hover {
+        border-color: var(--custom-ink);
+        background: var(--custom-glass-film) url("chrome://global/skin/icons/check.svg") center / 10px no-repeat;
+      }
+
+      &[aria-checked="true"] {
+        border-color: var(--custom-ink);
+        background: var(--custom-ink) url("chrome://global/skin/icons/check.svg") center / 10px no-repeat;
+        color: var(--custom-accent-ink);
+      }
+    }
+
+    .custom-calendar-title {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+
+      &[hidden] {
+        display: none;
+      }
+    }
+
+    /* Editing keeps the title's font and place, like renaming a download. */
+    .custom-calendar-edit {
+      box-sizing: content-box;
+      margin: calc(-1 * var(--space-xxsmall)) calc(-1 * var(--space-xsmall));
+      padding: var(--space-xxsmall) var(--space-xsmall);
+      border: 0;
+      border-radius: calc(var(--border-radius-custom-tab) - 4px);
+      background-color: var(--custom-glass-background-strong);
+      box-shadow: var(--custom-glass-edge);
+      color: var(--custom-ink);
+      font: inherit;
+      line-height: inherit;
+      resize: none;
+      overflow: hidden;
+      outline: none;
+    }
+
+    /* Tasks due today, floating at the bottom end of the new tab screen. */
+    #custom-due-card {
+      position: absolute;
+      inset-block-end: var(--space-xlarge);
+      inset-inline-end: var(--space-xlarge);
+      z-index: calc(var(--browser-area-z-index-toolbox-while-animating) + 1);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xsmall);
+      box-sizing: border-box;
+      width: 288px;
+      max-height: calc(100% - 2 * var(--space-xlarge));
+      padding: var(--space-small) var(--space-small) var(--space-small) var(--space-custom-padding);
+      border: var(--border-width) solid var(--custom-glass-border);
+      border-radius: var(--border-radius-custom-page);
+      background-color: var(--custom-glass-background-strong);
+      background-image: var(--custom-glass-sheen);
+      box-shadow: var(--custom-glass-rim), var(--custom-glass-caustic), var(--box-shadow-custom-float);
+      backdrop-filter: var(--custom-glass-filter);
+      color: var(--custom-ink);
+      font-size: var(--font-size-custom-label);
+      line-height: 1.4;
+      pointer-events: auto;
+
+      &[hidden] {
+        display: none;
+      }
+
+      @media (max-width: 720px), (max-height: 500px) {
+        display: none;
+      }
+    }
+
+    .custom-due-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-small);
+    }
+
+    .custom-due-icon {
+      flex: none;
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+      background: url("chrome://browser/content/custom-ui/resources/archive/calendar.svg") center / var(--icon-size-small) no-repeat;
+      color: var(--custom-muted);
+      -moz-context-properties: fill;
+      fill: currentColor;
+    }
+
+    #custom-due-title {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      font-size: var(--font-size-custom-title);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    #custom-due-close {
+      flex: none;
+      width: 28px;
+      height: 28px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: calc(var(--border-radius-custom-tab) - 2px);
+      background: transparent url("chrome://global/skin/icons/close.svg") center / 12px no-repeat;
+      color: var(--custom-muted);
+      -moz-context-properties: fill;
+      fill: currentColor;
+      appearance: none;
+
+      &:hover {
+        background-color: var(--custom-glass-film);
+        color: var(--custom-ink);
+      }
+
+      &:hover:active {
+        background-color: var(--custom-glass-film-strong);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-inset);
+      }
+    }
+
+    #custom-due-list {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      list-style: none;
+      scrollbar-width: thin;
+    }
+
+    .custom-due-row {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-custom-gap);
+      margin-inline-start: calc(-1 * var(--space-xsmall));
+      padding: var(--space-small) var(--space-xsmall);
+      border-radius: var(--border-radius-custom-tab);
+
+      &:hover {
+        background-color: var(--custom-glass-film);
+      }
+
+      &[done] .custom-due-task {
+        color: var(--custom-muted);
+        text-decoration: line-through;
+      }
+    }
+
+    .custom-due-text {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .custom-due-task {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+
+    .custom-due-time {
+      color: var(--custom-muted);
+      font-size: var(--font-size-custom-small);
+
+      &[overdue] {
+        color: var(--custom-attention-ink);
+      }
+    }
+
+    #custom-due-open {
+      flex: none;
+      min-height: var(--size-custom-navigation-control);
+      margin: 0;
+      margin-inline-start: calc(-1 * var(--space-xsmall));
+      padding-inline: var(--space-small);
+      border: 0;
+      border-radius: var(--border-radius-custom-tab);
+      background-color: var(--custom-glass-film);
+      color: var(--custom-ink);
+      font: inherit;
+      font-size: var(--font-size-custom-small);
+      font-weight: var(--font-weight-custom-medium);
+      appearance: none;
+
+      &:hover {
+        background-color: var(--custom-glass-film-strong);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-outline);
+        outline-offset: var(--focus-outline-inset);
+      }
+    }
+
+    #sidebar-container:not([sidebar-launcher-expanded]) {
+      #custom-calendar-composer {
+        display: none;
+      }
+
+      .custom-calendar-row {
+        align-items: center;
+        padding-block: 0;
+
+        > .custom-calendar-check {
+          margin: 0;
+        }
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .custom-calendar-check {
+        transition:
+          background-color 160ms ease,
+          border-color 160ms ease;
+
+        &[aria-checked="true"] {
+          animation: custom-calendar-check 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+      }
+
+      .custom-calendar-title {
+        transition: color 200ms ease;
+      }
+
+      .custom-calendar-completed-toggle::after {
+        transition: rotate 200ms ease;
+      }
+
+      #custom-due-card {
+        animation: custom-card-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      :is(.custom-due-row, .custom-due-task) {
+        transition:
+          background-color 150ms ease,
+          color 200ms ease;
+      }
+    }
+
+    @media (forced-colors: active) {
+      #custom-due-card {
+        border-color: CanvasText;
+      }
+
+      .custom-calendar-check[aria-checked="true"] {
+        background-color: Highlight;
+        color: HighlightText;
+      }
+    }
+  }
+}
+
+@keyframes custom-calendar-check {
+  50% {
+    scale: 1.15;
+  }
+}

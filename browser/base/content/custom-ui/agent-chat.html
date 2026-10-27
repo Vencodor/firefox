@@ -35,81 +35,29 @@
   </head>
   <body>
     <header class="chat-header">
-      <div class="chat-heading">
-        <img
-          src="chrome://browser/content/custom-ui/resources/mono/logo/mono-glyph-small.svg"
-          width="24"
-          height="24"
-          alt=""
-          draggable="false"
-        />
-        <h1 id="chat-title" data-l10n-id="agent-chat-title"></h1>
-      </div>
-      <div class="chat-header-actions">
-        <div
-          id="chat-headless-monitor"
-          class="chat-headless-monitor"
-          role="status"
-          aria-live="polite"
-          hidden
+      <h1 id="chat-title" data-l10n-id="agent-chat-title"></h1>
+      <button
+        id="chat-new"
+        class="chat-icon-button"
+        type="button"
+        data-l10n-id="agent-chat-new"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden="true"
         >
-          <span class="chat-headless-dot" aria-hidden="true"></span>
-          <span id="chat-headless-label" class="chat-headless-label"></span>
-          <span id="chat-headless-url" class="chat-headless-url"></span>
-        </div>
-        <button id="chat-new" class="chat-new-button" type="button">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path d="M8 3v10M3 8h10" />
-          </svg>
-          <span data-l10n-id="agent-chat-new"></span>
-        </button>
-      </div>
+          <path
+            d="M13 9v3.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5H7"
+          />
+          <path d="m11.4 2.6 2 2L8 10H6V8z" />
+        </svg>
+      </button>
     </header>
 
     <main class="chat-conversation">
-      <section id="chat-empty" aria-labelledby="chat-empty-title">
-        <div class="chat-empty-content">
-          <img
-            class="chat-empty-logo"
-            src="chrome://browser/content/custom-ui/resources/mono/animation/mono-glyph-spin.svg"
-            width="56"
-            height="56"
-            alt=""
-            draggable="false"
-          />
-          <h2 id="chat-empty-title" data-l10n-id="agent-chat-empty-title"></h2>
-          <p
-            class="chat-empty-description"
-            data-l10n-id="agent-chat-empty-description"
-          ></p>
-          <div class="chat-suggestions">
-            <button
-              class="chat-suggestion"
-              type="button"
-              data-prompt="떠오른 아이디어를 함께 정리하고 싶어요."
-              data-l10n-id="agent-chat-suggestion-ideas"
-            ></button>
-            <button
-              class="chat-suggestion"
-              type="button"
-              data-prompt="제가 쓴 글을 더 자연스럽게 다듬고 싶어요."
-              data-l10n-id="agent-chat-suggestion-writing"
-            ></button>
-            <button
-              class="chat-suggestion"
-              type="button"
-              data-prompt="해야 할 일을 실행 가능한 계획으로 정리하고 싶어요."
-              data-l10n-id="agent-chat-suggestion-planning"
-            ></button>
-          </div>
-        </div>
-      </section>
       <div
         id="chat-messages"
         role="log"
@@ -117,15 +65,48 @@
         aria-relevant="additions text"
         data-l10n-id="agent-chat-messages"
         tabindex="0"
-        hidden
       ></div>
     </main>
 
     <footer class="chat-composer">
+      <div class="chat-floating">
+        <button
+          id="chat-scroll-end"
+          class="chat-glass chat-scroll-end"
+          type="button"
+          data-l10n-id="agent-chat-scroll-end"
+          hidden
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path d="M8 3v10M4 9l4 4 4-4" />
+          </svg>
+        </button>
+        <div
+          id="chat-activity-status"
+          class="chat-glass chat-activity-status"
+          hidden
+        >
+          <span class="chat-activity-status-dot" aria-hidden="true"></span>
+          <span
+            id="chat-activity-status-label"
+            class="chat-activity-status-label"
+          ></span>
+          <span
+            id="chat-activity-status-detail"
+            class="chat-activity-status-detail"
+          ></span>
+        </div>
+      </div>
       <form id="chat-form">
         <textarea
           id="chat-input"
-          rows="3"
+          rows="1"
           maxlength="32000"
           spellcheck="true"
           data-l10n-id="agent-chat-input"
@@ -134,35 +115,31 @@
         <div class="chat-composer-actions">
           <div
             id="chat-effort-control"
-            class="chat-effort-control"
-            data-effort-level="2"
+            class="chat-effort"
+            role="radiogroup"
+            data-l10n-id="agent-chat-effort"
+            data-effort-level="1"
           >
-            <label
-              for="chat-effort-slider"
-              class="chat-effort-label"
-            >노력 수준</label>
-            <div class="chat-effort-track-wrap">
-              <input
-                id="chat-effort-slider"
-                class="chat-effort-slider"
-                type="range"
-                min="1"
-                max="3"
-                step="1"
-                value="2"
-                aria-label="노력 수준 (3단계)"
-              />
-              <div class="chat-effort-ticks" aria-hidden="true">
-                <span data-level="1">1단계</span>
-                <span data-level="2" class="is-active">2단계</span>
-                <span data-level="3">3단계</span>
-              </div>
-            </div>
-            <output
-              id="chat-effort-value"
-              for="chat-effort-slider"
-              class="chat-effort-value"
-            >보통 (2/3)</output>
+            <span class="chat-effort-indicator" aria-hidden="true"></span>
+            <button
+              class="chat-effort-option"
+              type="button"
+              role="radio"
+              aria-checked="true"
+              data-level="1"
+              data-mode="normal"
+              data-l10n-id="agent-chat-effort-normal"
+            ></button>
+            <button
+              class="chat-effort-option"
+              type="button"
+              role="radio"
+              aria-checked="false"
+              tabindex="-1"
+              data-level="2"
+              data-mode="deep"
+              data-l10n-id="agent-chat-effort-deep"
+            ></button>
           </div>
           <button
             id="chat-stop"
@@ -172,13 +149,13 @@
             hidden
           >
             <svg
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
               fill="currentColor"
               aria-hidden="true"
             >
-              <rect x="4" y="4" width="10" height="10" rx="2" />
+              <rect x="1" y="1" width="10" height="10" rx="2" />
             </svg>
           </button>
           <button
@@ -189,13 +166,13 @@
             disabled
           >
             <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
               fill="none"
               aria-hidden="true"
             >
-              <path d="M10 15.5v-11M5.5 9 10 4.5 14.5 9" />
+              <path d="M8 13V3M4 7l4-4 4 4" />
             </svg>
           </button>
         </div>

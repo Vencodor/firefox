@@ -23,7 +23,7 @@ custom-ui-navigation-stop =
     .aria-label = 로딩 중지
     .title = 로딩 중지
 
-custom-ui-address-new-tab = 새 탭
+custom-ui-address-new-tab = New Tab
     .aria-label = 주소 또는 검색어 입력
 
 custom-ui-address-input =
@@ -145,30 +145,136 @@ custom-ui-settings-general-heading =
 custom-ui-settings-general-navigation = 일반
     .title = 일반
 
-custom-ui-settings-search-heading =
-    .heading = 검색 엔진 제안
+custom-ui-settings-appearance-heading =
+    .heading = 모양
 
-custom-ui-settings-search-navigation = 검색 엔진 제안
-    .title = 검색 엔진 제안
+custom-ui-settings-appearance-navigation = 모양
+    .title = 모양
 
-custom-ui-settings-downloads-heading =
-    .heading = 저장 위치
+custom-ui-settings-theme-group =
+    .label = 테마
+    .description = 사이드바와 창의 색입니다. 밝기는 시스템 설정을 따릅니다.
 
-custom-ui-settings-downloads-navigation = 저장 위치
-    .title = 저장 위치
+custom-ui-settings-theme-mono =
+    .label = 모노
+
+custom-ui-settings-theme-sky =
+    .label = 스카이
+
+custom-ui-settings-theme-ocean =
+    .label = 오션
+
+custom-ui-settings-theme-lavender =
+    .label = 라벤더
+
+custom-ui-settings-theme-mint =
+    .label = 민트
+
+custom-ui-settings-theme-rose =
+    .label = 로즈
+
+custom-ui-settings-theme-peach =
+    .label = 피치
+
+custom-ui-settings-theme-sand =
+    .label = 샌드
+
+custom-ui-settings-theme-sage =
+    .label = 세이지
+
+custom-ui-settings-theme-slate =
+    .label = 슬레이트
+
+custom-ui-settings-tabs-heading =
+    .heading = 탭과 탐색
+
+custom-ui-settings-tabs-navigation = 탭과 탐색
+    .title = 탭과 탐색
 
 custom-ui-settings-tab-groups-heading =
     .label = 탭 그룹
 
-custom-ui-settings-about-heading =
-    .heading = Mono 소개
+custom-ui-settings-fold-heading =
+    .heading = Fold
 
-custom-ui-settings-about-navigation = Mono 소개
-    .title = Mono 소개
+custom-ui-settings-fold-navigation = Fold
+    .title = Fold
 
-custom-ui-settings-about-description = Mono는 Gecko 기반의 세로 탭 중심 브라우저입니다.
+custom-ui-settings-fold-group =
+    .label = 사이트 사이드바 접기
+    .description = 사이트의 사이드바를 Mono 사이드바로 접어 넣습니다. 사이트마다 처음부터 접을지 고릅니다.
 
-custom-ui-settings-about-stage = 현재 브라우저의 기본 UI를 정리하고 있습니다. 에이전트 작업 실행 기능은 아직 연결되지 않았습니다.
+custom-ui-settings-fold-enabled =
+    .label = Fold 사용
+
+# Variables:
+#   $name (String) - The site's name, such as Reddit.
+#   $host (String) - The site's address, such as reddit.com.
+custom-ui-settings-fold-site =
+    .label = { $name }
+    .description = { $host }
+
+# Variables:
+#   $name (String) - The site's name, such as Reddit.
+custom-ui-settings-fold-site-toggle =
+    .aria-label = { $name }에서 Fold 사용
+
+custom-ui-settings-connect-heading =
+    .heading = Connect
+
+custom-ui-settings-connect-navigation = Connect
+    .title = Connect
+
+custom-ui-settings-connect-group =
+    .label = 연결할 서비스
+    .description = 다른 서비스의 정보를 Mono에서 함께 씁니다.
+
+custom-ui-settings-connect-google-calendar =
+    .label = Google Calendar
+    .description = 일정을 Mono 캘린더에서 함께 봅니다.
+
+custom-ui-settings-connect-button =
+    .label = Connect
+
+custom-ui-settings-privacy-heading =
+    .heading = 개인 정보와 보안
+
+custom-ui-settings-privacy-navigation = 개인 정보와 보안
+    .title = 개인 정보와 보안
+
+custom-ui-settings-privacy-more =
+    .label = 더 보기
+
+custom-ui-settings-languages-link =
+    .label = 언어와 번역
+    .description = 웹사이트 언어, 번역, 맞춤법 검사
+
+custom-ui-settings-passwords-link =
+    .label = 비밀번호와 자동 완성
+    .description = 저장한 비밀번호, 결제 수단, 주소
+
+custom-ui-settings-permissions-link =
+    .label = 사이트 권한과 데이터
+    .description = 위치, 카메라, 알림 등 사이트가 쓰는 기능
+
+custom-ui-settings-ai-link =
+    .label = AI 기능
+    .description = 브라우저에 들어 있는 AI 기능의 사용 여부
+
+custom-ui-settings-languages-heading =
+    .heading = 언어와 번역
+
+custom-ui-settings-passwords-heading =
+    .heading = 비밀번호와 자동 완성
+
+custom-ui-settings-permissions-heading =
+    .heading = 사이트 권한과 데이터
+
+custom-ui-settings-ai-heading =
+    .heading = AI 기능
+
+custom-ui-settings-extensions-navigation = 확장 프로그램
+    .title = 확장 프로그램
 
 custom-ui-settings-default-active =
     .label = Mono가 기본 브라우저입니다.
@@ -273,27 +379,25 @@ custom-ui-notice-close =
 custom-ui-archive-button =
     .aria-label = 보관함
     .title = 보관함
-
-custom-ui-archive-tabs =
-    .aria-label = 보관함
-
-custom-ui-archive-tab-history =
-    .aria-label = 방문 기록
-    .title = 방문 기록
-
-custom-ui-archive-tab-bookmarks =
-    .aria-label = 북마크
-    .title = 북마크
-
-custom-ui-archive-tab-downloads =
-    .aria-label = 다운로드
-    .title = 다운로드
+# Variables:
+#   $percent (Number) - How much of the running downloads has arrived, from 0 to 100
+custom-ui-archive-button-downloading =
+    .aria-label = 다운로드 중 { $percent }% · 다운로드 보기
+    .title = 다운로드 중 { $percent }%
+custom-ui-archive-button-downloading-unknown =
+    .aria-label = 다운로드 중 · 다운로드 보기
+    .title = 다운로드 중
+custom-ui-archive-button-downloaded =
+    .aria-label = 다운로드 완료 · 다운로드 보기
+    .title = 다운로드 완료
 
 custom-ui-archive-title-history = 방문 기록
 
 custom-ui-archive-title-bookmarks = 북마크
 
 custom-ui-archive-title-downloads = 다운로드
+
+custom-ui-archive-title-calendar = 캘린더
 
 custom-ui-archive-closed-tabs = 최근 닫은 탭
 
@@ -302,6 +406,8 @@ custom-ui-archive-history-empty = 아직 방문 기록이 없어요
 custom-ui-archive-bookmarks-empty = 저장한 북마크가 없어요
 
 custom-ui-archive-downloads-empty = 다운로드한 파일이 없어요
+
+custom-ui-archive-calendar-empty = 할 일이 없어요
 
 custom-ui-archive-folder-toolbar = 북마크 도구 모음
 
@@ -323,6 +429,100 @@ custom-ui-archive-download-blocked = 차단됨
 
 custom-ui-archive-download-missing = 파일이 삭제됨
 
+custom-ui-archive-download-more =
+    .aria-label = 더 보기
+    .title = 더 보기
+
+custom-ui-archive-download-rename =
+    .label = 이름 바꾸기
+
+custom-ui-archive-download-show =
+    .label = 폴더에서 열기
+
+custom-ui-archive-download-delete =
+    .label = 삭제
+
+custom-ui-archive-download-rename-field =
+    .aria-label = 파일 이름
+
+## Calendar: things to do with an optional due day and time.
+
+custom-ui-calendar-input =
+    .placeholder = 할 일 추가
+    .aria-label = 새 할 일
+
+custom-ui-calendar-date-button =
+    .title = 기한 날짜
+
+custom-ui-calendar-time-button =
+    .title = 기한 시간
+
+custom-ui-calendar-date-chip = 날짜
+
+custom-ui-calendar-time-chip = 시간
+
+custom-ui-calendar-submit =
+    .aria-label = 할 일 추가
+    .title = 할 일 추가
+
+custom-ui-calendar-next-week = 다음 주
+
+custom-ui-calendar-pick-date = 날짜 선택…
+
+custom-ui-calendar-clear-date = 기한 없음
+
+custom-ui-calendar-clear-time = 시간 없음
+
+custom-ui-calendar-previous-month =
+    .aria-label = 이전 달
+    .title = 이전 달
+
+custom-ui-calendar-next-month =
+    .aria-label = 다음 달
+    .title = 다음 달
+
+custom-ui-calendar-overdue = 기한 지남
+
+custom-ui-calendar-no-date = 날짜 없음
+
+custom-ui-calendar-completed = 완료됨
+
+# Variables:
+#   $title (String) - The title of the task.
+custom-ui-calendar-complete =
+    .aria-label = { $title } 완료
+
+custom-ui-calendar-more =
+    .aria-label = 더 보기
+    .title = 더 보기
+
+custom-ui-calendar-edit = 편집
+
+custom-ui-calendar-change-date = 날짜 변경
+
+custom-ui-calendar-change-time = 시간 변경
+
+custom-ui-calendar-delete = 삭제
+
+custom-ui-calendar-edit-field =
+    .aria-label = 할 일 제목
+
+## Card on the new tab screen listing the tasks due today.
+
+custom-ui-due-title = 오늘 마감
+
+custom-ui-due-close =
+    .aria-label = 오늘은 그만 보기
+    .title = 오늘은 그만 보기
+
+custom-ui-due-open = 캘린더에서 보기
+
+# Variables:
+#   $count (Number) - How many more tasks are due today than the card lists.
+custom-ui-due-more = { $count }개 더 보기
+
+## Archive search and row removal.
+
 custom-ui-archive-search-history =
     .placeholder = 방문 기록 검색
     .aria-label = 방문 기록 검색
@@ -334,6 +534,10 @@ custom-ui-archive-search-bookmarks =
 custom-ui-archive-search-downloads =
     .placeholder = 다운로드 검색
     .aria-label = 다운로드 검색
+
+custom-ui-archive-search-calendar =
+    .placeholder = 할 일 검색
+    .aria-label = 할 일 검색
 
 custom-ui-archive-search-clear =
     .aria-label = 검색어 지우기

@@ -49,6 +49,7 @@ var CustomSidebarNavigation = {
     window.addEventListener("keydown", this, true);
     window.addEventListener("unload", this, { once: true });
     gBrowser.tabContainer.addEventListener("TabSelect", this);
+    gBrowser.tabContainer.addEventListener("TabAttrModified", this);
     Services.prefs.addObserver("sidebar.verticalTabs", this);
     this.rootObserver = new MutationObserver(() => this.updateMode());
     this.rootObserver.observe(this.root, {
@@ -89,6 +90,9 @@ var CustomSidebarNavigation = {
       }
     });
     this.viewObserver.observe(gURLBar.querySelector(".urlbarView"));
+    this.pageBox = document.getElementById("tabbrowser-tabbox");
+    this.pageObserver = new ResizeObserver(() => this.updatePageInset());
+    this.pageObserver.observe(this.pageBox);
     this.progressListener = {
       onLocationChange: browser => {
         if (browser === gBrowser.selectedBrowser) {
@@ -160,18 +164,44 @@ var CustomSidebarNavigation = {
     }
   },
 
+  /**
+   * Keeps the page area's distance from each window edge in custom
+   * properties so the address modal can centre over the page.
+   */
+  updatePageInset() {
+    let rect = this.pageBox.getBoundingClientRect();
+    let left = rect.left;
+    let right = window.innerWidth - rect.right;
+    let rtl = getComputedStyle(this.root).direction == "rtl";
+    this.root.style.setProperty(
+      "--custom-page-inline-start",
+      `${rtl ? right : left}px`
+    );
+    this.root.style.setProperty(
+      "--custom-page-inline-end",
+      `${rtl ? left : right}px`
+    );
+  },
+
   updateDomain() {
     let uri = gBrowser.selectedBrowser.currentURI;
-    if (isInitialPage(uri)) {
+    let initial = isInitialPage(uri);
+    this.domain.toggleAttribute("placeholder", initial);
+    if (initial) {
       document.l10n.setAttributes(this.domain, "custom-ui-address-new-tab");
       this.domain.removeAttribute("title");
       return;
     }
     document.l10n.setAttributes(this.domain, "custom-ui-address-input");
     let label;
-    try {
-      label = uri.displayHostPort;
-    } catch {}
+    if (uri.schemeIs("chrome")) {
+      label = gBrowser.selectedTab.label;
+    }
+    if (!label) {
+      try {
+        label = uri.displayHostPort;
+      } catch {}
+    }
     if (!label) {
       label = uri.schemeIs("about")
         ? uri.spec.split(/[?#]/)[0]
@@ -419,14 +449,24 @@ var CustomSidebarNavigation = {
         this.updateDomain();
         this.updateButtons();
         break;
+      case "TabAttrModified":
+        if (
+          event.target === gBrowser.selectedTab &&
+          event.detail.changed.includes("label")
+        ) {
+          this.updateDomain();
+        }
+        break;
       case "unload":
         this.rootObserver.disconnect();
         this.commandObserver.disconnect();
         this.viewObserver.disconnect();
+        this.pageObserver.disconnect();
         clearTimeout(this.windowControlsTimer);
         Services.prefs.removeObserver("sidebar.verticalTabs", this);
         gBrowser.removeTabsProgressListener(this.progressListener);
         gBrowser.tabContainer.removeEventListener("TabSelect", this);
+        gBrowser.tabContainer.removeEventListener("TabAttrModified", this);
         window.removeEventListener("keydown", this, true);
         CustomSiteSettings.uninit();
         break;

@@ -50,11 +50,13 @@
     margin: var(--space-custom-edge);
     flex-direction: column;
     overflow: hidden;
-    border: var(--border-width) solid var(--custom-line);
+    border: var(--border-width) solid var(--custom-glass-border);
     border-radius: var(--border-radius-custom-page);
-    background: var(--custom-surface);
+    background-color: var(--custom-glass-background-strong);
+    background-image: var(--custom-glass-sheen);
     color: var(--custom-ink);
-    box-shadow: var(--box-shadow-custom-float);
+    box-shadow: var(--box-shadow-custom-glass);
+    backdrop-filter: var(--custom-glass-filter);
     color-scheme: var(--toolbar-color-scheme);
     font: var(--font-size-custom-label)/1.45 var(--font-family-custom);
   }
@@ -93,10 +95,11 @@
     min-width: 0;
     min-height: var(--size-custom-control);
     padding-inline: var(--space-custom-inset);
-    border: var(--border-width) solid var(--custom-line-strong);
+    border: var(--border-width) solid var(--custom-glass-border);
     border-radius: var(--border-radius-custom-tab);
-    background: var(--custom-surface-subtle);
+    background: var(--custom-glass-film);
     color: var(--custom-ink);
+    box-shadow: var(--custom-glass-edge);
     font: inherit;
   }
 
@@ -115,24 +118,28 @@
     min-width: 0;
     min-height: 28px;
     padding-inline: var(--space-custom-edge);
-    border: var(--border-width) solid var(--custom-line);
+    border: var(--border-width) solid var(--custom-glass-border);
     border-radius: var(--border-radius-custom-tab);
-    background: var(--custom-surface-subtle);
+    background: var(--custom-glass-film);
     color: var(--custom-muted);
+    box-shadow: var(--custom-glass-edge);
     font-size: var(--font-size-custom-small);
     font-family: inherit;
     cursor: pointer;
   }
 
   .custom-observation-modes button:hover {
-    background: var(--custom-hover);
+    background: var(--custom-glass-film-strong);
     color: var(--custom-ink);
   }
 
   .custom-observation-modes button[aria-pressed="true"] {
-    border-color: var(--custom-line-strong);
-    background: var(--custom-accent-subtle);
+    border-color: var(--custom-glass-border);
+    background-color: var(--custom-selected-background, var(--background-color-box));
+    background-image: var(--custom-selected-sheen);
     color: var(--custom-ink);
+    box-shadow: var(--box-shadow-custom-selected);
+    backdrop-filter: var(--custom-selected-filter);
     font-weight: var(--font-weight-semibold);
   }
 
@@ -165,20 +172,21 @@
 
   .custom-observation-row {
     margin-block-end: var(--space-custom-inset);
-    border: var(--border-width) solid var(--custom-line);
+    border: var(--border-width) solid var(--custom-glass-line);
     border-radius: var(--border-radius-custom-tab);
-    background: var(--custom-surface);
+    background: var(--custom-glass-background);
   }
 
   .custom-observation-row[data-excluded="true"] {
     opacity: 0.72;
-    background: var(--custom-surface-subtle);
   }
 
   .custom-observation-row[data-selected="true"] {
     opacity: 1;
-    border-color: #c2410c;
-    background: rgb(234 88 12 / 12%);
+    border-color: var(--custom-marker-selected);
+    background-color: var(--custom-selected-background, var(--background-color-box));
+    background-image: var(--custom-selected-sheen);
+    box-shadow: var(--box-shadow-custom-selected);
   }
 
   #custom-observation-close {
@@ -195,7 +203,7 @@
   }
 
   #custom-observation-close:hover {
-    background: var(--custom-hover);
+    background: var(--custom-glass-film);
   }
 
   #custom-observation-close img {
@@ -214,16 +222,17 @@
   .custom-observation-score {
     flex: none;
     padding: 2px var(--space-custom-edge);
-    border: var(--border-width) solid var(--custom-line);
+    border: var(--border-width) solid var(--custom-glass-border);
     border-radius: var(--border-radius-custom-tab);
+    background: var(--custom-glass-film);
     color: var(--custom-muted);
     font-size: var(--font-size-custom-small);
     white-space: nowrap;
   }
 
   .custom-observation-score[data-included="true"] {
-    border-color: var(--custom-line-strong);
-    background: var(--custom-accent-subtle);
+    border-color: var(--custom-glass-border);
+    background: var(--custom-glass-film-strong);
     color: var(--custom-ink);
   }
 
@@ -250,15 +259,15 @@
     width: 0.5em;
     height: 0.5em;
     margin-inline-end: var(--space-custom-inset);
-    border: 1px solid #2563eb;
+    border: 1px solid var(--custom-marker-candidate);
     border-radius: 50%;
-    background: rgb(37 99 235 / 18%);
+    background: color-mix(in srgb, var(--custom-marker-candidate) 18%, transparent);
     content: "";
   }
 
   .custom-observation-select:hover,
   .custom-observation-details-toggle:hover {
-    background: var(--custom-hover);
+    background: var(--custom-glass-film);
   }
 
   .custom-observation-select[aria-pressed="true"] {
@@ -269,8 +278,8 @@
   }
 
   .custom-observation-row[data-selected="true"] .custom-observation-select::before {
-    border-color: #c2410c;
-    background: #c2410c;
+    border-color: var(--custom-marker-selected);
+    background: var(--custom-marker-selected);
   }
 
   .custom-observation-details-toggle {
@@ -301,13 +310,13 @@
   }
 
   .custom-observation-swatch-candidate {
-    border-color: #2563eb;
-    background: rgb(37 99 235 / 12%);
+    border-color: var(--custom-marker-candidate);
+    background: color-mix(in srgb, var(--custom-marker-candidate) 12%, transparent);
   }
 
   .custom-observation-swatch-selected {
-    border-color: #c2410c;
-    background: rgb(234 88 12 / 23%);
+    border-color: var(--custom-marker-selected);
+    background: color-mix(in srgb, var(--custom-marker-selected) 23%, transparent);
   }
 
   .custom-observation-details {
@@ -330,7 +339,7 @@
   .custom-observation-ranking-details {
     margin-block-end: var(--space-custom-inset);
     padding-block-end: var(--space-custom-inset);
-    border-block-end: var(--border-width) solid var(--custom-line);
+    border-block-end: var(--border-width) solid var(--custom-glass-line);
   }
 
   .custom-observation-ranking-details h3 {

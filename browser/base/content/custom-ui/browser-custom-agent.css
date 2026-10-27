@@ -26,6 +26,7 @@
   #custom-agent-hud {
     --custom-agent-orb-ring: var(--custom-ink);
     --custom-agent-orb-fill: var(--custom-ink);
+    --custom-agent-orb-shadow: var(--custom-glass-edge), var(--box-shadow-custom-float);
     position: absolute;
     inset-inline-end: var(--space-custom-hud, var(--space-xlarge));
     inset-block-end: var(--space-custom-hud, var(--space-xlarge));
@@ -59,8 +60,10 @@
     padding: 0;
     border: 0;
     border-radius: var(--border-radius-circle);
-    background-color: var(--custom-surface, var(--background-color-box));
-    box-shadow: var(--box-shadow-custom-float, var(--box-shadow-level-3));
+    background-color: var(--custom-glass-background-strong, var(--background-color-box));
+    background-image: var(--custom-glass-sheen);
+    box-shadow: var(--custom-agent-orb-shadow, var(--box-shadow-level-3));
+    backdrop-filter: var(--custom-glass-filter);
   }
 
   .custom-agent-orb-art {
@@ -72,7 +75,7 @@
 
   .custom-agent-orb-track {
     fill: none;
-    stroke: var(--custom-line-strong, var(--icon-color));
+    stroke: var(--custom-glass-film-strong, var(--icon-color));
     stroke-width: 3;
   }
 
@@ -152,10 +155,12 @@
     max-width: var(--size-custom-bubble, var(--size-layout-medium));
     padding: var(--space-custom-gap, var(--space-medium));
     padding-inline-start: var(--space-xlarge);
-    border: var(--border-width) solid var(--custom-line, var(--border-color));
+    border: var(--border-width) solid var(--custom-glass-border, var(--border-color));
     border-radius: var(--border-radius-custom-page, var(--border-radius-medium));
-    background-color: var(--custom-surface, var(--background-color-box));
-    box-shadow: var(--box-shadow-custom-float, var(--box-shadow-level-3));
+    background-color: var(--custom-glass-background-strong, var(--background-color-box));
+    background-image: var(--custom-glass-sheen);
+    box-shadow: var(--box-shadow-custom-glass, var(--box-shadow-level-3));
+    backdrop-filter: var(--custom-glass-filter);
   }
 
   #custom-agent-bubble::after {
@@ -165,13 +170,16 @@
     inset-block-start: 50%;
     width: var(--size-custom-glyph, var(--icon-size-xsmall));
     height: var(--size-custom-glyph, var(--icon-size-xsmall));
-    border-block-start: var(--border-width) solid var(--custom-line, var(--border-color));
-    border-inline-end: var(--border-width) solid var(--custom-line, var(--border-color));
-    background-color: var(--custom-surface, var(--background-color-box));
+    border-block-start: var(--border-width) solid var(--custom-glass-border, var(--border-color));
+    border-inline-end: var(--border-width) solid var(--custom-glass-border, var(--border-color));
+    background-color: var(--custom-glass-background-strong, var(--background-color-box));
+    backdrop-filter: var(--custom-glass-filter);
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
     transform: translateY(-50%) rotate(45deg);
     pointer-events: none;
 
     &:-moz-locale-dir(rtl) {
+      clip-path: polygon(0 0, 100% 0, 0 100%);
       transform: translateY(-50%) rotate(-45deg);
     }
   }
@@ -258,7 +266,7 @@
     color: var(--custom-muted, var(--text-color-deemphasized));
 
     &:hover {
-      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+      background-color: var(--custom-glass-film, var(--background-color-list-item-hover));
       color: var(--custom-ink, var(--text-color));
     }
   }
@@ -275,15 +283,16 @@
     box-sizing: border-box;
     height: var(--button-min-height-large);
     padding-inline: var(--space-custom-action-inline, var(--space-large));
-    border: var(--border-width) solid var(--custom-line-strong, var(--border-color));
+    border: var(--border-width) solid var(--custom-glass-border, var(--border-color));
     border-radius: var(--border-radius-custom-tab, var(--border-radius-medium));
-    background-color: transparent;
+    background-color: var(--custom-glass-film, transparent);
     color: var(--custom-ink, var(--text-color));
     font: inherit;
     font-weight: var(--font-weight-custom-medium, var(--font-weight-semibold));
+    box-shadow: var(--custom-glass-edge, var(--box-shadow-level-1));
 
     &:hover {
-      background-color: var(--custom-hover, var(--background-color-list-item-hover));
+      background-color: var(--custom-glass-film-strong, var(--background-color-list-item-hover));
       color: var(--custom-ink, var(--text-color));
     }
   }
@@ -292,6 +301,7 @@
     border-color: transparent;
     background-color: var(--custom-ink, var(--button-background-color-primary));
     color: var(--custom-accent-ink, var(--button-text-color-primary));
+    box-shadow: none;
 
     &:hover {
       background-color: color-mix(in srgb, var(--custom-ink, var(--button-background-color-primary)) 86%, var(--custom-surface, var(--background-color-box)));
@@ -413,7 +423,7 @@
 
 .custom-agent-ring-track {
   fill: none;
-  stroke: var(--custom-line-strong, var(--icon-color));
+  stroke: var(--custom-glass-film-strong, var(--icon-color));
   stroke-width: var(--custom-agent-ring-stroke);
 }
 
@@ -584,13 +594,19 @@
   }
 
   .tabbrowser-tab[custom-agent-state="confirm"]:not([pinned]) .tab-background {
-    --custom-agent-confirm-ring: inset 0 0 0 var(--border-width) var(--custom-line-strong);
-    background-color: var(--custom-surface, var(--background-color-box));
-    box-shadow: var(--custom-agent-confirm-ring, var(--box-shadow-level-1));
+    --custom-agent-confirm-ring: inset 0 0 0 var(--border-width) var(--custom-glass-line);
+    background-color: var(--custom-glass-background, var(--background-color-box));
+    background-image: var(--custom-glass-sheen);
+    --custom-agent-confirm-shadow: var(--custom-agent-confirm-ring), var(--custom-glass-edge);
+    box-shadow: var(--custom-agent-confirm-shadow, var(--box-shadow-level-1));
+    backdrop-filter: var(--custom-glass-filter);
   }
 
   .tabbrowser-tab[custom-agent-state="confirm"]:not([pinned]) .tab-background:is([selected], [multiselected]) {
-    box-shadow: var(--custom-agent-confirm-ring, var(--box-shadow-level-1)), var(--box-shadow-custom-tab, var(--box-shadow-level-1));
+    background-color: var(--custom-selected-background, var(--background-color-box));
+    background-image: var(--custom-selected-sheen);
+    box-shadow: var(--custom-agent-confirm-ring, var(--box-shadow-level-1)), var(--box-shadow-custom-selected, var(--box-shadow-level-1));
+    backdrop-filter: var(--custom-selected-filter);
   }
 }
 

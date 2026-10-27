@@ -6,13 +6,9 @@ agent-chat-title = Mono 에이전트
 agent-chat-urlbar-action = Chat
 agent-chat-open =
     .label = Chat with Agent
-agent-chat-new = 새 대화
-agent-chat-empty-title = 무엇을 도와드릴까요?
-agent-chat-empty-description = 생각을 정리하거나, 글을 다듬거나, 다음 할 일을 계획해 보세요.
-
-agent-chat-suggestion-ideas = 아이디어 정리
-agent-chat-suggestion-writing = 글 다듬기
-agent-chat-suggestion-planning = 계획 세우기
+agent-chat-new =
+    .aria-label = 새 대화
+    .title = 새 대화
 
 agent-chat-messages =
     .aria-label = 에이전트와의 대화
@@ -38,5 +34,22 @@ agent-chat-ready = 메시지를 보내 대화를 시작하세요.
 agent-chat-responding = 답변을 작성하고 있습니다.
 agent-chat-stopped = 응답을 중지했습니다.
 agent-chat-error = 답변을 받지 못했습니다. 잠시 후 다시 시도해 주세요.
+# Variables:
+#   $reason (String) - The error reported by the model API or the agent, shortened.
+agent-chat-error-detail = 답변을 받지 못했습니다. 잠시 후 다시 시도해 주세요. ({ $reason })
 agent-chat-empty-response = 받은 답변이 비어 있습니다. 다시 시도해 주세요.
 agent-chat-pending-message = 답변을 기다리고 있습니다.
+
+agent-chat-effort =
+    .aria-label = 노력 수준
+agent-chat-effort-normal = 보통
+agent-chat-effort-deep = 깊게
+
+agent-chat-activity-title = 작업 내역
+
+agent-chat-scroll-end =
+    .aria-label = 맨 아래로 이동
+    .title = 맨 아래로 이동
+
+agent-chat-sources =
+    .aria-label = 답변 출처

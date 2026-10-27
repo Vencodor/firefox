@@ -10,6 +10,16 @@ browser.jar:
    content/browser/preferences/custom-ui/preferences.js           (custom-ui/preferences.js)
    content/browser/preferences/custom-ui/navigation.css           (custom-ui/navigation.css)
    content/browser/preferences/custom-ui/settings-config.mjs      (custom-ui/settings-config.mjs)
+   content/browser/preferences/custom-ui/theme-mono.svg           (custom-ui/theme-mono.svg)
+   content/browser/preferences/custom-ui/theme-sky.svg            (custom-ui/theme-sky.svg)
+   content/browser/preferences/custom-ui/theme-ocean.svg          (custom-ui/theme-ocean.svg)
+   content/browser/preferences/custom-ui/theme-lavender.svg       (custom-ui/theme-lavender.svg)
+   content/browser/preferences/custom-ui/theme-mint.svg           (custom-ui/theme-mint.svg)
+   content/browser/preferences/custom-ui/theme-rose.svg           (custom-ui/theme-rose.svg)
+   content/browser/preferences/custom-ui/theme-peach.svg          (custom-ui/theme-peach.svg)
+   content/browser/preferences/custom-ui/theme-sand.svg           (custom-ui/theme-sand.svg)
+   content/browser/preferences/custom-ui/theme-sage.svg           (custom-ui/theme-sage.svg)
+   content/browser/preferences/custom-ui/theme-slate.svg          (custom-ui/theme-slate.svg)
 
    content/browser/preferences/main.js
    content/browser/preferences/translations.js
